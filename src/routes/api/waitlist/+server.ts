@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { supabaseAnon } from '$lib/server/supabase';
+import { supabaseAdmin } from '$lib/server/supabase';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
 
@@ -22,13 +22,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	try {
-		const sb = supabaseAnon();
-		if (!sb) {
-			return json(
-				{ message: 'Supabase ist noch nicht verbunden. Trag dich später nochmal ein.' },
-				{ status: 503 }
-			);
-		}
+		const sb = supabaseAdmin();
 		const { error } = await sb.from('waitlist').insert({ email });
 		if (error) {
 			if (error.code === '23505') return json({ ok: true });

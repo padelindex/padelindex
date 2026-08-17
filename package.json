@@ -4,9 +4,9 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "WRANGLER_HOME=.wrangler vite dev",
 		"build": "vite build",
-		"preview": "npm run build && wrangler pages dev",
+		"preview": "npm run build && WRANGLER_HOME=.wrangler wrangler pages dev",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

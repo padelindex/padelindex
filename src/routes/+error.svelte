@@ -18,7 +18,7 @@
 <section class="sec">
 	<div class="wrap">
 		<span class="eyebrow">{status}</span>
-		<h2 style="margin-top: 18px">{error.message}</h2>
+		<h2 style="margin-top: 18px">{error?.message ?? 'Seite nicht gefunden'}</h2>
 		<p class="muted" style="margin-top: 16px">
 			<a href="/">Zurück zur Startseite</a>
 		</p>

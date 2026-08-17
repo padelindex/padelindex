@@ -7,6 +7,9 @@ const config = {
 			routes: {
 				include: ['/*'],
 				exclude: ['<all>']
+			},
+			platformProxy: {
+				persist: '.wrangler/state'
 			}
 		})
 	}
