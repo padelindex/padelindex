@@ -12,7 +12,7 @@
 // gegen die aktuelle Doku prüfen, die API hat sich zwischen
 // Major-Versionen schon geändert.
 
-import { rating, rate, ordinal } from 'openskill';
+import { rating, rate } from 'openskill';
 
 // ---------- Konstanten ----------
 export const BASE_MU = 25.0;

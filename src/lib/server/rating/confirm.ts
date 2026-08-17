@@ -78,7 +78,11 @@ export async function applyRatingForMatch(sb: SupabaseClient, matchId: string) {
 
   // 4. Berechnen (reine Funktion, keine Seiteneffekte)
   const results = computeMatchRatings({ team1, team2, sets });
-  const grants = computeTokenGrants(results, [...team1, ...team2], match.source);
+  const grants = computeTokenGrants(
+    results,
+    [...team1, ...team2],
+    match.source as 'manual' | 'club_league' | 'tournament' | 'import'
+  );
 
   // 5. Atomar anwenden — ein einziger Call, Transaktion in Postgres
   const { error: rpcErr } = await sb.rpc('apply_match_rating', {

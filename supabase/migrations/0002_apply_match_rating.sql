@@ -210,6 +210,7 @@ end;
 $$;
 
 grant execute on function apply_inactivity_decay() to service_role;
+grant execute on function player_current_streak(uuid) to service_role;
 
 
 -- ============================================================

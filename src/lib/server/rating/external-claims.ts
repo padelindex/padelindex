@@ -9,7 +9,7 @@
 //   3. classifyClaim()     -> auto_verified / needs_review / rejected
 //   4. computeSeedFromClaims() -> mu/sigma NUR wenn matches_played < LOCK
 
-import { BASE_MU, BASE_SIGMA, toDisplayRating } from './rating';
+import { BASE_SIGMA } from './rating';
 
 // ---------- Typen ----------
 
