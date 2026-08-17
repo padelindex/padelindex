@@ -4,12 +4,17 @@ import { supabaseAdmin } from '$lib/server/supabase';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
 
+function fail(status: number, message: string, detail?: string) {
+	const suffix = detail && detail !== message ? ` (${detail})` : '';
+	return json({ message: `${message}${suffix}` }, { status });
+}
+
 export const POST: RequestHandler = async ({ request, platform }) => {
 	let body: unknown;
 	try {
 		body = await request.json();
 	} catch {
-		return json({ message: 'Bitte eine gültige E-Mail-Adresse eingeben.' }, { status: 400 });
+		return fail(400, 'Bitte eine gültige E-Mail-Adresse eingeben.');
 	}
 
 	const email =
@@ -18,7 +23,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 			: '';
 
 	if (!EMAIL_RE.test(email)) {
-		return json({ message: 'Bitte eine gültige E-Mail-Adresse eingeben.' }, { status: 400 });
+		return fail(400, 'Bitte eine gültige E-Mail-Adresse eingeben.');
 	}
 
 	try {
@@ -27,24 +32,19 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		if (error) {
 			if (error.code === '23505') return json({ ok: true });
 			console.error('waitlist insert', error);
-			return json({ message: 'Konnte nicht eingetragen werden.' }, { status: 500 });
+			return fail(500, 'Konnte nicht eingetragen werden.', error.message);
 		}
 		return json({ ok: true });
 	} catch (err) {
 		const detail = err instanceof Error ? err.message : String(err);
 		console.error('waitlist exception', detail);
-		if (detail.includes('SUPABASE_SERVICE_ROLE_KEY')) {
-			return json(
-				{
-					message:
-						'Server ist nicht mit Supabase verbunden (Secret Key fehlt in Cloudflare).'
-				},
-				{ status: 503 }
+		if (detail.includes('SUPABASE_SERVICE_ROLE_KEY') || detail.includes('nicht konfiguriert')) {
+			return fail(
+				503,
+				'Server ist nicht mit Supabase verbunden. Secret Key in Cloudflare als encrypted Secret setzen, nicht als Build-Variable.',
+				detail
 			);
 		}
-		return json(
-			{ message: 'Konnte nicht eingetragen werden. Bitte später erneut versuchen.' },
-			{ status: 500 }
-		);
+		return fail(500, 'Konnte nicht eingetragen werden. Bitte später erneut versuchen.', detail);
 	}
 };

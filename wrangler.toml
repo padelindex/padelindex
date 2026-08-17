@@ -9,6 +9,12 @@ compatibility_flags = ["nodejs_compat"]
 directory = ".svelte-kit/cloudflare"
 binding = "ASSETS"
 
+# Plain dashboard vars are wiped on each `wrangler deploy`. Keep public bindings here.
+# SUPABASE_SERVICE_ROLE_KEY must be an encrypted Worker Secret (not a Build variable).
+[vars]
+PUBLIC_SUPABASE_URL = "https://tcpfkfsxsrbwsctepjni.supabase.co"
+PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_VSHMoU9deBOLE4UOJjGafg_0Whiip7l"
+
 # 48h-Bestätigung: später aktivieren, sobald der Match-Flow steht.
 # [triggers]
 # crons = ["*/15 * * * *"]

@@ -56,13 +56,7 @@ Storage-Bucket `ranking-claims` erst in Phase 2 (Screenshot-Nachweise).
 
 1. Cloudflare-Account, Workers & Pages aktivieren.
 2. Worker `padelindex` an das GitHub-Repo `padelindex/padelindex` koppeln (Workers Builds).
-3. **Runtime-Variablen** unter Workers → `padelindex` → Settings → Variables and Secrets setzen — nicht nur Build-Variablen. Ohne `SUPABASE_SERVICE_ROLE_KEY` am Worker schlägt die Waitlist fehl.
-
-| Variable | Secret? |
-|---|---|
-| `PUBLIC_SUPABASE_URL` | nein |
-| `PUBLIC_SUPABASE_ANON_KEY` | nein |
-| `SUPABASE_SERVICE_ROLE_KEY` | ja |
+3. `PUBLIC_SUPABASE_*` stehen in `wrangler.toml` (`[vars]`). `SUPABASE_SERVICE_ROLE_KEY` muss unter Workers → `padelindex` → Settings → Variables and Secrets als **encrypted Secret** liegen — nicht als Build-Variable. Klartext-Vars aus dem Dashboard löscht `wrangler deploy`.
 
 4. Optional: Custom Domain `padelindex.de` auf diesen Worker.
 

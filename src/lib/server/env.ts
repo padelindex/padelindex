@@ -7,20 +7,31 @@ export type AppEnv = {
 	supabaseServiceRoleKey: string;
 };
 
-type PlatformEnv = App.Platform['env'] | undefined;
+function asString(value: unknown): string {
+	return typeof value === 'string' ? value.trim() : '';
+}
 
-function pick(platform: PlatformEnv, key: keyof NonNullable<PlatformEnv>, fallback: string | undefined) {
-	return (platform?.[key] || fallback || '').trim();
+function fromPlatform(platform: App.Platform | undefined, key: string): string {
+	const env = platform?.env as Record<string, unknown> | undefined;
+	return asString(env?.[key]);
+}
+
+function first(...values: string[]): string {
+	return values.find((value) => value.length > 0) ?? '';
 }
 
 export function readAppEnv(platform?: App.Platform): AppEnv | null {
-	const fromCf = platform?.env;
-	const supabaseUrl = pick(fromCf, 'PUBLIC_SUPABASE_URL', publicEnv.PUBLIC_SUPABASE_URL);
-	const supabaseAnonKey = pick(fromCf, 'PUBLIC_SUPABASE_ANON_KEY', publicEnv.PUBLIC_SUPABASE_ANON_KEY);
-	const supabaseServiceRoleKey = pick(
-		fromCf,
-		'SUPABASE_SERVICE_ROLE_KEY',
-		privateEnv.SUPABASE_SERVICE_ROLE_KEY
+	const supabaseUrl = first(
+		fromPlatform(platform, 'PUBLIC_SUPABASE_URL'),
+		asString(publicEnv.PUBLIC_SUPABASE_URL)
+	);
+	const supabaseAnonKey = first(
+		fromPlatform(platform, 'PUBLIC_SUPABASE_ANON_KEY'),
+		asString(publicEnv.PUBLIC_SUPABASE_ANON_KEY)
+	);
+	const supabaseServiceRoleKey = first(
+		fromPlatform(platform, 'SUPABASE_SERVICE_ROLE_KEY'),
+		asString(privateEnv.SUPABASE_SERVICE_ROLE_KEY)
 	);
 
 	if (!supabaseUrl || !supabaseAnonKey) return null;
