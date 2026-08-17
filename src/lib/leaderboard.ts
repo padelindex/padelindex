@@ -3,12 +3,15 @@ export type LicenseTier = 'free' | 'basic' | 'pro';
 export type LeaderboardPlayer = {
 	rank: number;
 	handle: string;
+	/** Bei unbeanspruchten Profilen abgekürzt ("Robin K.") — siehe public_display_name(). */
 	name: string;
 	rating: number;
 	confidence: number;
 	matches: number;
 	provisional: boolean;
 	trend: number;
+	/** false = importiertes Profil, das noch niemand beansprucht hat. */
+	claimed: boolean;
 };
 
 export type LeaderboardResponse = {
