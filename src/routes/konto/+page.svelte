@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
+	import { createBrowserSupabase, readMagicLinkTokensFromHash } from '$lib/supabase-browser';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -8,6 +11,66 @@
 		pending: 'Wird geprüft',
 		claimed: 'Bestätigt'
 	};
+
+	// Supabases Standard-Mail-Templates verlinken auf ihren eigenen
+	// /auth/v1/verify-Endpunkt, der nach Prüfung mit #access_token=...&
+	// refresh_token=... hier landet. Fragmente gehen nie an den Server —
+	// die Session muss deshalb im Browser übernommen werden (siehe
+	// supabase-browser.ts). Synchron statt erst in onMount geprüft, damit
+	// "Nicht eingeloggt" nicht kurz aufblitzt, bevor die Session steht.
+	let establishingSession = $state(
+		typeof window !== 'undefined' && readMagicLinkTokensFromHash(window.location.hash) !== null
+	);
+	let sessionError = $state(false);
+
+	onMount(async () => {
+		const tokens = readMagicLinkTokensFromHash(window.location.hash);
+		if (!tokens) return;
+
+		// Tokens sofort aus der URL tilgen — sollen nicht in der
+		// Browser-History oder beim Teilen des Links landen.
+		//
+		// Bewusst die rohe History-API statt $app/navigation.replaceState():
+		// die schlägt hier hart fehl ("Cannot call replaceState(...) before
+		// router is initialized"), weil onMount auf dieser Seite früher
+		// feuert als SvelteKits Router-Setup abschließt (live verifiziert).
+		// Reine URL-Kosmetik, kein SvelteKit-Navigationsziel — das Fragment
+		// spielt für SvelteKits Routing ohnehin keine Rolle.
+		history.replaceState(null, '', window.location.pathname + window.location.search);
+
+		if (!data.supabaseConfig) {
+			establishingSession = false;
+			sessionError = true;
+			return;
+		}
+
+		const supabase = createBrowserSupabase(data.supabaseConfig.url, data.supabaseConfig.anonKey);
+
+		// setSession() gibt bei einem kaputten/manipulierten Token nicht immer
+		// { error } zurück, sondern kann auch werfen (z.B. beim Decodieren
+		// eines fehlerhaften JWT) — ohne try/catch bliebe die Seite dann für
+		// immer bei "Einen Moment…" hängen. Live mit einem absichtlich
+		// kaputten Token verifiziert.
+		let sessionOk = false;
+		try {
+			const { error } = await supabase.auth.setSession({
+				access_token: tokens.accessToken,
+				refresh_token: tokens.refreshToken
+			});
+			sessionOk = !error;
+		} catch {
+			sessionOk = false;
+		}
+
+		establishingSession = false;
+		if (!sessionOk) {
+			sessionError = true;
+			return;
+		}
+
+		// Server neu abfragen — hooks.server.ts sieht jetzt das gesetzte Cookie.
+		await invalidateAll();
+	});
 </script>
 
 <svelte:head>
@@ -26,13 +89,24 @@
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 480px">
-		{#if !data.email}
+		{#if establishingSession}
+			<div class="sec-head">
+				<h2>Einen Moment…</h2>
+				<p class="muted">Anmeldung wird abgeschlossen.</p>
+			</div>
+		{:else if !data.email}
 			<div class="sec-head">
 				<h2>Nicht eingeloggt</h2>
 				<p class="muted">
 					Du bist gerade nicht angemeldet. Über die Vereinsseite kannst du dein Profil beanspruchen
 					und bekommst einen Bestätigungslink per E-Mail.
 				</p>
+				{#if sessionError}
+					<p class="err" role="status">
+						Der Anmeldelink konnte nicht eingelöst werden — vermutlich abgelaufen. Fordere einen
+						neuen an.
+					</p>
+				{/if}
 			</div>
 			<a class="btn btn-primary" href="/">Zur Startseite</a>
 			<p class="muted" style="margin-top: 16px">
@@ -108,5 +182,11 @@
 	.stat-l {
 		font-size: 12px;
 		color: var(--muted-light);
+	}
+
+	.err {
+		margin: 16px 0 0;
+		font-size: 13px;
+		color: #a3341f;
 	}
 </style>
