@@ -1,6 +1,13 @@
 name = "padelindex"
+main = ".svelte-kit/cloudflare/_worker.js"
 compatibility_date = "2026-01-01"
-pages_build_output_dir = ".svelte-kit/cloudflare"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Workers Builds runs `npx wrangler deploy` after `npm run build`.
+# This is a Worker with static assets, not a Pages-only project.
+[assets]
+directory = ".svelte-kit/cloudflare"
+binding = "ASSETS"
 
 # 48h-Bestätigung: später aktivieren, sobald der Match-Flow steht.
 # [triggers]
