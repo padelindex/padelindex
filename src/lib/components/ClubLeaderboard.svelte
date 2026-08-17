@@ -31,7 +31,9 @@
 {#if unavailable}
 	<div class="lb">
 		<div class="lb-head"><span class="n">Ranking</span></div>
-		<p class="empty">Supabase ist noch nicht verbunden. Ranking erscheint, sobald die Datenbank hängt.</p>
+		<p class="empty">
+			Supabase ist noch nicht verbunden. Ranking erscheint, sobald die Datenbank hängt.
+		</p>
 	</div>
 {:else if !board}
 	<div class="lb">
@@ -44,7 +46,9 @@
 			<span class="n">{board.club.name}</span>
 			<span class="e">Level-Ranking</span>
 		</div>
-		<p class="empty">Noch keine bestätigten Matches. Das Ranking startet mit dem ersten Ergebnis.</p>
+		<p class="empty">
+			Noch keine bestätigten Matches. Das Ranking startet mit dem ersten Ergebnis.
+		</p>
 	</div>
 {:else}
 	<div class="lb" class:compact>
@@ -58,6 +62,9 @@
 					<span class="r">{p.rank}</span>
 					<span>
 						<span class="nm">{p.name}</span>
+						{#if !p.claimed}
+							<span class="uc" title="Profil noch nicht beansprucht">frei</span>
+						{/if}
 						<span class="mt" class:prov={p.provisional}>
 							{p.provisional ? `provisorisch · ${p.matches} Matches` : `${p.matches} Matches`}
 						</span>
@@ -65,12 +72,7 @@
 					<span class="sc">
 						<svg class="mini" viewBox="0 0 22 22" aria-hidden="true">
 							<circle class="t" cx="11" cy="11" r="9"></circle>
-							<circle
-								class="f"
-								cx="11"
-								cy="11"
-								r="9"
-								stroke-dasharray={dash(p.confidence)}
+							<circle class="f" cx="11" cy="11" r="9" stroke-dasharray={dash(p.confidence)}
 							></circle>
 						</svg>
 						<span class="v" title="Sicherheit {Math.round(p.confidence * 100)} %">
@@ -93,5 +95,19 @@
 		padding: 22px 16px;
 		font-size: 14px;
 		color: var(--muted-light);
+	}
+
+	/* Importiertes Profil, das noch niemand übernommen hat. */
+	.uc {
+		margin-left: 7px;
+		padding: 1px 6px;
+		border-radius: 100px;
+		font-family: var(--mono);
+		font-size: 9px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--muted-light);
+		border: 1px solid var(--line-light, rgba(0, 0, 0, 0.14));
+		vertical-align: 1px;
 	}
 </style>

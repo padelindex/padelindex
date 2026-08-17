@@ -9,7 +9,8 @@
 	<title>{data.board?.club.name ?? 'Verein'} — PadelIndex</title>
 	<meta
 		name="description"
-		content="Öffentliches Level-Ranking von {data.board?.club.name ?? 'diesem Verein'} auf PadelIndex."
+		content="Öffentliches Level-Ranking von {data.board?.club.name ??
+			'diesem Verein'} auf PadelIndex."
 	/>
 </svelte:head>
 
@@ -36,5 +37,20 @@
 		<div style="margin-top: 36px">
 			<ClubLeaderboard board={data.board} unavailable={data.unavailable} />
 		</div>
+		{#if data.board}
+			<p class="claim-cta">
+				Du stehst in der Ligatabelle?
+				<a href="/c/{data.board.club.slug}/beanspruchen">Profil beanspruchen</a>
+			</p>
+		{/if}
 	</div>
 </section>
+
+<style>
+	.claim-cta {
+		margin-top: 20px;
+		text-align: center;
+		font-size: 13px;
+		color: var(--muted-light);
+	}
+</style>

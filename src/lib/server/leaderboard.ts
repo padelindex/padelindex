@@ -22,6 +22,7 @@ type LeaderboardRow = {
 	provisional: boolean;
 	trend: number | string;
 	last_match_at: string | null;
+	claimed: boolean;
 };
 
 export async function getClubLeaderboard(
@@ -49,7 +50,7 @@ export async function getClubLeaderboard(
 	const { data, error: rowsErr } = await sb
 		.from('club_leaderboard')
 		.select(
-			'club_slug, club_name, license_tier, accent, handle, name, rating, confidence, matches, provisional, trend, last_match_at'
+			'club_slug, club_name, license_tier, accent, handle, name, rating, confidence, matches, provisional, trend, last_match_at, claimed'
 		)
 		.eq('club_slug', slug)
 		.order('rating', { ascending: false })
@@ -67,7 +68,8 @@ export async function getClubLeaderboard(
 		confidence: Number(row.confidence),
 		matches: row.matches,
 		provisional: row.provisional,
-		trend: Number(row.trend)
+		trend: Number(row.trend),
+		claimed: row.claimed
 	}));
 
 	const updatedAt =

@@ -43,6 +43,8 @@ npm run build
    - [`supabase/migrations/0001_schema.sql`](supabase/migrations/0001_schema.sql)
    - [`supabase/migrations/0002_apply_match_rating.sql`](supabase/migrations/0002_apply_match_rating.sql)
    - [`supabase/migrations/0003_external_claims.sql`](supabase/migrations/0003_external_claims.sql)
+   - [`supabase/migrations/0004_waitlist_anon_insert.sql`](supabase/migrations/0004_waitlist_anon_insert.sql)
+   - [`supabase/migrations/0005_claimable_profiles.sql`](supabase/migrations/0005_claimable_profiles.sql)
 3. Authentication → Providers: **Email** (Magic Link reicht für den Pilot).
 4. Authentication → URL Configuration: Site URL = Cloudflare-URL (lokal `http://localhost:5173`).
 5. Keys unter Project Settings → API:
@@ -76,9 +78,52 @@ Siehe [`.env.example`](.env.example). Datei nicht committen.
 | `src/routes/api/waitlist` | Waitlist → Postgres |
 | `src/routes/api/v1/clubs/[slug]/leaderboard` | Widget-API (CORS, Cache 5 min) |
 | `static/embed.js` | Custom Element für Vereinswebsites |
+| `src/routes/c/[slug]/beanspruchen` | Profil beanspruchen (Name → Magic Link) |
+| `src/routes/api/claim` | Claim-Lookup + Claim-Start |
+| `src/lib/claim-match.ts` | Namensabgleich fürs Beanspruchen |
 | `src/lib/server/rating/` | OpenSkill-Kern, Confirm-Worker, Claims |
+| `src/lib/server/rating/league-seed.ts` | Startwert aus einer bestehenden Ligatabelle |
+| `scripts/import-bavaro.ts` | Ligadaten → Seed-SQL |
 | `supabase/migrations/` | Schema + RPCs |
 | `docs/` | Widget-Konzept, Verification-Pipeline |
+
+## Echte Ligadaten importieren
+
+Der Pilot läuft mit den echten Tabellen der BÁVARO Padel League (STC Oberland),
+nicht mit Demodaten.
+
+```bash
+# data/bavaro-zyklus5.json liegt lokal, nicht im Repo
+npm run import:bavaro
+# erzeugt supabase/seed-bavaro.local.sql -> im Supabase SQL Editor ausführen
+```
+
+Das Skript rechnet die echten Matches durch denselben Rating-Kern, den auch
+der Live-Betrieb nutzt: Startwert aus der Ligaposition vor dem Zyklus, dann
+jedes Match einzeln. Alle IDs sind deterministisch aus dem Namen abgeleitet,
+ein erneuter Lauf ist idempotent.
+
+**Personenbezogene Daten:** `data/` und `*.local.sql` sind bewusst gitignored.
+Dieses Repo ist öffentlich — Klarnamen von Vereinsmitgliedern gehören weder in
+die Git-Historie noch in eine Migration. Sie leben ausschließlich in Supabase.
+
+## Profile beanspruchen statt neu anlegen
+
+Importierte Spieler existieren als Profile ohne Auth-User
+(`players.user_id is null`, `claim_status = 'unclaimed'`).
+
+1. Spieler öffnet `/c/<slug>/beanspruchen` und tippt seinen Namen.
+2. Der Server sucht das unbeanspruchte Profil. Genau ein eindeutiger Treffer
+   oder keiner — bei zwei ähnlichen Namen wird die Zuordnung verweigert, statt
+   zu raten.
+3. Magic Link an die E-Mail. Beim ersten Login löst `handle_new_user()` den
+   Claim ein und verknüpft das **bestehende** Profil samt Rating und
+   Matchhistorie. Es entsteht kein Zweitprofil.
+
+Öffentlich sichtbar ist ein unbeanspruchtes Profil nur abgekürzt ("Robin K.")
+und unter einem anonymen Handle. `anon` hat keinen Lesezugriff auf `players`,
+sondern ausschließlich auf die View `club_leaderboard`. Erst nach dem
+Beanspruchen entscheidet der Spieler selbst über den vollen Namen.
 
 ## Nächste Schritte (nach Phase 1)
 
