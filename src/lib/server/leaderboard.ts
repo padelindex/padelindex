@@ -26,9 +26,10 @@ type LeaderboardRow = {
 
 export async function getClubLeaderboard(
 	slug: string,
-	requestedLimit?: number
+	requestedLimit?: number,
+	platform?: App.Platform
 ): Promise<LeaderboardResponse> {
-	const sb = supabaseAnon();
+	const sb = supabaseAnon(platform);
 	if (!sb) {
 		throw error(503, 'Supabase ist noch nicht verbunden.');
 	}

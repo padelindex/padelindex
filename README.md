@@ -52,14 +52,11 @@ npm run build
 
 Storage-Bucket `ranking-claims` erst in Phase 2 (Screenshot-Nachweise).
 
-### 2. Cloudflare Pages
+### 2. Cloudflare Workers
 
-1. Cloudflare-Account, Workers/Pages aktivieren.
-2. Neues Pages-Projekt, an das GitHub-Repo `padelindex/padelindex` koppeln.
-3. Build:
-   - Build command: `npm run build`
-   - Output directory: `.svelte-kit/cloudflare`
-4. Environment variables (Production **und** Preview):
+1. Cloudflare-Account, Workers & Pages aktivieren.
+2. Worker `padelindex` an das GitHub-Repo `padelindex/padelindex` koppeln (Workers Builds).
+3. **Runtime-Variablen** unter Workers → `padelindex` → Settings → Variables and Secrets setzen — nicht nur Build-Variablen. Ohne `SUPABASE_SERVICE_ROLE_KEY` am Worker schlägt die Waitlist fehl.
 
 | Variable | Secret? |
 |---|---|
@@ -67,7 +64,7 @@ Storage-Bucket `ranking-claims` erst in Phase 2 (Screenshot-Nachweise).
 | `PUBLIC_SUPABASE_ANON_KEY` | nein |
 | `SUPABASE_SERVICE_ROLE_KEY` | ja |
 
-5. Optional: Custom Domain `padelindex.de` auf dieses Pages-Projekt.
+4. Optional: Custom Domain `padelindex.de` auf diesen Worker.
 
 Das alte `padelindex.github.io` ist kein Host mehr — GitHub Pages dort deaktivieren.
 

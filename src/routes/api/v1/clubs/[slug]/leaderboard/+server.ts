@@ -10,10 +10,14 @@ const cors = {
 
 export const OPTIONS: RequestHandler = () => new Response(null, { headers: cors });
 
-export const GET: RequestHandler = async ({ params, url }) => {
+export const GET: RequestHandler = async ({ params, url, platform }) => {
 	const raw = Number(url.searchParams.get('limit'));
 	try {
-		const board = await getClubLeaderboard(params.slug, Number.isFinite(raw) ? raw : undefined);
+		const board = await getClubLeaderboard(
+			params.slug,
+			Number.isFinite(raw) ? raw : undefined,
+			platform
+		);
 		return json(board, {
 			headers: {
 				...cors,

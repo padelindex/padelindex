@@ -7,26 +7,37 @@ export type AppEnv = {
 	supabaseServiceRoleKey: string;
 };
 
-export function readAppEnv(): AppEnv | null {
-	const supabaseUrl = publicEnv.PUBLIC_SUPABASE_URL ?? '';
-	const supabaseAnonKey = publicEnv.PUBLIC_SUPABASE_ANON_KEY ?? '';
-	const supabaseServiceRoleKey = privateEnv.SUPABASE_SERVICE_ROLE_KEY ?? '';
+type PlatformEnv = App.Platform['env'] | undefined;
+
+function pick(platform: PlatformEnv, key: keyof NonNullable<PlatformEnv>, fallback: string | undefined) {
+	return (platform?.[key] || fallback || '').trim();
+}
+
+export function readAppEnv(platform?: App.Platform): AppEnv | null {
+	const fromCf = platform?.env;
+	const supabaseUrl = pick(fromCf, 'PUBLIC_SUPABASE_URL', publicEnv.PUBLIC_SUPABASE_URL);
+	const supabaseAnonKey = pick(fromCf, 'PUBLIC_SUPABASE_ANON_KEY', publicEnv.PUBLIC_SUPABASE_ANON_KEY);
+	const supabaseServiceRoleKey = pick(
+		fromCf,
+		'SUPABASE_SERVICE_ROLE_KEY',
+		privateEnv.SUPABASE_SERVICE_ROLE_KEY
+	);
 
 	if (!supabaseUrl || !supabaseAnonKey) return null;
 
 	return { supabaseUrl, supabaseAnonKey, supabaseServiceRoleKey };
 }
 
-export function requireAppEnv(): AppEnv {
-	const env = readAppEnv();
+export function requireAppEnv(platform?: App.Platform): AppEnv {
+	const env = readAppEnv(platform);
 	if (!env) {
 		throw new Error('Supabase ist nicht konfiguriert (PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY).');
 	}
 	return env;
 }
 
-export function requireServiceRole(): AppEnv {
-	const env = requireAppEnv();
+export function requireServiceRole(platform?: App.Platform): AppEnv {
+	const env = requireAppEnv(platform);
 	if (!env.supabaseServiceRoleKey) {
 		throw new Error('SUPABASE_SERVICE_ROLE_KEY fehlt.');
 	}
