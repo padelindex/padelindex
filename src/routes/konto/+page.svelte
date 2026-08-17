@@ -35,6 +35,9 @@
 				</p>
 			</div>
 			<a class="btn btn-primary" href="/">Zur Startseite</a>
+			<p class="muted" style="margin-top: 16px">
+				Profil schon beansprucht? <a href="/anmelden">Hier anmelden</a>
+			</p>
 		{:else if !data.player}
 			<div class="sec-head">
 				<h2>Angemeldet</h2>
