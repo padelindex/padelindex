@@ -37,6 +37,23 @@
 		<div style="margin-top: 36px">
 			<ClubLeaderboard board={data.board} unavailable={data.unavailable} />
 		</div>
+		{#if data.board && data.board.totalPages > 1}
+			<nav class="pager" aria-label="Seiten">
+				{#if data.board.page > 1}
+					<a class="pager-btn" href="?page={data.board.page - 1}">← Vorherige</a>
+				{:else}
+					<span class="pager-btn disabled">← Vorherige</span>
+				{/if}
+				<span class="pager-status">
+					Seite {data.board.page} von {data.board.totalPages} · {data.board.total} Spieler
+				</span>
+				{#if data.board.page < data.board.totalPages}
+					<a class="pager-btn" href="?page={data.board.page + 1}">Nächste →</a>
+				{:else}
+					<span class="pager-btn disabled">Nächste →</span>
+				{/if}
+			</nav>
+		{/if}
 		{#if data.board}
 			<p class="claim-cta">
 				Du stehst in der Ligatabelle?
@@ -47,6 +64,40 @@
 </section>
 
 <style>
+	.pager {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-top: 18px;
+		flex-wrap: wrap;
+	}
+
+	.pager-btn {
+		padding: 8px 16px;
+		border-radius: 100px;
+		border: 1px solid var(--line-light, rgba(0, 0, 0, 0.14));
+		font-size: 13px;
+		text-decoration: none;
+		color: inherit;
+		white-space: nowrap;
+	}
+
+	.pager-btn:not(.disabled):hover {
+		background: rgba(15, 110, 92, 0.08);
+	}
+
+	.pager-btn.disabled {
+		color: var(--muted-light);
+		opacity: 0.5;
+	}
+
+	.pager-status {
+		font-size: 12px;
+		color: var(--muted-light);
+		text-align: center;
+	}
+
 	.claim-cta {
 		margin-top: 20px;
 		text-align: center;
