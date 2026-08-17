@@ -9,7 +9,7 @@ Die Landing-Page, das Vereins-Widget und der Rating-Kern liegen in diesem Repo. 
 - **SvelteKit** mit `@sveltejs/adapter-cloudflare`
 - **Cloudflare Pages** — Hosting für Landing, App, API, `embed.js`
 - **Supabase** — Postgres, Auth, später Realtime und Storage
-- **GitHub** — nur Source. GitHub Pages abschalten oder auf die Cloudflare-Domain umleiten, sobald Pages live ist
+- **GitHub** — nur Source (`padelindex/padelindex`). Hosting ist Cloudflare Pages, nicht GitHub Pages.
 
 ## Lokal starten
 
@@ -55,7 +55,7 @@ Storage-Bucket `ranking-claims` erst in Phase 2 (Screenshot-Nachweise).
 ### 2. Cloudflare Pages
 
 1. Cloudflare-Account, Workers/Pages aktivieren.
-2. Neues Pages-Projekt, an dieses GitHub-Repo koppeln.
+2. Neues Pages-Projekt, an das GitHub-Repo `padelindex/padelindex` koppeln.
 3. Build:
    - Build command: `npm run build`
    - Output directory: `.svelte-kit/cloudflare`
@@ -69,7 +69,7 @@ Storage-Bucket `ranking-claims` erst in Phase 2 (Screenshot-Nachweise).
 
 5. Optional: Custom Domain `padelindex.de` auf dieses Pages-Projekt.
 
-GitHub Pages danach deaktivieren oder eine Redirect-Seite auf `padelindex.de` stellen. Dieses Repo bleibt die Quelle, nicht der Host.
+Das alte `padelindex.github.io` ist kein Host mehr — GitHub Pages dort deaktivieren.
 
 ### 3. Lokal `.env`
 
