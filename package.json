@@ -17,6 +17,7 @@
 		"import:bavaro": "node scripts/run.mjs scripts/import-bavaro.ts"
 	},
 	"dependencies": {
+		"@supabase/ssr": "^0.12.4",
 		"@supabase/supabase-js": "^2.112.3",
 		"openskill": "^5.0.1"
 	},

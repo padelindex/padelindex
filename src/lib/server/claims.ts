@@ -152,9 +152,16 @@ export async function startProfileClaim(
 
 	// Magic Link über den öffentlichen Client — Supabase legt den Auth-User
 	// beim ersten Klick an, der Trigger löst dann den Claim ein.
+	//
+	// signInWithOtp() läuft hier server-seitig, ohne den Browser des
+	// Spielers — deshalb bewusst KEIN PKCE-Redirect (dessen code_verifier
+	// bräuchte denselben Cookie-Storage, den erst der spätere Klick auf den
+	// Link hat). emailRedirectTo landet im E-Mail-Template als
+	// {{ .RedirectTo }} und wird dort als next-Parameter an
+	// /auth/confirm weitergereicht (token_hash-Flow, siehe dort).
 	const { error: otpErr } = await supabasePublic(platform).auth.signInWithOtp({
 		email,
-		options: { shouldCreateUser: true, emailRedirectTo: `${origin}/c/${slug}` }
+		options: { shouldCreateUser: true, emailRedirectTo: `${origin}/konto` }
 	});
 
 	if (otpErr) throw error(502, `Magic Link konnte nicht gesendet werden: ${otpErr.message}`);
