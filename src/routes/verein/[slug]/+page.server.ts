@@ -19,19 +19,28 @@ import {
 	updateReward,
 	type RewardInput
 } from '$lib/server/rewards';
+import {
+	addExistingPlayerToClub,
+	addUnclaimedMember,
+	loadClubMembers,
+	removeMemberFromClub,
+	searchClaimablePlayersNotInClub
+} from '$lib/server/club-members';
+import { cancelPendingMatch, loadClubPendingMatches } from '$lib/server/matches';
+import { updateClubSettings } from '$lib/server/club-settings';
 
 async function requireClubAdmin(
 	locals: App.Locals,
 	slug: string,
 	url: URL
-): Promise<{ id: string; slug: string; name: string }> {
+): Promise<{ id: string; slug: string; name: string; accent: string | null }> {
 	if (!locals.player || !locals.supabase) {
 		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
 	}
 
 	const { data: club } = await locals.supabase
 		.from('clubs')
-		.select('id, slug, name')
+		.select('id, slug, name, accent')
 		.eq('slug', slug)
 		.maybeSingle();
 	if (!club) throw error(404, 'Verein nicht gefunden');
@@ -52,8 +61,15 @@ function readRewardForm(form: FormData): RewardInput {
 
 export const load: PageServerLoad = async ({ params, locals, url, platform }) => {
 	const club = await requireClubAdmin(locals, params.slug, url);
-	const rewards = await loadRewardCatalogForAdmin(supabaseAdmin(platform), club.id);
-	return { club, rewards };
+	const admin = supabaseAdmin(platform);
+
+	const [rewards, members, pendingMatches] = await Promise.all([
+		loadRewardCatalogForAdmin(admin, club.id),
+		loadClubMembers(admin, club.id),
+		loadClubPendingMatches(admin, club.id)
+	]);
+
+	return { club, rewards, members, pendingMatches };
 };
 
 export const actions: Actions = {
@@ -92,5 +108,68 @@ export const actions: Actions = {
 		const result = await setRewardActive(supabaseAdmin(platform), club.id, rewardId, active);
 		if (!result.ok) return { rewardError: result.message };
 		return { rewardSaved: true };
+	},
+
+	searchMembers: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const query = String(form.get('query') ?? '');
+
+		const results = await searchClaimablePlayersNotInClub(supabaseAdmin(platform), club.id, query);
+		return { searchQuery: query, searchResults: results };
+	},
+
+	addExisting: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const playerId = String(form.get('playerId') ?? '');
+		if (!playerId) return { memberError: 'Ungültige Anfrage.' };
+
+		const result = await addExistingPlayerToClub(supabaseAdmin(platform), club.id, playerId);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	addUnclaimed: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const displayName = String(form.get('displayName') ?? '');
+
+		const result = await addUnclaimedMember(supabaseAdmin(platform), club.id, displayName);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	removeMember: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const playerId = String(form.get('playerId') ?? '');
+		if (!playerId) return { memberError: 'Ungültige Anfrage.' };
+
+		const result = await removeMemberFromClub(supabaseAdmin(platform), club.id, playerId);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	cancelMatch: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const matchId = String(form.get('matchId') ?? '');
+		if (!matchId) return { matchError: 'Ungültige Anfrage.' };
+
+		const result = await cancelPendingMatch(supabaseAdmin(platform), club.id, matchId);
+		if (!result.ok) return { matchError: result.message };
+		return { matchCancelled: true };
+	},
+
+	updateSettings: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const name = String(form.get('name') ?? '');
+		const accent = String(form.get('accent') ?? '');
+
+		const result = await updateClubSettings(supabaseAdmin(platform), club.id, { name, accent });
+		if (!result.ok) return { settingsError: result.message };
+		return { settingsSaved: true };
 	}
 };

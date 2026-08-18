@@ -279,3 +279,99 @@ export async function confirmMatchAsPlayer(
 	const result = await confirmMatchByPlayer(admin, matchId, playerId);
 	return { ok: true, confirmed: result.confirmed };
 }
+
+// ============================================================
+// Vereins-Admin: ausstehende Matches einsehen & stornieren
+// ============================================================
+// Bewusst nur "pending" — bei einem bereits bestätigten Match wäre
+// Stornieren eine Rating-Rückrechnung (mu/sigma/Token wieder abziehen,
+// inklusive aller danach gespielten Matches, deren Ausgangswerte sich
+// dadurch ändern). Für "Verwechslung/Tippfehler direkt nach dem Melden"
+// reicht das einfache Löschen einer noch unbestätigten Zeile.
+
+export type ClubPendingMatch = {
+	id: string;
+	playedAt: string;
+	confirmDeadline: string;
+	team1: { name: string; claimed: boolean }[];
+	team2: { name: string; claimed: boolean }[];
+	sets: { team1Games: number; team2Games: number }[];
+};
+
+/** Für /verein/[slug] — alle ausstehenden Matches DIESES Vereins, unabhängig von der eigenen Teilnahme. */
+export async function loadClubPendingMatches(
+	admin: SupabaseClient,
+	clubId: string
+): Promise<ClubPendingMatch[]> {
+	const { data: matches, error: matchErr } = await admin
+		.from('matches')
+		.select('id, played_at, confirm_deadline')
+		.eq('club_id', clubId)
+		.eq('status', 'pending')
+		.order('played_at', { ascending: false });
+	if (matchErr) throw error(500, matchErr.message);
+	if (!matches || matches.length === 0) return [];
+
+	const matchIds = matches.map((m) => m.id);
+	const [{ data: participants, error: partErr }, { data: sets, error: setsErr }] =
+		await Promise.all([
+			admin
+				.from('match_participants')
+				.select('match_id, team, players(display_name, claim_status)')
+				.in('match_id', matchIds),
+			admin
+				.from('match_sets')
+				.select('match_id, set_number, team1_games, team2_games')
+				.in('match_id', matchIds)
+		]);
+	if (partErr) throw error(500, partErr.message);
+	if (setsErr) throw error(500, setsErr.message);
+
+	return matches.map((m) => {
+		const mine = (participants ?? []).filter((p) => p.match_id === m.id);
+		const toEntry = (p: (typeof mine)[number]) => {
+			const player = p.players as unknown as { display_name: string; claim_status: string } | null;
+			const name = player
+				? player.claim_status === 'claimed'
+					? player.display_name
+					: abbreviateName(player.display_name)
+				: '?';
+			return { name, claimed: player?.claim_status === 'claimed' };
+		};
+
+		return {
+			id: m.id,
+			playedAt: m.played_at,
+			confirmDeadline: m.confirm_deadline,
+			team1: mine.filter((p) => p.team === 1).map(toEntry),
+			team2: mine.filter((p) => p.team === 2).map(toEntry),
+			sets: (sets ?? [])
+				.filter((s) => s.match_id === m.id)
+				.sort((a, b) => a.set_number - b.set_number)
+				.map((s) => ({ team1Games: s.team1_games, team2Games: s.team2_games }))
+		};
+	});
+}
+
+export type CancelResult = { ok: true } | { ok: false; message: string };
+
+/** club_id und status='pending' im WHERE — ein bereits bestätigtes oder fremdes Match darf hier nie greifen. */
+export async function cancelPendingMatch(
+	admin: SupabaseClient,
+	clubId: string,
+	matchId: string
+): Promise<CancelResult> {
+	const { data, error: err } = await admin
+		.from('matches')
+		.delete()
+		.eq('id', matchId)
+		.eq('club_id', clubId)
+		.eq('status', 'pending')
+		.select('id');
+
+	if (err) return { ok: false, message: err.message };
+	if (!data || data.length === 0) {
+		return { ok: false, message: 'Match nicht gefunden oder bereits bestätigt.' };
+	}
+	return { ok: true };
+}
