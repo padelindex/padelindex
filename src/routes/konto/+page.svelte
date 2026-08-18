@@ -23,6 +23,14 @@
 		manual_adjust: 'Anpassung'
 	};
 
+	const tokenReasonLabel: Record<string, string> = {
+		match_played: 'Match gespielt',
+		match_won: 'Sieg-Bonus',
+		tournament: 'Vereinsliga / Turnier',
+		milestone: 'Meilenstein',
+		streak: 'Serie'
+	};
+
 	function historyBadge(entry: PageData['history'][number]) {
 		if (entry.reason === 'match') {
 			if (entry.factors.won === true) return 'Sieg';
@@ -179,6 +187,10 @@
 						<span class="stat-l">Matches</span>
 					</span>
 					<span class="stat">
+						<span class="stat-v stat-tokens">{data.tokens.balance}</span>
+						<span class="stat-l">Tokens</span>
+					</span>
+					<span class="stat">
 						<span class="stat-v">{claimLabel[data.player.claimStatus]}</span>
 						<span class="stat-l">Status</span>
 					</span>
@@ -275,6 +287,33 @@
 			</div>
 
 			<div class="card">
+				<h3 class="card-title">Tokens</h3>
+				{#if data.tokens.recent.length === 0}
+					<p class="muted" style="font-size: 13px; margin: 0">
+						Noch keine Tokens — die ersten gibt es mit deinem ersten bestätigten Match.
+					</p>
+				{:else}
+					<ol class="hist">
+						{#each data.tokens.recent as tx (tx.id)}
+							<li class="hist-row">
+								<span class="hist-badge token-badge">+{tx.amount}</span>
+								<span class="hist-main">
+									<span class="hist-rating">
+										{tokenReasonLabel[tx.reason] ?? tx.reason}
+									</span>
+								</span>
+								<span class="hist-date">{formatDate(tx.createdAt)}</span>
+							</li>
+						{/each}
+					</ol>
+					<p class="muted" style="font-size: 12px; margin: 14px 0 0">
+						Einlösen bei deinem Verein kommt bald — Tokens sind ein Guthaben, kein Handelsgut:
+						keine Übertragung, kein Verfall durch Niederlagen.
+					</p>
+				{/if}
+			</div>
+
+			<div class="card">
 				<h3 class="card-title">E-Mail ändern</h3>
 				<form
 					method="POST"
@@ -344,6 +383,10 @@
 		font-weight: 600;
 	}
 
+	.stat-tokens {
+		color: var(--court-deep, #0f6e5c);
+	}
+
 	.stat-l {
 		font-size: 12px;
 		color: var(--muted-light);
@@ -392,6 +435,12 @@
 	.hist-badge.win {
 		background: rgba(15, 110, 92, 0.12);
 		color: var(--court, #0f6e5c);
+	}
+
+	.token-badge {
+		background: rgba(15, 110, 92, 0.12);
+		color: var(--court-deep, #0f6e5c);
+		font-family: var(--mono);
 	}
 
 	.hist-main {
