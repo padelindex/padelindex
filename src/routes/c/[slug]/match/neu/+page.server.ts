@@ -11,6 +11,7 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
+import { readEmailEnv } from '$lib/server/email';
 import { createMatchReport, loadClubRoster } from '$lib/server/matches';
 import { MAX_SETS, MATCH_TYPES, type MatchType } from '$lib/match-report';
 
@@ -35,7 +36,7 @@ export const load: PageServerLoad = async ({ params, locals, url, platform }) =>
 };
 
 export const actions: Actions = {
-	default: async ({ request, params, locals, platform }) => {
+	default: async ({ request, params, locals, platform, url }) => {
 		if (!locals.player) {
 			return { message: 'Nicht angemeldet.' };
 		}
@@ -68,15 +69,21 @@ export const actions: Actions = {
 
 		const playedAt = playedAtRaw ? `${playedAtRaw}T18:00:00` : new Date().toISOString();
 
-		const result = await createMatchReport(admin, club.id, {
-			reporterId: locals.player.id,
-			partnerId,
-			opponent1Id,
-			opponent2Id,
-			sets,
-			matchType,
-			playedAt
-		});
+		const result = await createMatchReport(
+			admin,
+			club.id,
+			{
+				reporterId: locals.player.id,
+				partnerId,
+				opponent1Id,
+				opponent2Id,
+				sets,
+				matchType,
+				playedAt
+			},
+			readEmailEnv(platform),
+			`${url.origin}/konto#ausstehend`
+		);
 
 		if (!result.ok) return { message: result.message };
 

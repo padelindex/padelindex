@@ -21,6 +21,8 @@ import { error } from '@sveltejs/kit';
 import { abbreviateName } from '$lib/claim-match';
 import { confirmMatchByPlayer } from './rating/confirm';
 import { validateMatchReport, type MatchReportInput } from '$lib/match-report';
+import { matchReportedEmail } from '$lib/notifications';
+import { sendEmail, type EmailEnv } from './email';
 
 export type PlayerClub = { id: string; slug: string; name: string };
 
@@ -85,7 +87,9 @@ export type ReportResult = { ok: true; matchId: string } | { ok: false; message:
 export async function createMatchReport(
 	admin: SupabaseClient,
 	clubId: string,
-	input: MatchReportInput & { playedAt: string }
+	input: MatchReportInput & { playedAt: string },
+	emailEnv: EmailEnv | null,
+	kontoUrl: string
 ): Promise<ReportResult> {
 	const validation = validateMatchReport(input);
 	if (!validation.ok) return validation;
@@ -102,7 +106,58 @@ export async function createMatchReport(
 	});
 
 	if (rpcErr) return { ok: false, message: rpcErr.message };
-	return { ok: true, matchId: data as string };
+	const matchId = data as string;
+
+	await notifyOpponentsOfPendingMatch(admin, emailEnv, input, kontoUrl);
+
+	return { ok: true, matchId };
+}
+
+/**
+ * Nur die Gegenseite (team2) kann das Match bestätigen (siehe confirm.ts),
+ * also braucht auch nur sie eine Benachrichtigung — ohne sie merkt man
+ * ein gemeldetes Match sonst erst nach der automatischen 48h-Bestätigung.
+ * Best-effort: läuft nie auf einen Fehler hinaus, der das erfolgreich
+ * angelegte Match nachträglich als fehlgeschlagen erscheinen ließe.
+ */
+async function notifyOpponentsOfPendingMatch(
+	admin: SupabaseClient,
+	emailEnv: EmailEnv | null,
+	input: MatchReportInput,
+	kontoUrl: string
+): Promise<void> {
+	try {
+		const { data: players, error: err } = await admin
+			.from('players')
+			.select('id, display_name, claim_status, user_id')
+			.in('id', [input.reporterId, input.partnerId, input.opponent1Id, input.opponent2Id]);
+		if (err || !players) return;
+
+		const byId = new Map(players.map((p) => [p.id, p]));
+		const nameOf = (id: string) => {
+			const p = byId.get(id);
+			if (!p) return '?';
+			return p.claim_status === 'claimed' ? p.display_name : abbreviateName(p.display_name);
+		};
+
+		const { subject, html } = matchReportedEmail({
+			reporterName: nameOf(input.reporterId),
+			partnerName: nameOf(input.partnerId),
+			sets: input.sets,
+			kontoUrl
+		});
+
+		for (const opponentId of [input.opponent1Id, input.opponent2Id]) {
+			const userId = byId.get(opponentId)?.user_id;
+			if (!userId) continue;
+			const { data: userRes } = await admin.auth.admin.getUserById(userId);
+			const email = userRes?.user?.email;
+			if (!email) continue;
+			await sendEmail(emailEnv, { to: email, subject, html });
+		}
+	} catch (e) {
+		console.error('Benachrichtigung für gemeldetes Match fehlgeschlagen', e);
+	}
 }
 
 export type PendingMatch = {

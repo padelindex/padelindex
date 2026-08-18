@@ -22,6 +22,9 @@ declare global {
 				PUBLIC_SUPABASE_URL?: string;
 				PUBLIC_SUPABASE_ANON_KEY?: string;
 				SUPABASE_SERVICE_ROLE_KEY?: string;
+				/** Transaktions-E-Mail (Resend), siehe lib/server/email.ts. Beide optional — ohne sie wird nur geloggt statt versendet. */
+				RESEND_API_KEY?: string;
+				MAIL_FROM?: string;
 			};
 			ctx: ExecutionContext;
 			caches: CacheStorage;
