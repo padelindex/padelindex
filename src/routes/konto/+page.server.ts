@@ -120,5 +120,41 @@ export const actions: Actions = {
 		if (!result.ok) return { redeemError: result.message };
 
 		return { redeemed: true };
+	},
+
+	// Läuft bewusst über den Session-Client, nicht service_role: die
+	// Spalten sind per column-level GRANT (0010_player_profile.sql) und
+	// players_self_update-RLS (0005) exakt auf diese fünf Selbstauskunft-
+	// Felder der eigenen Zeile begrenzt — kein zusätzlicher Autorisierungs-
+	// Code hier nötig, die Datenbank erzwingt es bereits.
+	updateProfile: async ({ request, locals }) => {
+		if (!locals.supabase || !locals.player) {
+			return { profileError: 'Nicht angemeldet.' };
+		}
+
+		const form = await request.formData();
+		const city = String(form.get('city') ?? '').trim();
+		const playingHand = String(form.get('playingHand') ?? '');
+		const preferredSide = String(form.get('preferredSide') ?? '');
+		const gender = String(form.get('gender') ?? '');
+		const selfAssessedLevelRaw = String(form.get('selfAssessedLevel') ?? '');
+
+		const toEnum = (v: string, allowed: string[]) => (allowed.includes(v) ? v : null);
+		const selfAssessedLevel =
+			selfAssessedLevelRaw === '' ? null : Math.max(0, Math.min(7, Number(selfAssessedLevelRaw)));
+
+		const { error } = await locals.supabase
+			.from('players')
+			.update({
+				city: city || null,
+				playing_hand: toEnum(playingHand, ['rechts', 'links']),
+				preferred_side: toEnum(preferredSide, ['rechts', 'links']),
+				gender: toEnum(gender, ['maennlich', 'weiblich', 'divers']),
+				self_assessed_level: selfAssessedLevel
+			})
+			.eq('id', locals.player.id);
+
+		if (error) return { profileError: error.message };
+		return { profileSaved: true };
 	}
 };
