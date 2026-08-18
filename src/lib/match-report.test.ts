@@ -6,7 +6,8 @@ const base = {
 	partnerId: 'p2',
 	opponent1Id: 'p3',
 	opponent2Id: 'p4',
-	sets: [{ team1Games: 6, team2Games: 3 }]
+	sets: [{ team1Games: 6, team2Games: 3 }],
+	matchType: 'freizeit' as const
 };
 
 describe('validateMatchReport', () => {
@@ -69,5 +70,16 @@ describe('validateMatchReport', () => {
 		expect(validateMatchReport({ ...base, sets: [{ team1Games: 6.5, team2Games: 3 }] }).ok).toBe(
 			false
 		);
+	});
+
+	it('lehnt ungültigen Match-Typ ab', () => {
+		// @ts-expect-error absichtlich ungültiger Wert
+		expect(validateMatchReport({ ...base, matchType: 'urlaub' }).ok).toBe(false);
+	});
+
+	it('akzeptiert alle fünf gültigen Match-Typen', () => {
+		for (const matchType of ['gps', 'turnier', 'vereinsliga', 'padelindex_challenge', 'freizeit'] as const) {
+			expect(validateMatchReport({ ...base, matchType })).toEqual({ ok: true });
+		}
 	});
 });

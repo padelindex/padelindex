@@ -97,7 +97,8 @@ export async function createMatchReport(
 		p_opponent1_id: input.opponent1Id,
 		p_opponent2_id: input.opponent2Id,
 		p_played_at: input.playedAt,
-		p_sets: input.sets.map((s) => ({ team1_games: s.team1Games, team2_games: s.team2Games }))
+		p_sets: input.sets.map((s) => ({ team1_games: s.team1Games, team2_games: s.team2Games })),
+		p_match_type: input.matchType
 	});
 
 	if (rpcErr) return { ok: false, message: rpcErr.message };

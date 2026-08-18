@@ -16,6 +16,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { error } from '@sveltejs/kit';
 import { abbreviateName } from '$lib/claim-match';
+import type { MatchType } from '$lib/match-report';
 
 export type PlayingHand = 'rechts' | 'links';
 export type PreferredSide = 'rechts' | 'links';
@@ -81,6 +82,7 @@ export type ProfileMatchEntry = {
 	ratingAfter: number;
 	ratingDelta: number;
 	myTeam: 1 | 2;
+	matchType: MatchType;
 	partner: { id: string; handle: string; name: string; claimed: boolean } | null;
 	team1: { name: string; claimed: boolean }[];
 	team2: { name: string; claimed: boolean }[];
@@ -124,7 +126,7 @@ export async function loadPublicMatchHistory(
 	const [{ data: myGenderRow }, { data: matches }, { data: participants }, { data: sets }] =
 		await Promise.all([
 			admin.from('players').select('gender').eq('id', playerId).maybeSingle(),
-			admin.from('matches').select('id, played_at').in('id', matchIds),
+			admin.from('matches').select('id, played_at, match_type').in('id', matchIds),
 			admin
 				.from('match_participants')
 				.select('match_id, player_id, team, players(handle, display_name, claim_status, gender)')
@@ -136,6 +138,7 @@ export async function loadPublicMatchHistory(
 		]);
 
 	const playedAtByMatch = new Map((matches ?? []).map((m) => [m.id, m.played_at]));
+	const matchTypeByMatch = new Map((matches ?? []).map((m) => [m.id, m.match_type as MatchType]));
 	const myGender = myGenderRow?.gender ?? null;
 	let mixedMatchCount = 0;
 
@@ -164,6 +167,7 @@ export async function loadPublicMatchHistory(
 			ratingAfter: Number(h.rating_after),
 			ratingDelta: Number(h.rating_after) - Number(h.rating_before),
 			myTeam,
+			matchType: matchTypeByMatch.get(matchId) ?? 'freizeit',
 			partner: partnerRow
 				? {
 						id: partnerRow.player_id,

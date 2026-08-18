@@ -49,6 +49,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 	};
 
 	const preferredPartners = computePreferredPartners(entries, 3);
+	const tournamentMatches = entries.filter((e) => e.matchType === 'turnier');
 
 	return {
 		profile,
@@ -57,6 +58,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 		form,
 		preferredPartners,
 		badges,
+		tournamentMatches,
 		longestStreakEver: longestStreak(chronological)
 	};
 };

@@ -8,12 +8,32 @@
 
 export type SetScoreInput = { team1Games: number; team2Games: number };
 
+export type MatchType = 'gps' | 'turnier' | 'vereinsliga' | 'padelindex_challenge' | 'freizeit';
+
+export const MATCH_TYPES: readonly MatchType[] = [
+	'freizeit',
+	'gps',
+	'turnier',
+	'vereinsliga',
+	'padelindex_challenge'
+];
+
+/** GPS = vom Deutschen Padel Verband organisierte Punktspiele. */
+export const MATCH_TYPE_LABELS: Record<MatchType, string> = {
+	freizeit: 'Freizeit',
+	gps: 'GPS (DPV-Punktspiele)',
+	turnier: 'Turnier',
+	vereinsliga: 'Vereinsliga',
+	padelindex_challenge: 'PadelIndex Challenge'
+};
+
 export type MatchReportInput = {
 	reporterId: string;
 	partnerId: string;
 	opponent1Id: string;
 	opponent2Id: string;
 	sets: SetScoreInput[];
+	matchType: MatchType;
 };
 
 export type ValidationResult = { ok: true } | { ok: false; message: string };
@@ -28,6 +48,9 @@ export function validateMatchReport(input: MatchReportInput): ValidationResult {
 	}
 	if (new Set(ids).size !== 4) {
 		return { ok: false, message: 'Alle vier Spieler müssen unterschiedlich sein.' };
+	}
+	if (!MATCH_TYPES.includes(input.matchType)) {
+		return { ok: false, message: 'Ungültiger Match-Typ.' };
 	}
 
 	if (input.sets.length === 0 || input.sets.length > MAX_SETS) {
