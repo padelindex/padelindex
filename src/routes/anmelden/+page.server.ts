@@ -14,8 +14,7 @@
 
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAnon } from '$lib/server/supabase';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+import { isValidEmail } from '$lib/email';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	return { alreadyLoggedIn: Boolean(locals.user) };
@@ -28,7 +27,7 @@ export const actions: Actions = {
 			.trim()
 			.toLowerCase();
 
-		if (!EMAIL_RE.test(email)) {
+		if (!isValidEmail(email)) {
 			return { message: 'Bitte eine gültige E-Mail-Adresse eingeben.' };
 		}
 

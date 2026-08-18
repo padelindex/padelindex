@@ -1,8 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+import { isValidEmail } from '$lib/email';
 
 function fail(status: number, message: string, detail?: string) {
 	const suffix = detail && detail !== message ? ` (${detail})` : '';
@@ -22,7 +21,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 			? body.email.trim().toLowerCase()
 			: '';
 
-	if (!EMAIL_RE.test(email)) {
+	if (!isValidEmail(email)) {
 		return fail(400, 'Bitte eine gültige E-Mail-Adresse eingeben.');
 	}
 

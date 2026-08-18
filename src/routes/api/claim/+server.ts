@@ -1,8 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { startProfileClaim } from '$lib/server/claims';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+import { isValidEmail } from '$lib/email';
 
 const REASONS: Record<string, string> = {
 	not_found: 'Dieses Profil gibt es in diesem Verein nicht.',
@@ -29,7 +28,7 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
 	const email = read('email').toLowerCase();
 
 	if (!slug || !handle) return json({ message: 'Ungültige Anfrage.' }, { status: 400 });
-	if (!EMAIL_RE.test(email)) {
+	if (!isValidEmail(email)) {
 		return json({ message: 'Bitte eine gültige E-Mail-Adresse eingeben.' }, { status: 400 });
 	}
 
