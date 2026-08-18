@@ -14,7 +14,7 @@
 // importierten Profile sind für anon absichtlich nicht lesbar.
 
 import { error } from '@sveltejs/kit';
-import { matchClaimName, type NameCandidate } from '$lib/claim-match';
+import { abbreviateName, matchClaimName, type NameCandidate } from '$lib/claim-match';
 import { supabaseAdmin, supabasePublic } from './supabase';
 
 export interface ClaimableProfile {
@@ -31,13 +31,6 @@ interface PlayerRow {
 	display_name: string;
 	rating: number | string;
 	matches_played: number;
-}
-
-/** Spiegelt public_display_name() aus 0005_claimable_profiles.sql. */
-export function abbreviateName(fullName: string): string {
-	const parts = fullName.trim().split(/\s+/);
-	if (parts.length < 2) return fullName.trim();
-	return `${parts[0]} ${parts[1][0]}.`;
 }
 
 async function unclaimedRoster(slug: string, platform?: App.Platform): Promise<PlayerRow[]> {

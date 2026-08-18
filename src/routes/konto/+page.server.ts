@@ -2,16 +2,28 @@ import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { isValidEmail } from '$lib/email';
 import { loadRatingHistory } from '$lib/server/rating-history';
+import { confirmMatchAsPlayer, loadPendingMatches, loadPlayerClub } from '$lib/server/matches';
+import { supabaseAdmin } from '$lib/server/supabase';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, platform }) => {
 	const player = locals.player;
-	const history =
-		player && locals.supabase ? await loadRatingHistory(locals.supabase, player.id) : [];
+	if (!player || !locals.supabase) {
+		return { email: locals.user?.email ?? null, player: null, history: [], club: null, pendingMatches: [] };
+	}
+
+	const admin = supabaseAdmin(platform);
+	const [history, club, pendingMatches] = await Promise.all([
+		loadRatingHistory(locals.supabase, player.id),
+		loadPlayerClub(locals.supabase, player.id),
+		loadPendingMatches(locals.supabase, admin, player.id)
+	]);
 
 	return {
 		email: locals.user?.email ?? null,
 		player,
-		history
+		history,
+		club,
+		pendingMatches
 	};
 };
 
@@ -57,5 +69,20 @@ export const actions: Actions = {
 		}
 
 		return { emailSent: true };
+	},
+
+	confirmMatch: async ({ request, locals, platform }) => {
+		if (!locals.player) {
+			return { matchError: 'Nicht angemeldet.' };
+		}
+
+		const form = await request.formData();
+		const matchId = String(form.get('matchId') ?? '');
+		if (!matchId) return { matchError: 'Ungültige Anfrage.' };
+
+		const result = await confirmMatchAsPlayer(supabaseAdmin(platform), matchId, locals.player.id);
+		if (!result.ok) return { matchError: result.message };
+
+		return { matchConfirmed: true };
 	}
 };
