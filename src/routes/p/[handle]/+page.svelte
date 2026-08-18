@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { MATCH_TYPE_LABELS } from '$lib/match-report';
 
 	let { data }: { data: PageData } = $props();
 
@@ -167,6 +168,26 @@
 				</div>
 			{/if}
 
+			{#if data.tournamentMatches.length > 0}
+				<div class="card">
+					<h3 class="card-title">Turnierergebnisse</h3>
+					<ol class="hist">
+						{#each data.tournamentMatches as m (m.matchId)}
+							<li class="hist-row">
+								<span class="hist-badge" class:win={m.won}>{m.won ? 'Sieg' : 'Niederlage'}</span>
+								<span class="hist-main">
+									<span class="hist-rating">
+										{#if m.partner}mit {m.partner.name} · {/if}
+										{m.sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ')}
+									</span>
+								</span>
+								<span class="hist-date">{formatDate(m.playedAt)}</span>
+							</li>
+						{/each}
+					</ol>
+				</div>
+			{/if}
+
 			<div class="card">
 				<h3 class="card-title">Matchhistorie</h3>
 				<ol class="hist">
@@ -177,6 +198,9 @@
 								<span class="hist-rating">
 									{#if m.partner}mit {m.partner.name} · {/if}
 									{m.sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ')}
+									{#if m.matchType !== 'freizeit'}
+										<span class="type-tag">{MATCH_TYPE_LABELS[m.matchType]}</span>
+									{/if}
 								</span>
 								<span class="hist-detail">
 									{m.ratingAfter.toFixed(2)} ({m.ratingDelta >= 0 ? '+' : ''}{m.ratingDelta.toFixed(2)})
@@ -413,6 +437,17 @@
 	.hist-rating {
 		font-size: 14px;
 		font-weight: 600;
+	}
+	.type-tag {
+		display: inline-block;
+		margin-left: 6px;
+		padding: 2px 8px;
+		border-radius: 100px;
+		font-size: 10.5px;
+		font-weight: 600;
+		background: rgba(15, 110, 92, 0.1);
+		color: var(--court-deep, #0f6e5c);
+		vertical-align: middle;
 	}
 	.hist-detail {
 		font-size: 12px;

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { MATCH_TYPES, MATCH_TYPE_LABELS } from '$lib/match-report';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -55,6 +56,13 @@
 			>
 				<label for="playedAt">Datum</label>
 				<input id="playedAt" type="date" name="playedAt" value={today} max={today} required />
+
+				<label for="matchType">Match-Typ</label>
+				<select id="matchType" name="matchType" required>
+					{#each MATCH_TYPES as t (t)}
+						<option value={t} selected={t === 'freizeit'}>{MATCH_TYPE_LABELS[t]}</option>
+					{/each}
+				</select>
 
 				<label for="partnerId">Dein Partner</label>
 				<select id="partnerId" name="partnerId" bind:value={partnerId} required>

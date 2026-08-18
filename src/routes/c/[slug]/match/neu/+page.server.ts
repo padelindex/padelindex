@@ -12,7 +12,7 @@ import { error, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { createMatchReport, loadClubRoster } from '$lib/server/matches';
-import { MAX_SETS } from '$lib/match-report';
+import { MAX_SETS, MATCH_TYPES, type MatchType } from '$lib/match-report';
 
 export const load: PageServerLoad = async ({ params, locals, url, platform }) => {
 	if (!locals.player) {
@@ -53,6 +53,10 @@ export const actions: Actions = {
 		const opponent1Id = String(form.get('opponent1Id') ?? '');
 		const opponent2Id = String(form.get('opponent2Id') ?? '');
 		const playedAtRaw = String(form.get('playedAt') ?? '');
+		const matchTypeRaw = String(form.get('matchType') ?? '');
+		const matchType: MatchType = MATCH_TYPES.includes(matchTypeRaw as MatchType)
+			? (matchTypeRaw as MatchType)
+			: 'freizeit';
 
 		const sets: { team1Games: number; team2Games: number }[] = [];
 		for (let i = 1; i <= MAX_SETS; i++) {
@@ -70,6 +74,7 @@ export const actions: Actions = {
 			opponent1Id,
 			opponent2Id,
 			sets,
+			matchType,
 			playedAt
 		});
 
