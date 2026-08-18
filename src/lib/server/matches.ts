@@ -21,6 +21,8 @@ import { error } from '@sveltejs/kit';
 import { abbreviateName } from '$lib/claim-match';
 import { confirmMatchByPlayer } from './rating/confirm';
 import { validateMatchReport, type MatchReportInput } from '$lib/match-report';
+import { matchReportedEmail } from '$lib/notifications';
+import { sendEmail, type EmailEnv } from './email';
 
 export type PlayerClub = { id: string; slug: string; name: string };
 
@@ -85,7 +87,9 @@ export type ReportResult = { ok: true; matchId: string } | { ok: false; message:
 export async function createMatchReport(
 	admin: SupabaseClient,
 	clubId: string,
-	input: MatchReportInput & { playedAt: string }
+	input: MatchReportInput & { playedAt: string },
+	emailEnv: EmailEnv | null,
+	kontoUrl: string
 ): Promise<ReportResult> {
 	const validation = validateMatchReport(input);
 	if (!validation.ok) return validation;
@@ -102,7 +106,58 @@ export async function createMatchReport(
 	});
 
 	if (rpcErr) return { ok: false, message: rpcErr.message };
-	return { ok: true, matchId: data as string };
+	const matchId = data as string;
+
+	await notifyOpponentsOfPendingMatch(admin, emailEnv, input, kontoUrl);
+
+	return { ok: true, matchId };
+}
+
+/**
+ * Nur die Gegenseite (team2) kann das Match bestätigen (siehe confirm.ts),
+ * also braucht auch nur sie eine Benachrichtigung — ohne sie merkt man
+ * ein gemeldetes Match sonst erst nach der automatischen 48h-Bestätigung.
+ * Best-effort: läuft nie auf einen Fehler hinaus, der das erfolgreich
+ * angelegte Match nachträglich als fehlgeschlagen erscheinen ließe.
+ */
+async function notifyOpponentsOfPendingMatch(
+	admin: SupabaseClient,
+	emailEnv: EmailEnv | null,
+	input: MatchReportInput,
+	kontoUrl: string
+): Promise<void> {
+	try {
+		const { data: players, error: err } = await admin
+			.from('players')
+			.select('id, display_name, claim_status, user_id')
+			.in('id', [input.reporterId, input.partnerId, input.opponent1Id, input.opponent2Id]);
+		if (err || !players) return;
+
+		const byId = new Map(players.map((p) => [p.id, p]));
+		const nameOf = (id: string) => {
+			const p = byId.get(id);
+			if (!p) return '?';
+			return p.claim_status === 'claimed' ? p.display_name : abbreviateName(p.display_name);
+		};
+
+		const { subject, html } = matchReportedEmail({
+			reporterName: nameOf(input.reporterId),
+			partnerName: nameOf(input.partnerId),
+			sets: input.sets,
+			kontoUrl
+		});
+
+		for (const opponentId of [input.opponent1Id, input.opponent2Id]) {
+			const userId = byId.get(opponentId)?.user_id;
+			if (!userId) continue;
+			const { data: userRes } = await admin.auth.admin.getUserById(userId);
+			const email = userRes?.user?.email;
+			if (!email) continue;
+			await sendEmail(emailEnv, { to: email, subject, html });
+		}
+	} catch (e) {
+		console.error('Benachrichtigung für gemeldetes Match fehlgeschlagen', e);
+	}
 }
 
 export type PendingMatch = {
@@ -223,4 +278,100 @@ export async function confirmMatchAsPlayer(
 
 	const result = await confirmMatchByPlayer(admin, matchId, playerId);
 	return { ok: true, confirmed: result.confirmed };
+}
+
+// ============================================================
+// Vereins-Admin: ausstehende Matches einsehen & stornieren
+// ============================================================
+// Bewusst nur "pending" — bei einem bereits bestätigten Match wäre
+// Stornieren eine Rating-Rückrechnung (mu/sigma/Token wieder abziehen,
+// inklusive aller danach gespielten Matches, deren Ausgangswerte sich
+// dadurch ändern). Für "Verwechslung/Tippfehler direkt nach dem Melden"
+// reicht das einfache Löschen einer noch unbestätigten Zeile.
+
+export type ClubPendingMatch = {
+	id: string;
+	playedAt: string;
+	confirmDeadline: string;
+	team1: { name: string; claimed: boolean }[];
+	team2: { name: string; claimed: boolean }[];
+	sets: { team1Games: number; team2Games: number }[];
+};
+
+/** Für /verein/[slug] — alle ausstehenden Matches DIESES Vereins, unabhängig von der eigenen Teilnahme. */
+export async function loadClubPendingMatches(
+	admin: SupabaseClient,
+	clubId: string
+): Promise<ClubPendingMatch[]> {
+	const { data: matches, error: matchErr } = await admin
+		.from('matches')
+		.select('id, played_at, confirm_deadline')
+		.eq('club_id', clubId)
+		.eq('status', 'pending')
+		.order('played_at', { ascending: false });
+	if (matchErr) throw error(500, matchErr.message);
+	if (!matches || matches.length === 0) return [];
+
+	const matchIds = matches.map((m) => m.id);
+	const [{ data: participants, error: partErr }, { data: sets, error: setsErr }] =
+		await Promise.all([
+			admin
+				.from('match_participants')
+				.select('match_id, team, players(display_name, claim_status)')
+				.in('match_id', matchIds),
+			admin
+				.from('match_sets')
+				.select('match_id, set_number, team1_games, team2_games')
+				.in('match_id', matchIds)
+		]);
+	if (partErr) throw error(500, partErr.message);
+	if (setsErr) throw error(500, setsErr.message);
+
+	return matches.map((m) => {
+		const mine = (participants ?? []).filter((p) => p.match_id === m.id);
+		const toEntry = (p: (typeof mine)[number]) => {
+			const player = p.players as unknown as { display_name: string; claim_status: string } | null;
+			const name = player
+				? player.claim_status === 'claimed'
+					? player.display_name
+					: abbreviateName(player.display_name)
+				: '?';
+			return { name, claimed: player?.claim_status === 'claimed' };
+		};
+
+		return {
+			id: m.id,
+			playedAt: m.played_at,
+			confirmDeadline: m.confirm_deadline,
+			team1: mine.filter((p) => p.team === 1).map(toEntry),
+			team2: mine.filter((p) => p.team === 2).map(toEntry),
+			sets: (sets ?? [])
+				.filter((s) => s.match_id === m.id)
+				.sort((a, b) => a.set_number - b.set_number)
+				.map((s) => ({ team1Games: s.team1_games, team2Games: s.team2_games }))
+		};
+	});
+}
+
+export type CancelResult = { ok: true } | { ok: false; message: string };
+
+/** club_id und status='pending' im WHERE — ein bereits bestätigtes oder fremdes Match darf hier nie greifen. */
+export async function cancelPendingMatch(
+	admin: SupabaseClient,
+	clubId: string,
+	matchId: string
+): Promise<CancelResult> {
+	const { data, error: err } = await admin
+		.from('matches')
+		.delete()
+		.eq('id', matchId)
+		.eq('club_id', clubId)
+		.eq('status', 'pending')
+		.select('id');
+
+	if (err) return { ok: false, message: err.message };
+	if (!data || data.length === 0) {
+		return { ok: false, message: 'Match nicht gefunden oder bereits bestätigt.' };
+	}
+	return { ok: true };
 }

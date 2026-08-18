@@ -11,6 +11,13 @@
 	function startEdit(id: string) {
 		editingId = editingId === id ? null : id;
 	}
+
+	let settingsBusy = $state(false);
+
+	let addingMember = $state(false);
+	let addMode = $state<'search' | 'unclaimed'>('search');
+	let memberBusyId = $state<string | null>(null);
+	let matchBusyId = $state<string | null>(null);
 </script>
 
 <svelte:head>
@@ -34,10 +41,228 @@
 			<span class="eyebrow">Vereins-Admin</span>
 			<h2>{data.club.name}</h2>
 			<p class="muted">
-				Prämienkatalog für Tokens. Deaktivierte Prämien bleiben in der Historie eingelöster
-				Spieler sichtbar, verschwinden aber aus deren Auswahl auf /konto.
+				Mitglieder, ausstehende Matches und Prämienkatalog für {data.club.name}.
 			</p>
 		</div>
+
+		{#if form?.settingsError}
+			<p class="err">{form.settingsError}</p>
+		{/if}
+
+		<div class="card">
+			<h3 class="card-title">Einstellungen</h3>
+			<form
+				method="POST"
+				action="?/updateSettings"
+				use:enhance={() => {
+					settingsBusy = true;
+					return async ({ update }) => {
+						await update();
+						settingsBusy = false;
+					};
+				}}
+			>
+				<label for="club-name">Vereinsname</label>
+				<input id="club-name" name="name" value={data.club.name} required maxlength="120" />
+				<label for="club-accent">Akzentfarbe</label>
+				<div class="accent-row">
+					<input
+						id="club-accent"
+						name="accent"
+						type="color"
+						value={data.club.accent ?? '#0F6E5C'}
+					/>
+					<span class="muted" style="font-size: 13px">Für Leaderboard & Embed-Widget</span>
+				</div>
+				<button class="btn btn-primary" type="submit" disabled={settingsBusy}>
+					{settingsBusy ? 'Wird gespeichert…' : 'Speichern'}
+				</button>
+			</form>
+		</div>
+
+		{#if form?.memberError}
+			<p class="err">{form.memberError}</p>
+		{/if}
+
+		<div class="card">
+			<div class="card-head">
+				<h3 class="card-title" style="margin:0">Mitglieder ({data.members.length})</h3>
+				<button
+					class="btn btn-ghost-light"
+					type="button"
+					onclick={() => (addingMember = !addingMember)}
+				>
+					{addingMember ? 'Abbrechen' : '+ Hinzufügen'}
+				</button>
+			</div>
+
+			{#if addingMember}
+				<div class="add-mode-toggle" role="group">
+					<button
+						type="button"
+						class:on={addMode === 'search'}
+						onclick={() => (addMode = 'search')}
+					>
+						Registrierten Spieler suchen
+					</button>
+					<button
+						type="button"
+						class:on={addMode === 'unclaimed'}
+						onclick={() => (addMode = 'unclaimed')}
+					>
+						Platzhalter anlegen
+					</button>
+				</div>
+
+				{#if addMode === 'search'}
+					<form method="POST" action="?/searchMembers" use:enhance>
+						<input
+							name="query"
+							placeholder="Name oder Handle…"
+							value={form?.searchQuery ?? ''}
+							minlength="2"
+							required
+						/>
+						<button class="btn btn-ghost-light" type="submit" style="margin-top: 10px">
+							Suchen
+						</button>
+					</form>
+					{#if form?.searchResults}
+						{#if form.searchResults.length === 0}
+							<p class="muted" style="font-size: 13px; margin-top: 12px">Keine Treffer.</p>
+						{:else}
+							<ul class="search-results">
+								{#each form.searchResults as r (r.id)}
+									<li>
+										<span>{r.name} <span class="muted">· {r.handle}</span></span>
+										<form
+											method="POST"
+											action="?/addExisting"
+											use:enhance={() => {
+												memberBusyId = r.id;
+												return async ({ update }) => {
+													await update();
+													memberBusyId = null;
+													addingMember = false;
+												};
+											}}
+										>
+											<input type="hidden" name="playerId" value={r.id} />
+											<button
+												class="btn btn-ghost-light"
+												type="submit"
+												disabled={memberBusyId === r.id}
+											>
+												Hinzufügen
+											</button>
+										</form>
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					{/if}
+				{:else}
+					<form
+						method="POST"
+						action="?/addUnclaimed"
+						use:enhance={() => {
+							memberBusyId = 'new';
+							return async ({ update }) => {
+								await update();
+								memberBusyId = null;
+								addingMember = false;
+							};
+						}}
+					>
+						<input name="displayName" placeholder="Name, z. B. Max Mustermann" required maxlength="120" />
+						<button
+							class="btn btn-primary"
+							type="submit"
+							disabled={memberBusyId === 'new'}
+							style="margin-top: 10px"
+						>
+							{memberBusyId === 'new' ? 'Wird angelegt…' : 'Anlegen'}
+						</button>
+					</form>
+					<p class="muted" style="font-size: 12.5px; margin-top: 10px">
+						Für jemanden, der noch keinen Account hat — kann das Profil später über den
+						Vereins-Link selbst beanspruchen.
+					</p>
+				{/if}
+			{/if}
+
+			{#if data.members.length === 0}
+				<p class="muted" style="font-size: 13px; margin-top: 14px">Noch keine Mitglieder.</p>
+			{:else}
+				<ul class="members">
+					{#each data.members as m (m.id)}
+						<li class="member-row">
+							<span class="member-name">
+								{m.name}
+								{#if !m.claimed}<span class="tag-inactive">unbeansprucht</span>{/if}
+							</span>
+							<span class="member-rating num">{m.rating.toFixed(2)}</span>
+							<form
+								method="POST"
+								action="?/removeMember"
+								use:enhance={() => {
+									memberBusyId = m.id;
+									return async ({ update }) => {
+										await update();
+										memberBusyId = null;
+									};
+								}}
+							>
+								<input type="hidden" name="playerId" value={m.id} />
+								<button class="btn btn-ghost-light" type="submit" disabled={memberBusyId === m.id}>
+									Entfernen
+								</button>
+							</form>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+
+		{#if form?.matchError}
+			<p class="err">{form.matchError}</p>
+		{/if}
+
+		{#if data.pendingMatches.length > 0}
+			<div class="card">
+				<h3 class="card-title">Ausstehende Matches</h3>
+				<ul class="pending-list">
+					{#each data.pendingMatches as pm (pm.id)}
+						<li class="pending-row">
+							<span class="pending-teams">
+								{pm.team1.map((p) => p.name).join(' & ')} vs. {pm.team2
+									.map((p) => p.name)
+									.join(' & ')}
+								<span class="muted">
+									· {pm.sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ')}
+								</span>
+							</span>
+							<form
+								method="POST"
+								action="?/cancelMatch"
+								use:enhance={() => {
+									matchBusyId = pm.id;
+									return async ({ update }) => {
+										await update();
+										matchBusyId = null;
+									};
+								}}
+							>
+								<input type="hidden" name="matchId" value={pm.id} />
+								<button class="btn btn-ghost-light" type="submit" disabled={matchBusyId === pm.id}>
+									Stornieren
+								</button>
+							</form>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
 
 		{#if form?.rewardError}
 			<p class="err">{form.rewardError}</p>
@@ -289,5 +514,112 @@
 
 	.edit-form {
 		flex: 1;
+	}
+
+	.accent-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-top: 12px;
+	}
+	.accent-row input[type='color'] {
+		width: 48px;
+		height: 40px;
+		padding: 4px;
+		border-radius: 10px;
+	}
+
+	.add-mode-toggle {
+		display: flex;
+		gap: 8px;
+		margin: 14px 0;
+	}
+	.add-mode-toggle button {
+		flex: 1;
+		padding: 9px 12px;
+		font-size: 13px;
+		border-radius: 100px;
+		border: 1px solid var(--line-light, rgba(0, 0, 0, 0.14));
+		background: #fff;
+		color: var(--muted-light);
+		cursor: pointer;
+	}
+	.add-mode-toggle button.on {
+		background: var(--court-deep, #0f6e5c);
+		border-color: var(--court-deep, #0f6e5c);
+		color: #fff;
+	}
+
+	.search-results {
+		list-style: none;
+		margin: 12px 0 0;
+		padding: 0;
+	}
+	.search-results li {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 10px 0;
+		border-top: 1px solid var(--line-light, rgba(0, 0, 0, 0.1));
+		font-size: 13.5px;
+	}
+	.search-results li:first-child {
+		border-top: none;
+	}
+
+	.members {
+		list-style: none;
+		margin: 14px 0 0;
+		padding: 0;
+	}
+	.member-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 12px 0;
+		border-top: 1px solid var(--line-light, rgba(0, 0, 0, 0.1));
+	}
+	.member-row:first-child {
+		border-top: none;
+		padding-top: 0;
+	}
+	.member-name {
+		flex: 1;
+		min-width: 0;
+		font-size: 14px;
+		font-weight: 500;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.member-rating {
+		flex-shrink: 0;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--court-deep, #0f6e5c);
+	}
+
+	.pending-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	.pending-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 14px 0;
+		border-top: 1px solid var(--line-light, rgba(0, 0, 0, 0.1));
+	}
+	.pending-row:first-child {
+		border-top: none;
+		padding-top: 0;
+	}
+	.pending-teams {
+		font-size: 13.5px;
+		flex: 1;
+		min-width: 0;
 	}
 </style>

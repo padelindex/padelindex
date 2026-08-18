@@ -212,7 +212,7 @@
 			</div>
 
 			{#if data.pendingMatches.length > 0}
-				<div class="card">
+				<div class="card" id="ausstehend">
 					<h3 class="card-title">Ausstehende Matches</h3>
 					<ol class="hist">
 						{#each data.pendingMatches as m (m.id)}
