@@ -10,6 +10,7 @@
 	let emailBusy = $state(false);
 	let confirmingId = $state<string | null>(null);
 	let redeemingId = $state<string | null>(null);
+	let profileBusy = $state(false);
 
 	const claimLabel: Record<'unclaimed' | 'pending' | 'claimed', string> = {
 		unclaimed: 'Nicht beansprucht',
@@ -202,6 +203,9 @@
 				{#if data.club}
 					<a class="btn btn-primary" href="/c/{data.club.slug}/match/neu">Match melden</a>
 				{/if}
+				{#if data.player.claimStatus === 'claimed'}
+					<a class="btn btn-ghost-light" href="/p/{data.player.handle}">Mein öffentliches Profil</a>
+				{/if}
 				{#each data.adminClubs as ac (ac.id)}
 					<a class="btn btn-ghost-light" href="/verein/{ac.slug}">Vereins-Admin · {ac.name}</a>
 				{/each}
@@ -365,6 +369,76 @@
 					Tokens sind ein Guthaben, kein Handelsgut: keine Übertragung, kein Verfall durch
 					Niederlagen.
 				</p>
+			</div>
+
+			<div class="card">
+				<h3 class="card-title">Profil</h3>
+				<p class="muted" style="font-size: 12.5px; margin: 0 0 14px">
+					Freiwillige Angaben für dein öffentliches Profil. Die Selbsteinschätzung ist nur
+					Zusatzinfo — dein Rating kommt ausschließlich aus bestätigten Matches.
+				</p>
+				<form
+					method="POST"
+					action="?/updateProfile"
+					use:enhance={() => {
+						profileBusy = true;
+						return async ({ update }) => {
+							await update();
+							profileBusy = false;
+						};
+					}}
+				>
+					<label class="field-label" for="city">Stadt</label>
+					<input id="city" name="city" value={data.player.city ?? ''} placeholder="z. B. München" />
+
+					<label class="field-label" for="playingHand">Spielhand</label>
+					<select id="playingHand" name="playingHand">
+						<option value="" selected={data.player.playingHand === null}>Keine Angabe</option>
+						<option value="rechts" selected={data.player.playingHand === 'rechts'}>Rechtshänder</option>
+						<option value="links" selected={data.player.playingHand === 'links'}>Linkshänder</option>
+					</select>
+
+					<label class="field-label" for="preferredSide">Bevorzugte Seite</label>
+					<select id="preferredSide" name="preferredSide">
+						<option value="" selected={data.player.preferredSide === null}>Keine Angabe</option>
+						<option value="rechts" selected={data.player.preferredSide === 'rechts'}>Rechte Seite</option>
+						<option value="links" selected={data.player.preferredSide === 'links'}>Linke Seite</option>
+					</select>
+
+					<label class="field-label" for="gender">Geschlecht</label>
+					<select id="gender" name="gender">
+						<option value="" selected={data.player.gender === null}>Keine Angabe</option>
+						<option value="maennlich" selected={data.player.gender === 'maennlich'}>Männlich</option>
+						<option value="weiblich" selected={data.player.gender === 'weiblich'}>Weiblich</option>
+						<option value="divers" selected={data.player.gender === 'divers'}>Divers</option>
+					</select>
+
+					<label class="field-label" for="selfAssessedLevel">
+						Selbsteinschätzung (0–7){#if data.player.selfAssessedLevel !== null}
+							<span class="num">· {data.player.selfAssessedLevel.toFixed(1)}</span>
+						{/if}
+					</label>
+					<input
+						id="selfAssessedLevel"
+						name="selfAssessedLevel"
+						type="number"
+						min="0"
+						max="7"
+						step="0.5"
+						value={data.player.selfAssessedLevel ?? ''}
+						placeholder="ohne Angabe"
+					/>
+
+					<button class="btn btn-ghost-light" type="submit" disabled={profileBusy}>
+						{profileBusy ? 'Wird gespeichert…' : 'Speichern'}
+					</button>
+				</form>
+				{#if form?.profileSaved}
+					<p class="ok" style="font-size: 13px; margin-top: 12px">Gespeichert.</p>
+				{/if}
+				{#if form?.profileError}
+					<p class="err">{form.profileError}</p>
+				{/if}
 			</div>
 
 			<div class="card">
@@ -580,7 +654,8 @@
 		color: var(--muted-light);
 	}
 
-	.card input {
+	.card input,
+	.card select {
 		width: 100%;
 		box-sizing: border-box;
 		padding: 11px 16px;
@@ -590,6 +665,17 @@
 		font-family: var(--body);
 		font-size: 14px;
 		margin-bottom: 10px;
+	}
+
+	.field-label {
+		display: block;
+		font-size: 11.5px;
+		font-weight: 600;
+		color: var(--muted-light);
+		margin: 14px 0 6px;
+	}
+	.field-label:first-of-type {
+		margin-top: 0;
 	}
 
 	.pending-row {

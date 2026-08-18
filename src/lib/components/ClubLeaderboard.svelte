@@ -58,27 +58,32 @@
 		</div>
 		<ol>
 			{#each board.players as p (p.handle)}
+				<!-- Profil-Link nur außerhalb des eingebetteten Widgets (compact) —
+				     Drittseiten sollen ihr Widget nicht ungefragt zu einer
+				     Navigation nach padelindex.de machen. -->
 				<li>
-					<span class="r">{p.rank}</span>
-					<span>
-						<span class="nm">{p.name}</span>
-						{#if !p.claimed}
-							<span class="uc" title="Profil noch nicht beansprucht">frei</span>
-						{/if}
-						<span class="mt" class:prov={p.provisional}>
-							{p.provisional ? `provisorisch · ${p.matches} Matches` : `${p.matches} Matches`}
+					<svelte:element this={compact ? 'span' : 'a'} class="row" href={compact ? undefined : `/p/${p.handle}`}>
+						<span class="r">{p.rank}</span>
+						<span>
+							<span class="nm">{p.name}</span>
+							{#if !p.claimed}
+								<span class="uc" title="Profil noch nicht beansprucht">frei</span>
+							{/if}
+							<span class="mt" class:prov={p.provisional}>
+								{p.provisional ? `provisorisch · ${p.matches} Matches` : `${p.matches} Matches`}
+							</span>
 						</span>
-					</span>
-					<span class="sc">
-						<svg class="mini" viewBox="0 0 22 22" aria-hidden="true">
-							<circle class="t" cx="11" cy="11" r="9"></circle>
-							<circle class="f" cx="11" cy="11" r="9" stroke-dasharray={dash(p.confidence)}
-							></circle>
-						</svg>
-						<span class="v" title="Sicherheit {Math.round(p.confidence * 100)} %">
-							{p.rating.toFixed(2)}
+						<span class="sc">
+							<svg class="mini" viewBox="0 0 22 22" aria-hidden="true">
+								<circle class="t" cx="11" cy="11" r="9"></circle>
+								<circle class="f" cx="11" cy="11" r="9" stroke-dasharray={dash(p.confidence)}
+								></circle>
+							</svg>
+							<span class="v" title="Sicherheit {Math.round(p.confidence * 100)} %">
+								{p.rating.toFixed(2)}
+							</span>
 						</span>
-					</span>
+					</svelte:element>
 				</li>
 			{/each}
 		</ol>
