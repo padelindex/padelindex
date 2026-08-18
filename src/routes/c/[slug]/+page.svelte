@@ -1,17 +1,30 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import ClubLeaderboard from '$lib/components/ClubLeaderboard.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	const clubName = $derived(data.board?.club.name ?? 'Verein');
+	const description = $derived(
+		`Öffentliches Level-Ranking von ${clubName} auf PadelIndex — aus bestätigten Matches, mit Sicherheitsgrad je Spieler.`
+	);
+	// Vereinsseiten sind indexierbar und werden verlinkt, deshalb eine
+	// eigene Canonical-URL statt der Startseiten-Angabe.
+	const canonical = $derived(`https://padelindex.de/c/${page.params.slug}`);
 </script>
 
 <svelte:head>
-	<title>{data.board?.club.name ?? 'Verein'} — PadelIndex</title>
-	<meta
-		name="description"
-		content="Öffentliches Level-Ranking von {data.board?.club.name ??
-			'diesem Verein'} auf PadelIndex."
-	/>
+	<title>{clubName} — Level-Ranking | PadelIndex</title>
+	<meta name="description" content={description} />
+	<link rel="canonical" href={canonical} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={canonical} />
+	<meta property="og:site_name" content="PadelIndex" />
+	<meta property="og:locale" content="de_DE" />
+	<meta property="og:title" content="{clubName} — Level-Ranking" />
+	<meta property="og:description" content={description} />
+	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
 <nav class="nav">
