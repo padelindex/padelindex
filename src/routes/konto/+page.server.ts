@@ -3,19 +3,28 @@ import type { Actions, PageServerLoad } from './$types';
 import { isValidEmail } from '$lib/email';
 import { loadRatingHistory } from '$lib/server/rating-history';
 import { confirmMatchAsPlayer, loadPendingMatches, loadPlayerClub } from '$lib/server/matches';
+import { loadTokenAccount } from '$lib/server/tokens';
 import { supabaseAdmin } from '$lib/server/supabase';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	const player = locals.player;
 	if (!player || !locals.supabase) {
-		return { email: locals.user?.email ?? null, player: null, history: [], club: null, pendingMatches: [] };
+		return {
+			email: locals.user?.email ?? null,
+			player: null,
+			history: [],
+			club: null,
+			pendingMatches: [],
+			tokens: { balance: 0, recent: [] }
+		};
 	}
 
 	const admin = supabaseAdmin(platform);
-	const [history, club, pendingMatches] = await Promise.all([
+	const [history, club, pendingMatches, tokens] = await Promise.all([
 		loadRatingHistory(locals.supabase, player.id),
 		loadPlayerClub(locals.supabase, player.id),
-		loadPendingMatches(locals.supabase, admin, player.id)
+		loadPendingMatches(locals.supabase, admin, player.id),
+		loadTokenAccount(locals.supabase, player.id)
 	]);
 
 	return {
@@ -23,7 +32,8 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		player,
 		history,
 		club,
-		pendingMatches
+		pendingMatches,
+		tokens
 	};
 };
 
