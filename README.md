@@ -60,7 +60,8 @@ Storage-Bucket `ranking-claims` erst in Phase 2 (Screenshot-Nachweise).
 2. Worker `padelindex` an das GitHub-Repo `padelindex/padelindex` koppeln (Workers Builds).
 3. `PUBLIC_SUPABASE_*` stehen in `wrangler.toml` (`[vars]`). `SUPABASE_SERVICE_ROLE_KEY` muss unter Workers → `padelindex` → Settings → Variables and Secrets als **encrypted Secret** liegen — nicht als Build-Variable. Klartext-Vars aus dem Dashboard löscht `wrangler deploy`.
 
-4. Optional: Custom Domain `padelindex.de` auf diesen Worker.
+4. Custom Domain `padelindex.de` ist auf diesen Worker geschaltet (Dashboard → Domains & Routes) — nicht in `wrangler.toml` verwaltet, bleibt also bei Code-Deploys unangetastet.
+5. Supabase → Authentication → URL Configuration: Site URL auf `https://padelindex.de`, `https://padelindex.afmhahn.workers.dev/**` zusätzlich unter Redirect URLs (Fallback für die workers.dev-Vorschau-URLs pro Branch).
 
 Das alte `padelindex.github.io` ist kein Host mehr — GitHub Pages dort deaktivieren.
 
