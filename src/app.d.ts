@@ -25,6 +25,8 @@ declare global {
 				/** Transaktions-E-Mail (Resend), siehe lib/server/email.ts. Beide optional — ohne sie wird nur geloggt statt versendet. */
 				RESEND_API_KEY?: string;
 				MAIL_FROM?: string;
+				/** /admin — siehe lib/server/platform-owner.ts. Fehlt sie, ist /admin für niemanden erreichbar (fail closed). */
+				PLATFORM_OWNER_EMAIL?: string;
 			};
 			ctx: ExecutionContext;
 			caches: CacheStorage;
