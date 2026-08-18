@@ -9,6 +9,7 @@
 
 	let emailBusy = $state(false);
 	let confirmingId = $state<string | null>(null);
+	let redeemingId = $state<string | null>(null);
 
 	const claimLabel: Record<'unclaimed' | 'pending' | 'claimed', string> = {
 		unclaimed: 'Nicht beansprucht',
@@ -286,6 +287,52 @@
 				{/if}
 			</div>
 
+			{#if data.rewards.length > 0}
+				<div class="card">
+					<h3 class="card-title">Prämien einlösen</h3>
+					<ul class="rewards">
+						{#each data.rewards as r (r.id)}
+							<li class="reward-row">
+								<div class="reward-main">
+									<span class="reward-title">{r.title}</span>
+									{#if r.description}
+										<span class="reward-desc">{r.description}</span>
+									{/if}
+								</div>
+								<span class="reward-cost num">{r.cost}</span>
+								<form
+									method="POST"
+									action="?/redeem"
+									use:enhance={() => {
+										redeemingId = r.id;
+										return async ({ update }) => {
+											await update();
+											redeemingId = null;
+										};
+									}}
+								>
+									<input type="hidden" name="rewardId" value={r.id} />
+									<button
+										class="btn btn-ghost-light"
+										type="submit"
+										disabled={redeemingId === r.id || data.tokens.balance < r.cost}
+										style="padding: 8px 16px; font-size: 13px"
+									>
+										{redeemingId === r.id ? 'Wird eingelöst…' : 'Einlösen'}
+									</button>
+								</form>
+							</li>
+						{/each}
+					</ul>
+					{#if form?.redeemError}
+						<p class="err">{form.redeemError}</p>
+					{/if}
+					{#if form?.redeemed}
+						<p class="ok" style="font-size: 13px; margin-top: 12px">Eingelöst — dein Verein meldet sich.</p>
+					{/if}
+				</div>
+			{/if}
+
 			<div class="card">
 				<h3 class="card-title">Tokens</h3>
 				{#if data.tokens.recent.length === 0}
@@ -296,21 +343,25 @@
 					<ol class="hist">
 						{#each data.tokens.recent as tx (tx.id)}
 							<li class="hist-row">
-								<span class="hist-badge token-badge">+{tx.amount}</span>
+								<span class="hist-badge token-badge" class:token-out={tx.amount < 0}>
+									{tx.amount > 0 ? '+' : '−'}{Math.abs(tx.amount)}
+								</span>
 								<span class="hist-main">
 									<span class="hist-rating">
-										{tokenReasonLabel[tx.reason] ?? tx.reason}
+										{tx.kind === 'grant'
+											? (tokenReasonLabel[tx.reason] ?? tx.reason)
+											: `Eingelöst: ${tx.rewardTitle}`}
 									</span>
 								</span>
 								<span class="hist-date">{formatDate(tx.createdAt)}</span>
 							</li>
 						{/each}
 					</ol>
-					<p class="muted" style="font-size: 12px; margin: 14px 0 0">
-						Einlösen bei deinem Verein kommt bald — Tokens sind ein Guthaben, kein Handelsgut:
-						keine Übertragung, kein Verfall durch Niederlagen.
-					</p>
 				{/if}
+				<p class="muted" style="font-size: 12px; margin: 14px 0 0">
+					Tokens sind ein Guthaben, kein Handelsgut: keine Übertragung, kein Verfall durch
+					Niederlagen.
+				</p>
 			</div>
 
 			<div class="card">
@@ -441,6 +492,59 @@
 		background: rgba(15, 110, 92, 0.12);
 		color: var(--court-deep, #0f6e5c);
 		font-family: var(--mono);
+	}
+
+	.token-badge.token-out {
+		background: rgba(180, 113, 26, 0.12);
+		color: #b4711a;
+	}
+
+	.rewards {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.reward-row {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		padding: 14px 0;
+		border-top: 1px solid var(--line-light, rgba(0, 0, 0, 0.1));
+	}
+
+	.reward-row:first-child {
+		border-top: none;
+		padding-top: 0;
+	}
+
+	.reward-main {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.reward-title {
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.reward-desc {
+		font-size: 12.5px;
+		color: var(--muted-light);
+	}
+
+	.reward-cost {
+		flex-shrink: 0;
+		font-size: 15px;
+		font-weight: 600;
+		color: var(--court-deep, #0f6e5c);
+	}
+
+	.reward-row form {
+		flex-shrink: 0;
 	}
 
 	.hist-main {
