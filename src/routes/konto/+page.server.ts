@@ -5,6 +5,7 @@ import { loadRatingHistory } from '$lib/server/rating-history';
 import { confirmMatchAsPlayer, loadPendingMatches, loadPlayerClub } from '$lib/server/matches';
 import { loadTokenAccount } from '$lib/server/tokens';
 import { loadRewardCatalog, redeemReward } from '$lib/server/rewards';
+import { loadAdminClubs } from '$lib/server/club-admin';
 import { supabaseAdmin } from '$lib/server/supabase';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
@@ -17,16 +18,18 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 			club: null,
 			pendingMatches: [],
 			tokens: { balance: 0, recent: [] },
-			rewards: []
+			rewards: [],
+			adminClubs: []
 		};
 	}
 
 	const admin = supabaseAdmin(platform);
-	const [history, club, pendingMatches, tokens] = await Promise.all([
+	const [history, club, pendingMatches, tokens, adminClubs] = await Promise.all([
 		loadRatingHistory(locals.supabase, player.id),
 		loadPlayerClub(locals.supabase, player.id),
 		loadPendingMatches(locals.supabase, admin, player.id),
-		loadTokenAccount(locals.supabase, player.id)
+		loadTokenAccount(locals.supabase, player.id),
+		loadAdminClubs(locals.supabase, player.id)
 	]);
 
 	// Prämien gehören zum Verein — ohne Vereinsmitgliedschaft gibt es
@@ -40,7 +43,8 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		club,
 		pendingMatches,
 		tokens,
-		rewards
+		rewards,
+		adminClubs
 	};
 };
 

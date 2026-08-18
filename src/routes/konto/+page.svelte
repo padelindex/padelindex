@@ -198,11 +198,14 @@
 				</div>
 			</div>
 
-			{#if data.club}
-				<a class="btn btn-primary" href="/c/{data.club.slug}/match/neu" style="margin-top: 20px">
-					Match melden
-				</a>
-			{/if}
+			<div class="action-row">
+				{#if data.club}
+					<a class="btn btn-primary" href="/c/{data.club.slug}/match/neu">Match melden</a>
+				{/if}
+				{#each data.adminClubs as ac (ac.id)}
+					<a class="btn btn-ghost-light" href="/verein/{ac.slug}">Vereins-Admin · {ac.name}</a>
+				{/each}
+			</div>
 
 			{#if data.pendingMatches.length > 0}
 				<div class="card">
@@ -436,6 +439,13 @@
 
 	.stat-tokens {
 		color: var(--court-deep, #0f6e5c);
+	}
+
+	.action-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-top: 20px;
 	}
 
 	.stat-l {
