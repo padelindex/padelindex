@@ -16,9 +16,13 @@ if (!target) {
 }
 
 // configFile: false — die SvelteKit-Plugins werden hier nicht gebraucht.
+// $lib muss trotzdem von Hand aufgelöst werden: ohne SvelteKits eigenes
+// Vite-Plugin kennt ein bare configFile:false-Server diesen Alias nicht,
+// und Server-Module importieren ihn pervasiv (z.B. $lib/match-report).
 const server = await createServer({
 	configFile: false,
 	logLevel: 'warn',
+	resolve: { alias: { $lib: resolve(process.cwd(), 'src/lib') } },
 	server: { middlewareMode: true },
 	optimizeDeps: { noDiscovery: true }
 });

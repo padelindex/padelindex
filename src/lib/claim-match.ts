@@ -9,6 +9,13 @@
 //
 // Regel: nur ein einziger, deutlich bester Treffer wird bestätigt.
 
+/** Spiegelt public_display_name() aus 0005_claimable_profiles.sql. */
+export function abbreviateName(fullName: string): string {
+	const parts = fullName.trim().split(/\s+/);
+	if (parts.length < 2) return fullName.trim();
+	return `${parts[0]} ${parts[1][0]}.`;
+}
+
 /** Kleinschreibung, Umlaute aufgelöst, Satzzeichen weg, Leerraum normalisiert. */
 export function normalizeName(value: string): string {
 	return value

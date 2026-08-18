@@ -8,6 +8,7 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let emailBusy = $state(false);
+	let confirmingId = $state<string | null>(null);
 
 	const claimLabel: Record<'unclaimed' | 'pending' | 'claimed', string> = {
 		unclaimed: 'Nicht beansprucht',
@@ -183,6 +184,67 @@
 					</span>
 				</div>
 			</div>
+
+			{#if data.club}
+				<a class="btn btn-primary" href="/c/{data.club.slug}/match/neu" style="margin-top: 20px">
+					Match melden
+				</a>
+			{/if}
+
+			{#if data.pendingMatches.length > 0}
+				<div class="card">
+					<h3 class="card-title">Ausstehende Matches</h3>
+					<ol class="hist">
+						{#each data.pendingMatches as m (m.id)}
+							<li class="pending-row">
+								<div class="pending-teams">
+									<span class:me-team={m.myTeam === 1}>
+										{m.team1.map((p) => p.name).join(' & ')}
+									</span>
+									<span class="vs">vs.</span>
+									<span class:me-team={m.myTeam === 2}>
+										{m.team2.map((p) => p.name).join(' & ')}
+									</span>
+								</div>
+								<span class="pending-sets">
+									{m.sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ')}
+								</span>
+								<span class="pending-date">
+									gemeldet für {formatDate(m.playedAt)} · Frist {formatDate(m.confirmDeadline)}
+								</span>
+								{#if m.canConfirm}
+									<form
+										method="POST"
+										action="?/confirmMatch"
+										use:enhance={() => {
+											confirmingId = m.id;
+											return async ({ update }) => {
+												await update();
+												confirmingId = null;
+											};
+										}}
+									>
+										<input type="hidden" name="matchId" value={m.id} />
+										<button
+											class="btn btn-primary"
+											type="submit"
+											disabled={confirmingId === m.id}
+											style="margin-top: 10px; padding: 8px 16px; font-size: 13px"
+										>
+											{confirmingId === m.id ? 'Wird bestätigt…' : 'Ergebnis bestätigen'}
+										</button>
+									</form>
+								{:else}
+									<span class="pending-waiting">Warte auf Bestätigung der Gegenseite</span>
+								{/if}
+							</li>
+						{/each}
+					</ol>
+					{#if form?.matchError}
+						<p class="err">{form.matchError}</p>
+					{/if}
+				</div>
+			{/if}
 
 			<div class="card">
 				<h3 class="card-title">Verlauf</h3>
@@ -365,5 +427,49 @@
 		font-family: var(--body);
 		font-size: 14px;
 		margin-bottom: 10px;
+	}
+
+	.pending-row {
+		padding: 14px 0;
+		border-top: 1px solid var(--line-light, rgba(0, 0, 0, 0.1));
+	}
+
+	.pending-row:first-child {
+		border-top: none;
+		padding-top: 0;
+	}
+
+	.pending-teams {
+		font-size: 14px;
+		font-weight: 600;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		align-items: baseline;
+	}
+
+	.pending-teams .me-team {
+		color: var(--court-deep, #0c6e64);
+	}
+
+	.pending-teams .vs {
+		font-weight: 400;
+		font-size: 12px;
+		color: var(--muted-light);
+	}
+
+	.pending-sets {
+		display: block;
+		margin-top: 4px;
+		font-size: 13px;
+		font-family: var(--mono);
+	}
+
+	.pending-date,
+	.pending-waiting {
+		display: block;
+		margin-top: 4px;
+		font-size: 12px;
+		color: var(--muted-light);
 	}
 </style>
