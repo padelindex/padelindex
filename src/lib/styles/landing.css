@@ -128,6 +128,11 @@ img,svg{display:block;max-width:100%}
 .btn:focus-visible,a:focus-visible,input:focus-visible,button:focus-visible{
   outline:2px solid var(--court);outline-offset:3px
 }
+/* .btn hatte bisher gar keinen :disabled-Zustand — ein deaktivierter Button
+   (z.B. "nicht genug Tokens") sah optisch identisch zu einem aktiven aus.
+   Live an den Prämien-Buttons auf /konto gefunden. */
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-primary:disabled:hover{background:var(--court)}
 
 /* ============================================================
    Hero — die Thesis: ein Rating ist keine Zahl, sondern eine

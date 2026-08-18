@@ -4,6 +4,7 @@ import { isValidEmail } from '$lib/email';
 import { loadRatingHistory } from '$lib/server/rating-history';
 import { confirmMatchAsPlayer, loadPendingMatches, loadPlayerClub } from '$lib/server/matches';
 import { loadTokenAccount } from '$lib/server/tokens';
+import { loadRewardCatalog, redeemReward } from '$lib/server/rewards';
 import { supabaseAdmin } from '$lib/server/supabase';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
@@ -15,7 +16,8 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 			history: [],
 			club: null,
 			pendingMatches: [],
-			tokens: { balance: 0, recent: [] }
+			tokens: { balance: 0, recent: [] },
+			rewards: []
 		};
 	}
 
@@ -27,13 +29,18 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		loadTokenAccount(locals.supabase, player.id)
 	]);
 
+	// Prämien gehören zum Verein — ohne Vereinsmitgliedschaft gibt es
+	// nichts zum Einlösen.
+	const rewards = club ? await loadRewardCatalog(locals.supabase, club.id) : [];
+
 	return {
 		email: locals.user?.email ?? null,
 		player,
 		history,
 		club,
 		pendingMatches,
-		tokens
+		tokens,
+		rewards
 	};
 };
 
@@ -94,5 +101,20 @@ export const actions: Actions = {
 		if (!result.ok) return { matchError: result.message };
 
 		return { matchConfirmed: true };
+	},
+
+	redeem: async ({ request, locals, platform }) => {
+		if (!locals.player) {
+			return { redeemError: 'Nicht angemeldet.' };
+		}
+
+		const form = await request.formData();
+		const rewardId = String(form.get('rewardId') ?? '');
+		if (!rewardId) return { redeemError: 'Ungültige Anfrage.' };
+
+		const result = await redeemReward(supabaseAdmin(platform), locals.player.id, rewardId);
+		if (!result.ok) return { redeemError: result.message };
+
+		return { redeemed: true };
 	}
 };
