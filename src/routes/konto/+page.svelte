@@ -1,16 +1,56 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { createBrowserSupabase, readMagicLinkTokensFromHash } from '$lib/supabase-browser';
-	import type { PageData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	let emailBusy = $state(false);
 
 	const claimLabel: Record<'unclaimed' | 'pending' | 'claimed', string> = {
 		unclaimed: 'Nicht beansprucht',
 		pending: 'Wird geprüft',
 		claimed: 'Bestätigt'
 	};
+
+	const reasonLabel: Record<string, string> = {
+		seed: 'Start',
+		match: 'Match',
+		inactivity_decay: 'Inaktivität',
+		manual_adjust: 'Anpassung'
+	};
+
+	function historyBadge(entry: PageData['history'][number]) {
+		if (entry.reason === 'match') {
+			if (entry.factors.won === true) return 'Sieg';
+			if (entry.factors.won === false) return 'Niederlage';
+		}
+		return reasonLabel[entry.reason] ?? entry.reason;
+	}
+
+	function historyDetail(entry: PageData['history'][number]) {
+		if (entry.reason === 'seed') {
+			const { league_rank, league_size, league, season } = entry.factors;
+			if (league_rank && league_size) {
+				return `Ligaposition #${league_rank} von ${league_size}${league ? ` · ${league}` : ''}${season ? ` ${season}` : ''}`;
+			}
+			return 'Startwert aus dem Fragebogen';
+		}
+		if (entry.reason === 'match' && typeof entry.factors.opponentAvgRating === 'number') {
+			return `Gegner-Ø ${entry.factors.opponentAvgRating.toFixed(2)}`;
+		}
+		return '';
+	}
+
+	function formatDate(iso: string) {
+		return new Date(iso).toLocaleDateString('de-DE', {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric'
+		});
+	}
 
 	// Supabases Standard-Mail-Templates verlinken auf ihren eigenen
 	// /auth/v1/verify-Endpunkt, der nach Prüfung mit #access_token=...&
@@ -144,6 +184,69 @@
 				</div>
 			</div>
 
+			<div class="card">
+				<h3 class="card-title">Verlauf</h3>
+				{#if data.history.length === 0}
+					<p class="muted" style="font-size: 13px; margin: 0">
+						Noch keine Einträge — der Verlauf füllt sich mit den ersten Matches.
+					</p>
+				{:else}
+					<ol class="hist">
+						{#each data.history as entry (entry.id)}
+							<li class="hist-row">
+								<span class="hist-badge" class:win={entry.factors.won === true}
+									>{historyBadge(entry)}</span
+								>
+								<span class="hist-main">
+									<span class="hist-rating">
+										{entry.ratingBefore.toFixed(2)} → {entry.ratingAfter.toFixed(2)}
+									</span>
+									{#if historyDetail(entry)}
+										<span class="hist-detail">{historyDetail(entry)}</span>
+									{/if}
+								</span>
+								<span class="hist-date">{formatDate(entry.createdAt)}</span>
+							</li>
+						{/each}
+					</ol>
+				{/if}
+			</div>
+
+			<div class="card">
+				<h3 class="card-title">E-Mail ändern</h3>
+				<form
+					method="POST"
+					action="?/changeEmail"
+					use:enhance={() => {
+						emailBusy = true;
+						return async ({ update }) => {
+							await update();
+							emailBusy = false;
+						};
+					}}
+				>
+					<input
+						type="email"
+						name="email"
+						placeholder="neue@mail.de"
+						autocomplete="email"
+						required
+					/>
+					<button class="btn btn-ghost" type="submit" disabled={emailBusy}>
+						{emailBusy ? 'Wird gesendet…' : 'Bestätigungslink senden'}
+					</button>
+				</form>
+				{#if form?.emailSent}
+					<p class="ok" style="font-size: 14px; margin-top: 12px">
+						Bestätigungslink verschickt — prüfe dein Postfach (je nach Einstellung ggf. auch das der
+						alten Adresse). Die Änderung greift erst nach der Bestätigung.
+					</p>
+				{/if}
+				{#if form?.emailError}
+					<p class="err">{form.emailError}</p>
+				{/if}
+			</div>
+
 			<form method="POST" action="?/logout">
 				<button class="btn btn-ghost" type="submit" style="margin-top: 20px">Abmelden</button>
 			</form>
@@ -188,5 +291,79 @@
 		margin: 16px 0 0;
 		font-size: 13px;
 		color: #a3341f;
+	}
+
+	.card-title {
+		margin: 0 0 14px;
+		font-size: 13px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--muted-light);
+	}
+
+	.hist {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.hist-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.hist-badge {
+		flex-shrink: 0;
+		padding: 3px 9px;
+		border-radius: 100px;
+		font-size: 11px;
+		font-weight: 600;
+		background: rgba(0, 0, 0, 0.06);
+		color: var(--muted-light);
+	}
+
+	.hist-badge.win {
+		background: rgba(15, 110, 92, 0.12);
+		color: var(--court, #0f6e5c);
+	}
+
+	.hist-main {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.hist-rating {
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.hist-detail {
+		font-size: 12px;
+		color: var(--muted-light);
+	}
+
+	.hist-date {
+		flex-shrink: 0;
+		font-size: 12px;
+		color: var(--muted-light);
+	}
+
+	.card input {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 11px 16px;
+		border-radius: 100px;
+		border: 1px solid var(--line-light, rgba(0, 0, 0, 0.14));
+		background: #fff;
+		font-family: var(--body);
+		font-size: 14px;
+		margin-bottom: 10px;
 	}
 </style>
