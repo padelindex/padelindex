@@ -232,7 +232,7 @@
 						autocomplete="email"
 						required
 					/>
-					<button class="btn btn-ghost" type="submit" disabled={emailBusy}>
+					<button class="btn btn-ghost-light" type="submit" disabled={emailBusy}>
 						{emailBusy ? 'Wird gesendet…' : 'Bestätigungslink senden'}
 					</button>
 				</form>
@@ -248,7 +248,7 @@
 			</div>
 
 			<form method="POST" action="?/logout">
-				<button class="btn btn-ghost" type="submit" style="margin-top: 20px">Abmelden</button>
+				<button class="btn btn-ghost-light" type="submit" style="margin-top: 20px">Abmelden</button>
 			</form>
 		{/if}
 	</div>
