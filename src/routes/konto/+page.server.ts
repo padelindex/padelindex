@@ -9,7 +9,10 @@ import { loadAdminClubs } from '$lib/server/club-admin';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { getNotifications, markAllRead } from '$lib/server/notification-store';
 
-export const load: PageServerLoad = async ({ locals, platform }) => {
+export const load: PageServerLoad = async ({ locals, platform, url }) => {
+	// Hinweis aus dem Match-Melden-Flow, falls die Challenge-Verknüpfung nicht
+	// geklappt hat (das Match selbst wurde trotzdem gemeldet).
+	const challengeHinweis = url.searchParams.get('challengeHinweis');
 	const player = locals.player;
 	if (!player || !locals.supabase) {
 		return {
@@ -21,7 +24,8 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 			tokens: { balance: 0, recent: [] },
 			rewards: [],
 			adminClubs: [],
-			notifications: []
+			notifications: [],
+			challengeHinweis
 		};
 	}
 
@@ -48,7 +52,8 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		tokens,
 		rewards,
 		adminClubs,
-		notifications
+		notifications,
+		challengeHinweis
 	};
 };
 

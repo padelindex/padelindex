@@ -10,6 +10,15 @@
 	let opponent2Id = $state('');
 	let setCount = $state(2);
 	let busy = $state(false);
+	let challengeId = $state('');
+	let matchType = $state<(typeof MATCH_TYPES)[number]>('freizeit');
+
+	// Eine gemeldete Challenge IST ein Challenge-Match — den Typ deshalb
+	// automatisch mitziehen, statt sich darauf zu verlassen, dass beides
+	// von Hand zusammenpasst.
+	$effect(() => {
+		if (challengeId) matchType = 'padelindex_challenge';
+	});
 
 	const today = new Date().toISOString().slice(0, 10);
 
@@ -58,11 +67,27 @@
 				<input id="playedAt" type="date" name="playedAt" value={today} max={today} required />
 
 				<label for="matchType">Match-Typ</label>
-				<select id="matchType" name="matchType" required>
+				<select id="matchType" name="matchType" required bind:value={matchType}>
 					{#each MATCH_TYPES as t (t)}
-						<option value={t} selected={t === 'freizeit'}>{MATCH_TYPE_LABELS[t]}</option>
+						<option value={t}>{MATCH_TYPE_LABELS[t]}</option>
 					{/each}
 				</select>
+
+				{#if data.openChallenges.length > 0}
+					<label for="challengeId">Ergebnis einer Challenge?</label>
+					<select id="challengeId" name="challengeId" bind:value={challengeId}>
+						<option value="">Nein, normales Match</option>
+						{#each data.openChallenges as c (c.id)}
+							<option value={c.id}>Challenge gegen {c.counterpartName}</option>
+						{/each}
+					</select>
+					{#if challengeId}
+						<p class="note">
+							Die Challenge wird abgeschlossen, sobald ein Gegner das Ergebnis bestätigt — erst
+							dann wird ihr Challenge-Platz wieder frei.
+						</p>
+					{/if}
+				{/if}
 
 				<label for="partnerId">Dein Partner</label>
 				<select id="partnerId" name="partnerId" bind:value={partnerId} required>
@@ -214,6 +239,12 @@
 		color: var(--muted-light);
 		text-decoration: underline;
 		cursor: pointer;
+	}
+
+	.note {
+		margin: 8px 0 0;
+		font-size: 12.5px;
+		color: var(--court-deep, #0f6e5c);
 	}
 
 	.err {

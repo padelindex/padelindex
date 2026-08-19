@@ -476,13 +476,59 @@ export async function cancelChallenge(
 	return { ok: true };
 }
 
+/** Angenommene Challenges, für die noch kein Ergebnis gemeldet wurde. */
+export type OpenChallengeForMatch = {
+	id: string;
+	counterpartId: string;
+	counterpartName: string;
+	selectedTimeSlot: { date: string; startTime: string; endTime: string } | null;
+};
+
 /**
- * Verknüpft ein gemeldetes Match mit der Challenge und schließt sie ab.
- * Bewusst KEIN Rating-Eingriff — das Rating läuft vollständig über
- * apply_match_rating (0002); die Challenge dokumentiert nur, dass dieses
- * Match ihr Ergebnis war.
+ * Fürs Match-Melden: welche angenommenen Challenges warten noch auf ihr
+ * Ergebnis? Ohne diese Rückverknüpfung bliebe eine gespielte Challenge
+ * für immer im Status "accepted" — und würde damit dauerhaft einen der
+ * drei Challenge-Plätze belegen UND eine erneute Challenge gegen
+ * denselben Gegner blockieren (siehe challenges_one_open_per_pair_idx
+ * in 0013). Das Abschließen ist also kein Nice-to-have, sondern das,
+ * was den Kreislauf überhaupt schließt.
  */
-export async function completeChallengeWithMatch(
+export async function getOpenChallengesForMatch(
+	admin: SupabaseClient,
+	playerId: string
+): Promise<OpenChallengeForMatch[]> {
+	const { data } = await admin
+		.from('challenges')
+		.select('id, challenger_id, challenged_player_id, selected_time_slot')
+		.or(`challenger_id.eq.${playerId},challenged_player_id.eq.${playerId}`)
+		.eq('status', 'accepted')
+		.is('result_match_id', null);
+
+	if (!data || data.length === 0) return [];
+
+	const counterpartIds = data.map((c) =>
+		c.challenger_id === playerId ? c.challenged_player_id : c.challenger_id
+	);
+	const names = await loadPlayerNames(admin, counterpartIds);
+
+	return data.map((c) => {
+		const counterpartId = c.challenger_id === playerId ? c.challenged_player_id : c.challenger_id;
+		return {
+			id: c.id,
+			counterpartId,
+			counterpartName: names.get(counterpartId)?.name ?? 'Unbekannt',
+			selectedTimeSlot: c.selected_time_slot
+		};
+	});
+}
+
+/**
+ * Beim Melden: Match an die Challenge hängen, Status bleibt "accepted".
+ * Abgeschlossen wird erst bei der Bestätigung (completeChallengesForMatch) —
+ * ein gemeldetes, aber noch nicht bestätigtes Match ist schließlich noch
+ * kein Ergebnis, und ein abgelehntes darf die Challenge nicht verbrauchen.
+ */
+export async function linkChallengeToMatch(
 	admin: SupabaseClient,
 	challengeId: string,
 	playerId: string,
@@ -490,7 +536,7 @@ export async function completeChallengeWithMatch(
 ): Promise<ActionResult> {
 	const { data } = await admin
 		.from('challenges')
-		.select('id, challenger_id, challenged_player_id, status')
+		.select('id, challenger_id, challenged_player_id, status, result_match_id')
 		.eq('id', challengeId)
 		.maybeSingle();
 
@@ -498,8 +544,11 @@ export async function completeChallengeWithMatch(
 	if (data.challenger_id !== playerId && data.challenged_player_id !== playerId) {
 		return { ok: false, message: 'Challenge nicht gefunden.' };
 	}
-	if (!canTransitionChallenge(data.status as ChallengeStatus, 'completed')) {
-		return { ok: false, message: 'Nur angenommene Challenges können abgeschlossen werden.' };
+	if (data.status !== 'accepted') {
+		return { ok: false, message: 'Nur angenommene Challenges können ein Ergebnis bekommen.' };
+	}
+	if (data.result_match_id) {
+		return { ok: false, message: 'Für diese Challenge wurde bereits ein Ergebnis gemeldet.' };
 	}
 
 	// Beide Beteiligten müssen wirklich in diesem Match gespielt haben —
@@ -514,10 +563,42 @@ export async function completeChallengeWithMatch(
 		return { ok: false, message: 'In diesem Match haben nicht beide Challenge-Beteiligten gespielt.' };
 	}
 
-	if (!(await setChallengeStatus(admin, challengeId, 'accepted', 'completed', { result_match_id: matchId }))) {
-		return { ok: false, message: 'Diese Challenge wurde bereits abgeschlossen.' };
+	const { data: updated } = await admin
+		.from('challenges')
+		.update({ result_match_id: matchId, updated_at: new Date().toISOString() })
+		.eq('id', challengeId)
+		.eq('status', 'accepted')
+		.is('result_match_id', null)
+		.select('id');
+
+	if ((updated?.length ?? 0) === 0) {
+		return { ok: false, message: 'Für diese Challenge wurde bereits ein Ergebnis gemeldet.' };
 	}
 	return { ok: true };
+}
+
+/**
+ * Wird nach erfolgreicher Rating-Anwendung aufgerufen (confirm.ts): das
+ * verknüpfte Match ist jetzt bestätigt und gewertet, die Challenge damit
+ * erledigt — sie gibt ihren Challenge-Platz wieder frei.
+ * Best-effort: darf die Bestätigung des Matches nie scheitern lassen.
+ */
+export async function completeChallengesForMatch(
+	admin: SupabaseClient,
+	matchId: string
+): Promise<number> {
+	try {
+		const { data } = await admin
+			.from('challenges')
+			.update({ status: 'completed', updated_at: new Date().toISOString() })
+			.eq('result_match_id', matchId)
+			.eq('status', 'accepted')
+			.select('id');
+		return data?.length ?? 0;
+	} catch (e) {
+		console.error('Challenge-Abschluss fehlgeschlagen', e);
+		return 0;
+	}
 }
 
 async function notifyChallengeReceived(

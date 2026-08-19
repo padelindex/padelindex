@@ -245,6 +245,12 @@
 				</div>
 			{/if}
 
+			{#if data.challengeHinweis}
+				<p class="err" role="alert">
+					Match gemeldet, aber nicht mit der Challenge verknüpft: {data.challengeHinweis}
+				</p>
+			{/if}
+
 			{#if data.pendingMatches.length > 0}
 				<div class="card" id="ausstehend">
 					<h3 class="card-title">Ausstehende Matches</h3>

@@ -13,6 +13,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { readEmailEnv } from '$lib/server/email';
 import { createMatchReport, loadClubRoster } from '$lib/server/matches';
+import { getOpenChallengesForMatch, linkChallengeToMatch } from '$lib/server/challenges';
 import { MAX_SETS, MATCH_TYPES, type MatchType } from '$lib/match-report';
 
 export const load: PageServerLoad = async ({ params, locals, url, platform }) => {
@@ -30,9 +31,12 @@ export const load: PageServerLoad = async ({ params, locals, url, platform }) =>
 	if (clubErr) throw error(500, clubErr.message);
 	if (!club) throw error(404, 'Verein nicht gefunden');
 
-	const roster = await loadClubRoster(admin, club.id);
+	const [roster, openChallenges] = await Promise.all([
+		loadClubRoster(admin, club.id),
+		getOpenChallengesForMatch(admin, locals.player.id)
+	]);
 
-	return { club, roster, me: locals.player.id };
+	return { club, roster, me: locals.player.id, openChallenges };
 };
 
 export const actions: Actions = {
@@ -86,6 +90,18 @@ export const actions: Actions = {
 		);
 
 		if (!result.ok) return { message: result.message };
+
+		// Optional: als Ergebnis einer angenommenen Challenge melden. Bewusst
+		// NACH dem erfolgreichen Report und ohne dessen Ergebnis zu kippen —
+		// das Match ist gültig gemeldet, selbst wenn die Verknüpfung scheitert
+		// (z. B. weil inzwischen jemand anderes ein Ergebnis eingetragen hat).
+		const challengeId = String(form.get('challengeId') ?? '');
+		if (challengeId) {
+			const link = await linkChallengeToMatch(admin, challengeId, locals.player.id, result.matchId);
+			if (!link.ok) {
+				throw redirect(303, `/konto?challengeHinweis=${encodeURIComponent(link.message)}`);
+			}
+		}
 
 		throw redirect(303, `/konto`);
 	}
