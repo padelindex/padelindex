@@ -1,0 +1,76 @@
+// ============================================================
+// PadelIndex — Spielanfragen (empfangen & gesendet)
+// ============================================================
+// Lesen über den Session-Client (RLS play_requests_involved_read — man
+// sieht nur, woran man selbst beteiligt ist). Namen der Gegenseite löst
+// der Admin-Client auf, erst NACHDEM RLS die Beteiligung bestätigt hat —
+// gleiches Muster wie loadPendingMatches in matches.ts.
+
+import { redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
+import { supabaseAdmin } from '$lib/server/supabase';
+import {
+	acceptPlayRequest,
+	cancelPlayRequest,
+	declinePlayRequest,
+	getPlayRequests
+} from '$lib/server/play-requests';
+
+export const load: PageServerLoad = async ({ locals, url, platform }) => {
+	if (!locals.player || !locals.supabase) {
+		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
+	}
+
+	const { incoming, outgoing } = await getPlayRequests(
+		locals.supabase,
+		supabaseAdmin(platform),
+		locals.player.id
+	);
+
+	return { incoming, outgoing };
+};
+
+export const actions: Actions = {
+	accept: async ({ request, locals, platform }) => {
+		if (!locals.player) return { error: 'Nicht angemeldet.' };
+		const form = await request.formData();
+		const id = String(form.get('requestId') ?? '');
+		if (!id) return { error: 'Ungültige Anfrage.' };
+
+		const result = await acceptPlayRequest(
+			supabaseAdmin(platform),
+			id,
+			locals.player.id,
+			locals.player.displayName
+		);
+		if (!result.ok) return { error: result.message };
+		return { done: true };
+	},
+
+	decline: async ({ request, locals, platform }) => {
+		if (!locals.player) return { error: 'Nicht angemeldet.' };
+		const form = await request.formData();
+		const id = String(form.get('requestId') ?? '');
+		if (!id) return { error: 'Ungültige Anfrage.' };
+
+		const result = await declinePlayRequest(
+			supabaseAdmin(platform),
+			id,
+			locals.player.id,
+			locals.player.displayName
+		);
+		if (!result.ok) return { error: result.message };
+		return { done: true };
+	},
+
+	cancel: async ({ request, locals, platform }) => {
+		if (!locals.player) return { error: 'Nicht angemeldet.' };
+		const form = await request.formData();
+		const id = String(form.get('requestId') ?? '');
+		if (!id) return { error: 'Ungültige Anfrage.' };
+
+		const result = await cancelPlayRequest(supabaseAdmin(platform), id, locals.player.id);
+		if (!result.ok) return { error: result.message };
+		return { done: true };
+	}
+};

@@ -7,6 +7,7 @@ import { loadTokenAccount } from '$lib/server/tokens';
 import { loadRewardCatalog, redeemReward } from '$lib/server/rewards';
 import { loadAdminClubs } from '$lib/server/club-admin';
 import { supabaseAdmin } from '$lib/server/supabase';
+import { getNotifications, markAllRead } from '$lib/server/notification-store';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	const player = locals.player;
@@ -19,17 +20,19 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 			pendingMatches: [],
 			tokens: { balance: 0, recent: [] },
 			rewards: [],
-			adminClubs: []
+			adminClubs: [],
+			notifications: []
 		};
 	}
 
 	const admin = supabaseAdmin(platform);
-	const [history, club, pendingMatches, tokens, adminClubs] = await Promise.all([
+	const [history, club, pendingMatches, tokens, adminClubs, notifications] = await Promise.all([
 		loadRatingHistory(locals.supabase, player.id),
 		loadPlayerClub(locals.supabase, player.id),
 		loadPendingMatches(locals.supabase, admin, player.id),
 		loadTokenAccount(locals.supabase, player.id),
-		loadAdminClubs(locals.supabase, player.id)
+		loadAdminClubs(locals.supabase, player.id),
+		getNotifications(locals.supabase, player.id, 10)
 	]);
 
 	// Prämien gehören zum Verein — ohne Vereinsmitgliedschaft gibt es
@@ -44,7 +47,8 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		pendingMatches,
 		tokens,
 		rewards,
-		adminClubs
+		adminClubs,
+		notifications
 	};
 };
 
@@ -156,5 +160,11 @@ export const actions: Actions = {
 
 		if (error) return { profileError: error.message };
 		return { profileSaved: true };
+	},
+
+	markNotificationsRead: async ({ locals, platform }) => {
+		if (!locals.player) return { notificationError: 'Nicht angemeldet.' };
+		await markAllRead(supabaseAdmin(platform), locals.player.id);
+		return { notificationsRead: true };
 	}
 };
