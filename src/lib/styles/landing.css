@@ -125,7 +125,7 @@ img,svg{display:block;max-width:100%}
    weiß fast komplett. */
 .btn-ghost-light{border-color:var(--line-light);color:var(--ink);background:transparent}
 .btn-ghost-light:hover{border-color:var(--court);color:var(--court-deep)}
-.btn:focus-visible,a:focus-visible,input:focus-visible,button:focus-visible{
+.btn:focus-visible,a:focus-visible,input:focus-visible,button:focus-visible,summary:focus-visible{
   outline:2px solid var(--court);outline-offset:3px
 }
 /* .btn hatte bisher gar keinen :disabled-Zustand — ein deaktivierter Button

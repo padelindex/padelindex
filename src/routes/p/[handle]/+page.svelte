@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { MATCH_TYPE_LABELS } from '$lib/match-report';
+	import RatingLegend from '$lib/components/RatingLegend.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -34,17 +35,30 @@
 
 	// Rating-Verlauf als kleine Linie: chronologisch, aus der bereits
 	// geladenen (neueste-zuerst) Historie.
-	const series = $derived([...data.history].reverse().map((m) => m.ratingAfter));
+	const chronological = $derived([...data.history].reverse());
+	const series = $derived(chronological.map((m) => m.ratingAfter));
 	const W = 480;
 	const H = 90;
 	const PAD = 6;
+	const seriesRange = $derived.by(() => {
+		if (series.length === 0) return { lo: 0, hi: 0 };
+		return { lo: Math.min(...series), hi: Math.max(...series) };
+	});
 	const seriesPath = $derived.by(() => {
 		if (series.length < 2) return '';
-		const lo = Math.min(...series) - 0.1;
-		const hi = Math.max(...series) + 0.1;
+		const lo = seriesRange.lo - 0.1;
+		const hi = seriesRange.hi + 0.1;
 		const x = (i: number) => PAD + ((W - 2 * PAD) * i) / (series.length - 1);
 		const y = (v: number) => H - PAD - ((H - 2 * PAD) * (v - lo)) / Math.max(0.01, hi - lo);
 		return series.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+	});
+	const seriesTrendLabel = $derived.by(() => {
+		if (series.length < 2) return '';
+		const first = series[0];
+		const last = series[series.length - 1];
+		const diff = last - first;
+		const richtung = diff > 0.005 ? 'gestiegen' : diff < -0.005 ? 'gefallen' : 'gleich geblieben';
+		return `Rating-Verlauf über ${series.length} Matches, von ${first.toFixed(2)} auf ${last.toFixed(2)} ${richtung}. Details in der Tabelle darunter.`;
 	});
 </script>
 
@@ -91,6 +105,10 @@
 					· Sicherheit {Math.round(data.profile.confidence * 100)} %
 				</p>
 			</div>
+		</div>
+
+		<div class="profile-legend">
+			<RatingLegend />
 		</div>
 
 		{#if data.profile.city || data.profile.playingHand || data.profile.preferredSide || data.profile.gender || data.profile.selfAssessedLevel !== null}
@@ -156,9 +174,39 @@
 				{#if seriesPath}
 					<div class="rseries">
 						<span class="form-l">Rating-Verlauf</span>
-						<svg viewBox="0 0 {W} {H}" preserveAspectRatio="none" role="img" aria-label="Rating-Verlauf über die letzten {series.length} Matches">
-							<path class="rseries-line" d={seriesPath}></path>
-						</svg>
+						<div class="rseries-chart">
+							<div class="rseries-axis" aria-hidden="true">
+								<span>{(seriesRange.hi + 0.1).toFixed(2)}</span>
+								<span>{(seriesRange.lo - 0.1).toFixed(2)}</span>
+							</div>
+							<svg
+								viewBox="0 0 {W} {H}"
+								preserveAspectRatio="none"
+								role="img"
+								aria-label={seriesTrendLabel}
+							>
+								<path class="rseries-line" d={seriesPath}></path>
+							</svg>
+						</div>
+						<span class="rseries-caption" aria-hidden="true">Älter → neuer</span>
+
+						<table class="sr-only">
+							<caption>Rating nach jedem Match, chronologisch</caption>
+							<thead>
+								<tr>
+									<th scope="col">Datum</th>
+									<th scope="col">Rating danach</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each chronological as m (m.matchId)}
+									<tr>
+										<td>{formatDate(m.playedAt)}</td>
+										<td>{m.ratingAfter.toFixed(2)}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
 					</div>
 				{/if}
 			</div>
@@ -234,6 +282,10 @@
 		align-items: center;
 		gap: 20px;
 		flex-wrap: wrap;
+	}
+
+	.profile-legend {
+		margin-top: 16px;
 	}
 
 	.ring-wrap {
@@ -376,11 +428,35 @@
 		padding-top: 16px;
 		border-top: 1px solid var(--line-light, rgba(0, 0, 0, 0.1));
 	}
-	.rseries svg {
-		width: 100%;
+	.rseries-chart {
+		display: flex;
+		align-items: stretch;
+		gap: 10px;
+		margin-top: 8px;
+	}
+	.rseries-axis {
+		flex-shrink: 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		font-family: var(--mono);
+		font-size: 10px;
+		color: var(--muted-light);
+		text-align: right;
+		padding: 2px 0;
+	}
+	.rseries-chart svg {
+		flex: 1;
+		min-width: 0;
 		height: 60px;
 		display: block;
-		margin-top: 8px;
+	}
+	.rseries-caption {
+		display: block;
+		margin-top: 4px;
+		font-size: 10.5px;
+		color: var(--muted-light);
+		text-align: right;
 	}
 	.rseries-line {
 		fill: none;
