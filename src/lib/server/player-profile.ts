@@ -15,7 +15,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { error } from '@sveltejs/kit';
-import { abbreviateName } from '$lib/claim-match';
+import { formatPlayerName } from '$lib/claim-match';
 import type { MatchType } from '$lib/match-report';
 
 export type PlayingHand = 'rechts' | 'links';
@@ -61,7 +61,7 @@ export async function loadPublicProfile(
 	return {
 		id: data.id,
 		handle: data.handle,
-		name: claimed ? data.display_name : abbreviateName(data.display_name),
+		name: formatPlayerName(data.display_name, data.claim_status),
 		claimed,
 		rating: Number(data.rating),
 		confidence: Number(confidence.toFixed(4)),
@@ -97,7 +97,7 @@ type RawParticipant = {
 };
 
 const nameOf = (p: RawParticipant['players']) =>
-	p ? (p.claim_status === 'claimed' ? p.display_name : abbreviateName(p.display_name)) : '?';
+	p ? formatPlayerName(p.display_name, p.claim_status) : '?';
 
 /**
  * Matchhistorie neueste-zuerst (für die Anzeige) — Formkurve/Badges

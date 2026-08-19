@@ -17,7 +17,7 @@
 // nicht als offene Tabelle im Client.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { abbreviateName } from '$lib/claim-match';
+import { formatPlayerName } from '$lib/claim-match';
 import { weekdayOfDate, type AvailabilityMatchType } from '$lib/availability';
 import {
 	MIN_DISPLAY_SCORE,
@@ -288,7 +288,7 @@ export async function getMatchSuggestionsForPlayer(
 		suggestions.push({
 			playerId: row.id,
 			handle: row.handle,
-			name: row.claim_status === 'claimed' ? row.display_name : abbreviateName(row.display_name),
+			name: formatPlayerName(row.display_name, row.claim_status),
 			rating,
 			matchesPlayed: row.matches_played,
 			clubName: membership?.clubs?.name ?? null,

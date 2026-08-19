@@ -1,5 +1,6 @@
 <svelte:head>
 	<title>Impressum — PadelIndex</title>
+	<meta name="robots" content="noindex, follow" />
 </svelte:head>
 
 <nav class="nav">

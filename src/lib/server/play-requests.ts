@@ -9,7 +9,7 @@
 // angenommen werden kann.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { abbreviateName } from '$lib/claim-match';
+import { formatPlayerName } from '$lib/claim-match';
 import type { AvailabilityMatchType } from '$lib/availability';
 import {
 	canTransitionPlayRequest,
@@ -130,7 +130,7 @@ export async function loadPlayerNames(
 	for (const row of data ?? []) {
 		map.set(row.id, {
 			handle: row.handle,
-			name: row.claim_status === 'claimed' ? row.display_name : abbreviateName(row.display_name)
+			name: formatPlayerName(row.display_name, row.claim_status)
 		});
 	}
 	return map;

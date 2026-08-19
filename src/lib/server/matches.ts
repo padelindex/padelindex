@@ -18,7 +18,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { error } from '@sveltejs/kit';
-import { abbreviateName } from '$lib/claim-match';
+import { formatPlayerName } from '$lib/claim-match';
 import { confirmMatchByPlayer } from './rating/confirm';
 import { validateMatchReport, type MatchReportInput } from '$lib/match-report';
 import { matchReportedEmail } from '$lib/notifications';
@@ -76,7 +76,7 @@ export async function loadClubRoster(
 		.map((p) => ({
 			id: p.id,
 			handle: p.handle,
-			name: p.claim_status === 'claimed' ? p.display_name : abbreviateName(p.display_name),
+			name: formatPlayerName(p.display_name, p.claim_status),
 			claimed: p.claim_status === 'claimed'
 		}))
 		.sort((a, b) => a.name.localeCompare(b.name, 'de'));
@@ -137,7 +137,7 @@ async function notifyOpponentsOfPendingMatch(
 		const nameOf = (id: string) => {
 			const p = byId.get(id);
 			if (!p) return '?';
-			return p.claim_status === 'claimed' ? p.display_name : abbreviateName(p.display_name);
+			return formatPlayerName(p.display_name, p.claim_status);
 		};
 
 		const { subject, html } = matchReportedEmail({
@@ -221,11 +221,7 @@ export async function loadPendingMatches(
 		const mine = (participants ?? []).filter((p) => p.match_id === m.id);
 		const toEntry = (p: (typeof mine)[number]) => {
 			const player = p.players as unknown as { display_name: string; claim_status: string } | null;
-			const name = player
-				? player.claim_status === 'claimed'
-					? player.display_name
-					: abbreviateName(player.display_name)
-				: '?';
+			const name = player ? formatPlayerName(player.display_name, player.claim_status) : '?';
 			return { name, claimed: player?.claim_status === 'claimed' };
 		};
 
@@ -331,11 +327,7 @@ export async function loadClubPendingMatches(
 		const mine = (participants ?? []).filter((p) => p.match_id === m.id);
 		const toEntry = (p: (typeof mine)[number]) => {
 			const player = p.players as unknown as { display_name: string; claim_status: string } | null;
-			const name = player
-				? player.claim_status === 'claimed'
-					? player.display_name
-					: abbreviateName(player.display_name)
-				: '?';
+			const name = player ? formatPlayerName(player.display_name, player.claim_status) : '?';
 			return { name, claimed: player?.claim_status === 'claimed' };
 		};
 

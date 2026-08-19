@@ -16,6 +16,17 @@ export function abbreviateName(fullName: string): string {
 	return `${parts[0]} ${parts[1][0]}.`;
 }
 
+/**
+ * Zentrale Stelle für die Namensdarstellung im JS-Teil der App — jede Anzeige
+ * eines Spielernamens gegenüber Dritten geht hier durch (player-profile.ts,
+ * matchmaking.ts, club-members.ts). Spiegelt public_display_name() aus
+ * 0005_claimable_profiles.sql, das dieselbe Regel für die SQL-Seite
+ * (club_leaderboard-View) übernimmt.
+ */
+export function formatPlayerName(fullName: string, claimStatus: string): string {
+	return claimStatus === 'claimed' ? fullName : abbreviateName(fullName);
+}
+
 /** Kleinschreibung, Umlaute aufgelöst, Satzzeichen weg, Leerraum normalisiert. */
 export function normalizeName(value: string): string {
 	return value

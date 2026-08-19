@@ -9,7 +9,7 @@
 // Funktionen vertrauen der übergebenen clubId.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { abbreviateName } from '$lib/claim-match';
+import { formatPlayerName } from '$lib/claim-match';
 
 export type ClubMember = {
 	id: string;
@@ -42,7 +42,7 @@ export async function loadClubMembers(admin: SupabaseClient, clubId: string): Pr
 		.map((p) => ({
 			id: p.id,
 			handle: p.handle,
-			name: p.claim_status === 'claimed' ? p.display_name : abbreviateName(p.display_name),
+			name: formatPlayerName(p.display_name, p.claim_status),
 			claimed: p.claim_status === 'claimed',
 			rating: Number(p.rating),
 			matchesPlayed: p.matches_played
