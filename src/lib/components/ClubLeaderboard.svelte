@@ -81,6 +81,7 @@
 							</svg>
 							<span class="v" title="Sicherheit {Math.round(p.confidence * 100)} %">
 								{p.rating.toFixed(2)}
+								<span class="sr-only">, Sicherheit {Math.round(p.confidence * 100)} %</span>
 							</span>
 						</span>
 					</svelte:element>

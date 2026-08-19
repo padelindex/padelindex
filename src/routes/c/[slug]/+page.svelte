@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import ClubLeaderboard from '$lib/components/ClubLeaderboard.svelte';
+	import RatingLegend from '$lib/components/RatingLegend.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -46,6 +47,9 @@
 				Öffentliche Rangliste aus bestätigten Matches. Der Ring neben der Zahl zeigt, wie sicher der
 				Wert ist.
 			</p>
+			<div style="margin-top: 14px">
+				<RatingLegend />
+			</div>
 		</div>
 		<div style="margin-top: 36px">
 			<ClubLeaderboard board={data.board} unavailable={data.unavailable} />
