@@ -22,7 +22,9 @@ import {
 import {
 	addExistingPlayerToClub,
 	addUnclaimedMember,
+	approveClaim,
 	loadClubMembers,
+	rejectClaim,
 	removeMemberFromClub,
 	searchClaimablePlayersNotInClub
 } from '$lib/server/club-members';
@@ -158,6 +160,28 @@ export const actions: Actions = {
 		if (!playerId) return { memberError: 'Ungültige Anfrage.' };
 
 		const result = await removeMemberFromClub(supabaseAdmin(platform), club.id, playerId);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	approveClaim: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const playerId = String(form.get('playerId') ?? '');
+		if (!playerId || !locals.player) return { memberError: 'Ungültige Anfrage.' };
+
+		const result = await approveClaim(supabaseAdmin(platform), club.id, playerId, locals.player.id);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	rejectClaim: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const playerId = String(form.get('playerId') ?? '');
+		if (!playerId) return { memberError: 'Ungültige Anfrage.' };
+
+		const result = await rejectClaim(supabaseAdmin(platform), club.id, playerId);
 		if (!result.ok) return { memberError: result.message };
 		return { memberSaved: true };
 	},

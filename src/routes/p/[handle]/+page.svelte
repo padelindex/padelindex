@@ -138,6 +138,11 @@
 					<a class="btn btn-ghost-light" href="/challenges">Herausfordern</a>
 				{/if}
 			</div>
+		{:else if !data.viewer}
+			<p class="anon-cta">
+				Selbst noch nicht bei PadelIndex?
+				<a href="/#anmelden">Platz sichern</a>
+			</p>
 		{/if}
 
 		{#if data.history.length === 0}
@@ -344,6 +349,19 @@
 		flex-wrap: wrap;
 		gap: 10px;
 		margin-top: 20px;
+	}
+	.anon-cta {
+		margin-top: 20px;
+		font-size: 13.5px;
+		color: var(--muted-light);
+	}
+	.anon-cta a {
+		color: var(--court-deep, #0f6e5c);
+		font-weight: 600;
+		text-decoration: none;
+	}
+	.anon-cta a:hover {
+		text-decoration: underline;
 	}
 	.badge {
 		font-size: 12.5px;

@@ -214,6 +214,10 @@ section{position:relative}
 .factor p{font-size:14.5px}
 .factor .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--court-deep);display:block;margin-bottom:16px}
 
+.rechnen-cta{margin-top:44px;padding-top:28px;border-top:1px solid var(--line-light);font-size:15px;color:var(--muted-light);text-align:center}
+.rechnen-cta a{margin-left:8px;color:var(--court-deep);font-weight:600;text-decoration:none;white-space:nowrap}
+.rechnen-cta a:hover{text-decoration:underline}
+
 /* Vergleich */
 .cmp{width:100%;border-collapse:collapse;margin-top:48px;font-size:14.5px}
 .cmp th,.cmp td{text-align:left;padding:15px 14px;border-bottom:1px solid var(--line-light);vertical-align:top}
@@ -267,6 +271,18 @@ a.row:hover{background:rgba(15,110,92,.05)}
 .tier li{padding:7px 0 7px 20px;position:relative;border-bottom:1px solid var(--line-light)}
 .tier li:last-child{border-bottom:0}
 .tier li::before{content:"";position:absolute;left:0;top:14px;width:8px;height:2px;background:var(--court-deep)}
+
+.sec-break{padding:clamp(40px,6vh,64px) 0;background:var(--night-2);border-top:1px solid var(--line-dark);border-bottom:1px solid var(--line-dark)}
+.sec-break .wrap{max-width:640px}
+.sec-break .eyebrow{color:var(--court)}
+.sec-break p{margin-top:14px;font-size:15px;color:var(--muted-dark)}
+.sec-break p a{color:var(--court);text-decoration:underline}
+
+.trial-banner{margin-top:32px;padding:14px 20px;border-radius:100px;background:rgba(15,110,92,.08);border:1px solid rgba(15,110,92,.2);color:var(--court-deep);font-size:14px;font-weight:600;text-align:center}
+
+.demo-block{margin-top:56px;padding-top:40px;border-top:1px solid var(--line-light)}
+.demo-block h3{font-size:24px}
+.demo-block > .muted{margin-top:10px;margin-bottom:20px}
 
 /* CTA */
 .cta{position:relative;padding:clamp(80px,13vh,150px) 0;overflow:hidden;text-align:center}

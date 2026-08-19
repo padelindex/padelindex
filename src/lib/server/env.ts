@@ -54,3 +54,17 @@ export function requireServiceRole(platform?: App.Platform): AppEnv {
 	}
 	return env;
 }
+
+/**
+ * Schaltet die "12 Monate kostenlos"-Einführungsaktion für Vereine ein/aus
+ * (Website-Audit Block 2, Entscheidung vom 19.08.: Flag statt Preisliste).
+ * Kein Preis behauptet, solange keiner feststeht — einfacher An/Aus-Schalter
+ * über wrangler.toml [vars]/.env, keine neue Abhängigkeit.
+ */
+export function readTrialOfferEnabled(platform?: App.Platform): boolean {
+	const value = first(
+		fromPlatform(platform, 'PUBLIC_TRIAL_OFFER_ENABLED'),
+		asString(publicEnv.PUBLIC_TRIAL_OFFER_ENABLED)
+	);
+	return value === 'true';
+}

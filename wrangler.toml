@@ -14,6 +14,9 @@ binding = "ASSETS"
 [vars]
 PUBLIC_SUPABASE_URL = "https://tcpfkfsxsrbwsctepjni.supabase.co"
 PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_VSHMoU9deBOLE4UOJjGafg_0Whiip7l"
+# "12 Monate kostenlos"-Aktion für Vereine (Website-Audit Block 2) — auf
+# "false" oder Zeile entfernen, sobald echte Preise feststehen.
+PUBLIC_TRIAL_OFFER_ENABLED = "true"
 
 # 48h-Bestätigung: später aktivieren, sobald der Match-Flow steht.
 # [triggers]

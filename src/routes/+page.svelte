@@ -7,6 +7,7 @@
 	import RatingJourney from '$lib/components/landing/RatingJourney.svelte';
 	import TokenFlow from '$lib/components/landing/TokenFlow.svelte';
 	import ClubShowcase from '$lib/components/landing/ClubShowcase.svelte';
+	import ClubDemoForm from '$lib/components/landing/ClubDemoForm.svelte';
 	import SignupForm from '$lib/components/landing/SignupForm.svelte';
 	import type { PageData } from './$types';
 
@@ -224,6 +225,11 @@
 				</p>
 			</article>
 		</div>
+
+		<p class="rechnen-cta" use:reveal={{ delay: 0.18 }}>
+			Das war nur die Simulation — für dein echtes Level braucht es ein echtes Match.
+			<a href="#anmelden">Platz sichern →</a>
+		</p>
 	</div>
 </section>
 
@@ -339,6 +345,22 @@
 	</div>
 </section>
 
+<!-- ============================ BRUCH ============================ -->
+<!-- Bewusster Wechsel der Zielgruppe: bis hierhin ging es um dich als
+     Spieler:in, ab hier um deinen Verein. Eigener, andersfarbiger
+     Abschnitt statt eines nahtlosen Übergangs, damit das nicht untergeht
+     (Website-Audit Block 2: "visueller Bruch"). -->
+<section class="sec-break">
+	<div class="wrap">
+		<span class="eyebrow" use:reveal>Wechsel der Perspektive</span>
+		<p use:reveal={{ delay: 0.05 }}>
+			Ab hier geht es nicht mehr um dein eigenes Level, sondern um deinen Verein — falls du gerade
+			nur als Spieler:in hier bist, ist <a href="#anmelden">der Platz auf der Warteliste</a> weiter
+			oben schon alles, was du brauchst.
+		</p>
+	</div>
+</section>
+
 <!-- ============================ VEREINE ============================ -->
 <section class="sec sec-light" id="vereine">
 	<div class="wrap">
@@ -355,6 +377,12 @@
 		<div use:reveal>
 			<ClubShowcase board={data.board} />
 		</div>
+
+		{#if data.trialOfferEnabled}
+			<p class="trial-banner" use:reveal>
+				Gründungsvereine spielen die ersten 12 Monate kostenlos — unabhängig vom Paket.
+			</p>
+		{/if}
 
 		<div class="tiers">
 			<div class="tier" use:reveal>
@@ -386,6 +414,12 @@
 					<li>Hinweis abschaltbar</li>
 				</ul>
 			</div>
+		</div>
+
+		<div class="demo-block" use:reveal>
+			<h3>Lust, es auszuprobieren?</h3>
+			<p class="muted">Kurz Verein und Kontakt hinterlassen, wir zeigen es euch.</p>
+			<ClubDemoForm />
 		</div>
 	</div>
 </section>

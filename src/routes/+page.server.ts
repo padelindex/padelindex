@@ -9,6 +9,7 @@
 
 import type { PageServerLoad } from './$types';
 import { getClubLeaderboard } from '$lib/server/leaderboard';
+import { readTrialOfferEnabled } from '$lib/server/env';
 import type { LeaderboardResponse } from '$lib/leaderboard';
 
 const PILOT_CLUB = 'stc-oberland';
@@ -26,5 +27,5 @@ export const load: PageServerLoad = async ({ platform, setHeaders }) => {
 	// Supabase und macht die Startseite schneller.
 	setHeaders({ 'cache-control': 'public, max-age=60, s-maxage=300' });
 
-	return { board };
+	return { board, trialOfferEnabled: readTrialOfferEnabled(platform) };
 };

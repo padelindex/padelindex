@@ -81,15 +81,25 @@
 
 		<h3>5. Warteliste</h3>
 		<p>
-			Wenn du dich auf padelindex.de in die Warteliste einträgst, speichern wir ausschließlich die
-			von dir angegebene E-Mail-Adresse, um dich über den Start des Pilotbetriebs zu informieren.
-			Rechtsgrundlage ist deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Du kannst diese
-			Einwilligung jederzeit formlos per E-Mail an
+			Wenn du dich auf padelindex.de in die Warteliste einträgst, speichern wir deine E-Mail-Adresse
+			und, falls angegeben, den Namen deines Vereins, um dich über den Start des Pilotbetriebs zu
+			informieren und deinen Verein direkt anzufragen. Der Eintrag wird erst aktiv, wenn du den
+			Bestätigungslink in der Mail anklickst (Double-Opt-in) — bis dahin ist die Adresse nur
+			vorgemerkt. Rechtsgrundlage ist deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Du kannst
+			diese Einwilligung jederzeit formlos per E-Mail an
 			<a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a>
 			widerrufen; wir löschen den Eintrag dann umgehend.
 		</p>
 
-		<h3>6. Öffentliche Spielerdaten und Rangliste</h3>
+		<h3>6. Demo-Anfragen von Vereinen</h3>
+		<p>
+			Wenn ein Verein über das Formular im Vereins-Bereich eine Demo anfragt, speichern wir
+			Vereinsname, Ansprechperson, E-Mail-Adresse und eine optionale Nachricht, um die Anfrage
+			zu bearbeiten. Rechtsgrundlage ist die Anbahnung eines Vertragsverhältnisses
+			(Art. 6 Abs. 1 lit. b DSGVO).
+		</p>
+
+		<h3>7. Öffentliche Spielerdaten und Rangliste</h3>
 		<p>
 			Kern von PadelIndex ist eine öffentlich einsehbare Rangliste je Verein: Name (oder bei noch
 			nicht beanspruchten Profilen abgekürzt, z. B. „Robin K.“), Level-Wert, Anzahl Matches und
@@ -116,14 +126,14 @@
 			-->
 		</p>
 
-		<h3>7. Cookies und lokale Speicherung</h3>
+		<h3>8. Cookies und lokale Speicherung</h3>
 		<p>
 			Wir setzen ausschließlich technisch notwendige Cookies ein, um dich nach der Anmeldung
 			eingeloggt zu halten (Session-Cookie von Supabase Auth). Es gibt aktuell keine
 			Analyse-, Marketing- oder Tracking-Cookies und keine Werbenetzwerke auf dieser Seite.
 		</p>
 
-		<h3>8. Speicherdauer</h3>
+		<h3>9. Speicherdauer</h3>
 		<p>
 			Konto- und Ranglisten-Daten speichern wir, solange dein Konto bzw. Profil besteht.
 			Warteliste-Einträge speichern wir bis zum Pilotstart oder bis zu deinem Widerruf. Nach einer
@@ -132,7 +142,7 @@
 			erfolgt im Rahmen der technisch üblichen Backup-Zyklen.
 		</p>
 
-		<h3>9. Deine Rechte</h3>
+		<h3>10. Deine Rechte</h3>
 		<p>Du hast jederzeit das Recht auf:</p>
 		<p>
 			Auskunft über die zu dir gespeicherten Daten (Art. 15 DSGVO), Berichtigung unrichtiger Daten
@@ -148,7 +158,7 @@
 			uns zuständig ist das Bayerische Landesamt für Datenschutzaufsicht (BayLDA).
 		</p>
 
-		<h3>10. Sicherheit</h3>
+		<h3>11. Sicherheit</h3>
 		<p>
 			Die Übertragung zwischen deinem Browser und unseren Servern ist durchgehend TLS-verschlüsselt
 			(https). Zugriff auf Kontodaten und nicht-öffentliche Profildaten ist über Zugriffsregeln
