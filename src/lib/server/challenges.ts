@@ -25,9 +25,13 @@ import {
 	isExpired,
 	type ChallengeStatus
 } from '$lib/challenge-rules';
-import { notify } from './notification-store';
+import { notify, resolvePlayerEmailAddress } from './notification-store';
 import { sendEmail, type EmailEnv } from './email';
-import { challengeReceivedEmail } from '$lib/notifications';
+import {
+	challengeAcceptedEmail,
+	challengeDeclinedEmail,
+	challengeReceivedEmail
+} from '$lib/notifications';
 import { loadPlayerNames } from './play-requests';
 
 export type RankedPlayer = {
@@ -415,7 +419,8 @@ export async function acceptChallenge(
 	challengeId: string,
 	playerId: string,
 	accepterName: string,
-	selectedSlotIndex: number
+	selectedSlotIndex: number,
+	notifyCtx?: { emailEnv: EmailEnv | null; baseUrl: string }
 ): Promise<ActionResult> {
 	const loaded = await loadChallengeForTransition(admin, challengeId, playerId, 'challenged', 'accepted');
 	if (!loaded.ok) return loaded;
@@ -436,6 +441,19 @@ export async function acceptChallenge(
 		link: '/challenges'
 	});
 
+	if (notifyCtx) {
+		await sendChallengeAnswerEmail(admin, loaded.row.challenger_id, notifyCtx, (address) => {
+			const { subject, html } = challengeAcceptedEmail({
+				accepterName,
+				date: selected.date,
+				startTime: selected.startTime,
+				endTime: selected.endTime,
+				url: `${notifyCtx.baseUrl}/challenges`
+			});
+			return { to: address, subject, html };
+		});
+	}
+
 	return { ok: true };
 }
 
@@ -443,7 +461,8 @@ export async function declineChallenge(
 	admin: SupabaseClient,
 	challengeId: string,
 	playerId: string,
-	declinerName: string
+	declinerName: string,
+	notifyCtx?: { emailEnv: EmailEnv | null; baseUrl: string }
 ): Promise<ActionResult> {
 	const loaded = await loadChallengeForTransition(admin, challengeId, playerId, 'challenged', 'declined');
 	if (!loaded.ok) return loaded;
@@ -459,7 +478,33 @@ export async function declineChallenge(
 		link: '/challenges'
 	});
 
+	if (notifyCtx) {
+		await sendChallengeAnswerEmail(admin, loaded.row.challenger_id, notifyCtx, (address) => {
+			const { subject, html } = challengeDeclinedEmail({
+				declinerName,
+				url: `${notifyCtx.baseUrl}/challenges`
+			});
+			return { to: address, subject, html };
+		});
+	}
+
 	return { ok: true };
+}
+
+/** Gemeinsamer Best-effort-Versand für accept/decline — löst die Adresse auf, ruft die übergebene Template-Funktion, schickt ab. */
+async function sendChallengeAnswerEmail(
+	admin: SupabaseClient,
+	playerId: string,
+	notifyCtx: { emailEnv: EmailEnv | null; baseUrl: string },
+	buildMessage: (address: string) => { to: string; subject: string; html: string }
+): Promise<void> {
+	try {
+		const address = await resolvePlayerEmailAddress(admin, playerId);
+		if (!address) return;
+		await sendEmail(notifyCtx.emailEnv, buildMessage(address));
+	} catch (e) {
+		console.error('E-Mail zur Challenge-Antwort fehlgeschlagen', e);
+	}
 }
 
 export async function cancelChallenge(
@@ -623,15 +668,7 @@ async function notifyChallengeReceived(
 	if (!input.baseUrl) return;
 
 	try {
-		const { data: player } = await admin
-			.from('players')
-			.select('user_id')
-			.eq('id', input.targetId)
-			.maybeSingle();
-		if (!player?.user_id) return;
-
-		const { data: userRes } = await admin.auth.admin.getUserById(player.user_id);
-		const address = userRes?.user?.email;
+		const address = await resolvePlayerEmailAddress(admin, input.targetId);
 		if (!address) return;
 
 		const { subject, html } = challengeReceivedEmail({

@@ -81,7 +81,7 @@ export const actions: Actions = {
 		return { challengeSent: true };
 	},
 
-	accept: async ({ request, locals, platform }) => {
+	accept: async ({ request, locals, platform, url }) => {
 		if (!locals.player) return { error: 'Nicht angemeldet.' };
 		const form = await request.formData();
 		const id = String(form.get('challengeId') ?? '');
@@ -93,13 +93,14 @@ export const actions: Actions = {
 			id,
 			locals.player.id,
 			locals.player.displayName,
-			Number.isFinite(slotIndex) ? slotIndex : 0
+			Number.isFinite(slotIndex) ? slotIndex : 0,
+			{ emailEnv: readEmailEnv(platform), baseUrl: url.origin }
 		);
 		if (!result.ok) return { error: result.message };
 		return { done: true };
 	},
 
-	decline: async ({ request, locals, platform }) => {
+	decline: async ({ request, locals, platform, url }) => {
 		if (!locals.player) return { error: 'Nicht angemeldet.' };
 		const form = await request.formData();
 		const id = String(form.get('challengeId') ?? '');
@@ -109,7 +110,8 @@ export const actions: Actions = {
 			supabaseAdmin(platform),
 			id,
 			locals.player.id,
-			locals.player.displayName
+			locals.player.displayName,
+			{ emailEnv: readEmailEnv(platform), baseUrl: url.origin }
 		);
 		if (!result.ok) return { error: result.message };
 		return { done: true };

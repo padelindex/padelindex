@@ -74,6 +74,44 @@
 					/>
 					<span class="muted" style="font-size: 13px">Für Leaderboard & Embed-Widget</span>
 				</div>
+
+				<label for="club-lat">Standort (für Entfernung im Matchmaking)</label>
+				<div class="coord-row">
+					<input
+						id="club-lat"
+						name="latitude"
+						type="number"
+						step="any"
+						min="-90"
+						max="90"
+						placeholder="Breitengrad"
+						value={data.club.latitude ?? ''}
+					/>
+					<input
+						id="club-lng"
+						name="longitude"
+						type="number"
+						step="any"
+						min="-180"
+						max="180"
+						placeholder="Längengrad"
+						value={data.club.longitude ?? ''}
+					/>
+				</div>
+				<p class="muted coord-hint">
+					<a
+						href="https://www.google.com/maps/search/{encodeURIComponent(data.club.name)}"
+						target="_blank"
+						rel="noopener"
+					>
+						Auf Google Maps suchen
+					</a>
+					— dort mit Rechtsklick auf den Platz klicken, die Koordinaten kopieren
+					(„48.1234, 11.5678") und hier auf beide Felder aufteilen. Leer lassen, um
+					den Standort wieder zu entfernen; ohne Koordinaten fällt das Matchmaking bei
+					der Entfernung auf „gleicher Verein" zurück.
+				</p>
+
 				<button class="btn btn-primary" type="submit" disabled={settingsBusy}>
 					{settingsBusy ? 'Wird gespeichert…' : 'Speichern'}
 				</button>
@@ -527,6 +565,23 @@
 		height: 40px;
 		padding: 4px;
 		border-radius: 10px;
+	}
+
+	.coord-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+		margin-top: 12px;
+	}
+
+	.coord-hint {
+		font-size: 12.5px;
+		margin: 8px 0 0;
+		line-height: 1.5;
+	}
+
+	.coord-hint a {
+		color: var(--court-deep, #0f6e5c);
 	}
 
 	.add-mode-toggle {
