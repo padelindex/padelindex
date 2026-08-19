@@ -3,6 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { createBrowserSupabase, readMagicLinkTokensFromHash } from '$lib/supabase-browser';
+	import { abbreviateName } from '$lib/claim-match';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -469,6 +470,20 @@
 						placeholder="ohne Angabe"
 					/>
 
+					{#if data.player.claimStatus === 'claimed'}
+						<label class="field-label full-name-toggle" for="showFullName">
+							<input
+								id="showFullName"
+								name="showFullName"
+								type="checkbox"
+								checked={data.player.showFullName}
+							/>
+							Meinen vollen Namen öffentlich zeigen (sonst z. B. „{abbreviateName(
+								data.player.displayName
+							)}")
+						</label>
+					{/if}
+
 					<button class="btn btn-ghost-light" type="submit" disabled={profileBusy}>
 						{profileBusy ? 'Wird gespeichert…' : 'Speichern'}
 					</button>
@@ -779,6 +794,22 @@
 	}
 	.field-label:first-of-type {
 		margin-top: 0;
+	}
+
+	.full-name-toggle {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-weight: 400;
+		font-size: 13px;
+		color: var(--muted-dark);
+		cursor: pointer;
+	}
+
+	.full-name-toggle input {
+		width: auto;
+		margin: 0;
+		flex-shrink: 0;
 	}
 
 	.pending-row {

@@ -17,7 +17,7 @@
 // nicht als offene Tabelle im Client.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { abbreviateName } from '$lib/claim-match';
+import { formatPlayerName } from '$lib/claim-match';
 import { weekdayOfDate, type AvailabilityMatchType } from '$lib/availability';
 import {
 	MIN_DISPLAY_SCORE,
@@ -78,6 +78,7 @@ type RawPlayer = {
 	handle: string;
 	display_name: string;
 	claim_status: string;
+	show_full_name: boolean;
 	rating: number | string;
 	matches_played: number;
 	last_match_at: string | null;
@@ -180,7 +181,7 @@ export async function getMatchSuggestionsForPlayer(
 			admin
 				.from('players')
 				.select(
-					'id, handle, display_name, claim_status, rating, matches_played, last_match_at, city, playing_hand, preferred_side, gender, self_assessed_level'
+					'id, handle, display_name, claim_status, show_full_name, rating, matches_played, last_match_at, city, playing_hand, preferred_side, gender, self_assessed_level'
 				)
 				.in('id', candidateIds)
 				.eq('profile_public', true),
@@ -197,7 +198,7 @@ export async function getMatchSuggestionsForPlayer(
 			admin
 				.from('players')
 				.select(
-					'id, handle, display_name, claim_status, rating, matches_played, last_match_at, city, playing_hand, preferred_side, gender, self_assessed_level'
+					'id, handle, display_name, claim_status, show_full_name, rating, matches_played, last_match_at, city, playing_hand, preferred_side, gender, self_assessed_level'
 				)
 				.eq('id', playerId)
 				.maybeSingle()
@@ -288,7 +289,7 @@ export async function getMatchSuggestionsForPlayer(
 		suggestions.push({
 			playerId: row.id,
 			handle: row.handle,
-			name: row.claim_status === 'claimed' ? row.display_name : abbreviateName(row.display_name),
+			name: formatPlayerName(row.display_name, row.claim_status, row.show_full_name),
 			rating,
 			matchesPlayed: row.matches_played,
 			clubName: membership?.clubs?.name ?? null,

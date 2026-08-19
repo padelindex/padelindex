@@ -99,3 +99,29 @@ export async function markAllRead(admin: SupabaseClient, playerId: string): Prom
 		.eq('player_id', playerId)
 		.is('read_at', null);
 }
+
+/**
+ * Login-E-Mail eines Spielers, falls vorhanden — für Benachrichtigungen
+ * per Mail (play-requests.ts, challenges.ts). null für unbeanspruchte
+ * Profile (kein user_id, also kein Postfach) oder wenn die Auth-Zeile
+ * aus irgendeinem Grund keine E-Mail trägt.
+ */
+export async function resolvePlayerEmailAddress(
+	admin: SupabaseClient,
+	playerId: string
+): Promise<string | null> {
+	try {
+		const { data: player } = await admin
+			.from('players')
+			.select('user_id')
+			.eq('id', playerId)
+			.maybeSingle();
+		if (!player?.user_id) return null;
+
+		const { data: userRes } = await admin.auth.admin.getUserById(player.user_id);
+		return userRes?.user?.email ?? null;
+	} catch (e) {
+		console.error('E-Mail-Adresse konnte nicht aufgelöst werden', e);
+		return null;
+	}
+}

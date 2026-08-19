@@ -9,6 +9,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
+import { readEmailEnv } from '$lib/server/email';
 import {
 	acceptPlayRequest,
 	cancelPlayRequest,
@@ -31,7 +32,7 @@ export const load: PageServerLoad = async ({ locals, url, platform }) => {
 };
 
 export const actions: Actions = {
-	accept: async ({ request, locals, platform }) => {
+	accept: async ({ request, locals, platform, url }) => {
 		if (!locals.player) return { error: 'Nicht angemeldet.' };
 		const form = await request.formData();
 		const id = String(form.get('requestId') ?? '');
@@ -41,13 +42,14 @@ export const actions: Actions = {
 			supabaseAdmin(platform),
 			id,
 			locals.player.id,
-			locals.player.displayName
+			locals.player.displayName,
+			{ emailEnv: readEmailEnv(platform), baseUrl: url.origin }
 		);
 		if (!result.ok) return { error: result.message };
 		return { done: true };
 	},
 
-	decline: async ({ request, locals, platform }) => {
+	decline: async ({ request, locals, platform, url }) => {
 		if (!locals.player) return { error: 'Nicht angemeldet.' };
 		const form = await request.formData();
 		const id = String(form.get('requestId') ?? '');
@@ -57,7 +59,8 @@ export const actions: Actions = {
 			supabaseAdmin(platform),
 			id,
 			locals.player.id,
-			locals.player.displayName
+			locals.player.displayName,
+			{ emailEnv: readEmailEnv(platform), baseUrl: url.origin }
 		);
 		if (!result.ok) return { error: result.message };
 		return { done: true };

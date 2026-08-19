@@ -88,7 +88,13 @@
 			{/each}
 		</ol>
 		<div class="lb-foot">
-			<span>{board.updated_at ? `Stand ${updatedLabel(board.updated_at)}` : ''}</span>
+			{#if board.dataOrigin === 'league_import'}
+				<span class="src" title="Noch keine über PadelIndex gemeldeten Matches — die Werte stammen aus importierten Liga-Ergebnissen.">
+					Aus Ligaergebnissen importiert
+				</span>
+			{:else}
+				<span>{board.updated_at ? `Stand ${updatedLabel(board.updated_at)}` : ''}</span>
+			{/if}
 			<span>PadelIndex</span>
 		</div>
 	</div>

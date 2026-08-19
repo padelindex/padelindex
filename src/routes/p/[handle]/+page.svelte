@@ -221,6 +221,10 @@
 				</ol>
 			</div>
 		{/if}
+
+		<p class="delist-link">
+			<a href="/profil-entfernen?handle={data.profile.handle}">Ich möchte hier nicht gelistet sein</a>
+		</p>
 	</div>
 </section>
 
@@ -473,5 +477,15 @@
 		flex-shrink: 0;
 		font-size: 12px;
 		color: var(--muted-light);
+	}
+
+	.delist-link {
+		margin-top: 28px;
+		text-align: center;
+		font-size: 12.5px;
+	}
+	.delist-link a {
+		color: var(--muted-light);
+		text-decoration: underline;
 	}
 </style>

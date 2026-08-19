@@ -8,5 +8,6 @@ Disallow: /anmelden
 Disallow: /auth/
 Disallow: /embed/
 Disallow: /api/
+Disallow: /profil-entfernen
 
 Sitemap: https://padelindex.de/sitemap.xml

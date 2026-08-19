@@ -29,18 +29,23 @@ import {
 import { cancelPendingMatch, loadClubPendingMatches } from '$lib/server/matches';
 import { updateClubSettings } from '$lib/server/club-settings';
 
-async function requireClubAdmin(
-	locals: App.Locals,
-	slug: string,
-	url: URL
-): Promise<{ id: string; slug: string; name: string; accent: string | null }> {
+type AdminClub = {
+	id: string;
+	slug: string;
+	name: string;
+	accent: string | null;
+	latitude: number | null;
+	longitude: number | null;
+};
+
+async function requireClubAdmin(locals: App.Locals, slug: string, url: URL): Promise<AdminClub> {
 	if (!locals.player || !locals.supabase) {
 		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
 	}
 
 	const { data: club } = await locals.supabase
 		.from('clubs')
-		.select('id, slug, name, accent')
+		.select('id, slug, name, accent, latitude, longitude')
 		.eq('slug', slug)
 		.maybeSingle();
 	if (!club) throw error(404, 'Verein nicht gefunden');
@@ -48,7 +53,13 @@ async function requireClubAdmin(
 	const admin = await isClubAdmin(locals.supabase, club.id, locals.player.id);
 	if (!admin) throw error(403, 'Kein Admin-Zugriff auf diesen Verein.');
 
-	return club;
+	// numeric-Spalten kommen über PostgREST als String — hier einmalig
+	// koerziert, damit alle Aufrufer mit echten number|null arbeiten.
+	return {
+		...club,
+		latitude: club.latitude === null ? null : Number(club.latitude),
+		longitude: club.longitude === null ? null : Number(club.longitude)
+	};
 }
 
 function readRewardForm(form: FormData): RewardInput {
@@ -167,8 +178,15 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '');
 		const accent = String(form.get('accent') ?? '');
+		const latitudeRaw = String(form.get('latitude') ?? '').trim();
+		const longitudeRaw = String(form.get('longitude') ?? '').trim();
 
-		const result = await updateClubSettings(supabaseAdmin(platform), club.id, { name, accent });
+		const result = await updateClubSettings(supabaseAdmin(platform), club.id, {
+			name,
+			accent,
+			latitude: latitudeRaw === '' ? null : Number(latitudeRaw),
+			longitude: longitudeRaw === '' ? null : Number(longitudeRaw)
+		});
 		if (!result.ok) return { settingsError: result.message };
 		return { settingsSaved: true };
 	}

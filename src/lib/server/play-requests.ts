@@ -9,16 +9,16 @@
 // angenommen werden kann.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { abbreviateName } from '$lib/claim-match';
+import { formatPlayerName } from '$lib/claim-match';
 import type { AvailabilityMatchType } from '$lib/availability';
 import {
 	canTransitionPlayRequest,
 	isExpired,
 	type PlayRequestStatus
 } from '$lib/challenge-rules';
-import { notify } from './notification-store';
+import { notify, resolvePlayerEmailAddress } from './notification-store';
 import { sendEmail, type EmailEnv } from './email';
-import { playRequestEmail } from '$lib/notifications';
+import { playRequestAcceptedEmail, playRequestDeclinedEmail, playRequestEmail } from '$lib/notifications';
 
 export type PlayRequest = {
 	id: string;
@@ -124,13 +124,13 @@ export async function loadPlayerNames(
 
 	const { data } = await admin
 		.from('players')
-		.select('id, handle, display_name, claim_status')
+		.select('id, handle, display_name, claim_status, show_full_name')
 		.in('id', ids);
 
 	for (const row of data ?? []) {
 		map.set(row.id, {
 			handle: row.handle,
-			name: row.claim_status === 'claimed' ? row.display_name : abbreviateName(row.display_name)
+			name: formatPlayerName(row.display_name, row.claim_status, row.show_full_name)
 		});
 	}
 	return map;
@@ -303,7 +303,8 @@ export async function acceptPlayRequest(
 	admin: SupabaseClient,
 	requestId: string,
 	playerId: string,
-	receiverName: string
+	receiverName: string,
+	notifyCtx?: { emailEnv: EmailEnv | null; baseUrl: string }
 ): Promise<ActionResult> {
 	const loaded = await loadForTransition(admin, requestId, playerId, 'receiver', 'accepted');
 	if (!loaded.ok) return loaded;
@@ -320,6 +321,19 @@ export async function acceptPlayRequest(
 		link: '/anfragen'
 	});
 
+	if (notifyCtx) {
+		await sendPlayRequestAnswerEmail(admin, loaded.row.sender_id, notifyCtx, (address) => {
+			const { subject, html } = playRequestAcceptedEmail({
+				responderName: receiverName,
+				date: loaded.row.proposed_date,
+				startTime: trimTime(loaded.row.proposed_start),
+				endTime: trimTime(loaded.row.proposed_end),
+				url: `${notifyCtx.baseUrl}/anfragen`
+			});
+			return { to: address, subject, html };
+		});
+	}
+
 	return { ok: true };
 }
 
@@ -327,7 +341,8 @@ export async function declinePlayRequest(
 	admin: SupabaseClient,
 	requestId: string,
 	playerId: string,
-	receiverName: string
+	receiverName: string,
+	notifyCtx?: { emailEnv: EmailEnv | null; baseUrl: string }
 ): Promise<ActionResult> {
 	const loaded = await loadForTransition(admin, requestId, playerId, 'receiver', 'declined');
 	if (!loaded.ok) return loaded;
@@ -343,7 +358,33 @@ export async function declinePlayRequest(
 		link: '/anfragen'
 	});
 
+	if (notifyCtx) {
+		await sendPlayRequestAnswerEmail(admin, loaded.row.sender_id, notifyCtx, (address) => {
+			const { subject, html } = playRequestDeclinedEmail({
+				responderName: receiverName,
+				url: `${notifyCtx.baseUrl}/spieler-finden`
+			});
+			return { to: address, subject, html };
+		});
+	}
+
 	return { ok: true };
+}
+
+/** Gemeinsamer Best-effort-Versand für accept/decline — löst die Adresse auf, ruft die übergebene Template-Funktion, schickt ab. */
+async function sendPlayRequestAnswerEmail(
+	admin: SupabaseClient,
+	playerId: string,
+	notifyCtx: { emailEnv: EmailEnv | null; baseUrl: string },
+	buildMessage: (address: string) => { to: string; subject: string; html: string }
+): Promise<void> {
+	try {
+		const address = await resolvePlayerEmailAddress(admin, playerId);
+		if (!address) return;
+		await sendEmail(notifyCtx.emailEnv, buildMessage(address));
+	} catch (e) {
+		console.error('E-Mail zur Spielanfrage-Antwort fehlgeschlagen', e);
+	}
 }
 
 export async function cancelPlayRequest(
@@ -389,15 +430,7 @@ async function notifyPlayRequest(
 	if (!input.email) return;
 
 	try {
-		const { data: player } = await admin
-			.from('players')
-			.select('user_id')
-			.eq('id', input.playerId)
-			.maybeSingle();
-		if (!player?.user_id) return;
-
-		const { data: userRes } = await admin.auth.admin.getUserById(player.user_id);
-		const address = userRes?.user?.email;
+		const address = await resolvePlayerEmailAddress(admin, input.playerId);
 		if (!address) return;
 
 		const { subject, html } = playRequestEmail({

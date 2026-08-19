@@ -9,7 +9,7 @@
 // Funktionen vertrauen der übergebenen clubId.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { abbreviateName } from '$lib/claim-match';
+import { formatPlayerName } from '$lib/claim-match';
 
 export type ClubMember = {
 	id: string;
@@ -25,6 +25,7 @@ type MemberRow = {
 	handle: string;
 	display_name: string;
 	claim_status: string;
+	show_full_name: boolean;
 	rating: number;
 	matches_played: number;
 };
@@ -32,7 +33,7 @@ type MemberRow = {
 export async function loadClubMembers(admin: SupabaseClient, clubId: string): Promise<ClubMember[]> {
 	const { data, error } = await admin
 		.from('club_memberships')
-		.select('players!inner(id, handle, display_name, claim_status, rating, matches_played)')
+		.select('players!inner(id, handle, display_name, claim_status, show_full_name, rating, matches_played)')
 		.eq('club_id', clubId);
 
 	if (error || !data) return [];
@@ -42,7 +43,7 @@ export async function loadClubMembers(admin: SupabaseClient, clubId: string): Pr
 		.map((p) => ({
 			id: p.id,
 			handle: p.handle,
-			name: p.claim_status === 'claimed' ? p.display_name : abbreviateName(p.display_name),
+			name: formatPlayerName(p.display_name, p.claim_status, p.show_full_name),
 			claimed: p.claim_status === 'claimed',
 			rating: Number(p.rating),
 			matchesPlayed: p.matches_played

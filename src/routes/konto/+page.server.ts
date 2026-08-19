@@ -132,10 +132,11 @@ export const actions: Actions = {
 	},
 
 	// Läuft bewusst über den Session-Client, nicht service_role: die
-	// Spalten sind per column-level GRANT (0010_player_profile.sql) und
-	// players_self_update-RLS (0005) exakt auf diese fünf Selbstauskunft-
-	// Felder der eigenen Zeile begrenzt — kein zusätzlicher Autorisierungs-
-	// Code hier nötig, die Datenbank erzwingt es bereits.
+	// Spalten sind per column-level GRANT (0010_player_profile.sql,
+	// 0014_block0_privacy.sql für show_full_name) und players_self_update-RLS
+	// (0005) exakt auf diese Selbstauskunft-Felder der eigenen Zeile begrenzt
+	// — kein zusätzlicher Autorisierungs-Code hier nötig, die Datenbank
+	// erzwingt es bereits.
 	updateProfile: async ({ request, locals }) => {
 		if (!locals.supabase || !locals.player) {
 			return { profileError: 'Nicht angemeldet.' };
@@ -147,6 +148,7 @@ export const actions: Actions = {
 		const preferredSide = String(form.get('preferredSide') ?? '');
 		const gender = String(form.get('gender') ?? '');
 		const selfAssessedLevelRaw = String(form.get('selfAssessedLevel') ?? '');
+		const showFullName = form.get('showFullName') === 'on';
 
 		const toEnum = (v: string, allowed: string[]) => (allowed.includes(v) ? v : null);
 		const selfAssessedLevel =
@@ -159,7 +161,8 @@ export const actions: Actions = {
 				playing_hand: toEnum(playingHand, ['rechts', 'links']),
 				preferred_side: toEnum(preferredSide, ['rechts', 'links']),
 				gender: toEnum(gender, ['maennlich', 'weiblich', 'divers']),
-				self_assessed_level: selfAssessedLevel
+				self_assessed_level: selfAssessedLevel,
+				show_full_name: showFullName
 			})
 			.eq('id', locals.player.id);
 

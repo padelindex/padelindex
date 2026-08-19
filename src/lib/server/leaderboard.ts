@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { supabaseAnon } from './supabase';
+import { supabaseAnon, supabaseAdmin } from './supabase';
 import {
 	CLUB_LEADERBOARD_PAGE_SIZE,
 	clampLeaderboardLimit,
@@ -57,13 +57,42 @@ function latestMatchAt(rows: LeaderboardRow[]): string | null {
 async function findClub(sb: ReturnType<typeof supabaseAnon>, slug: string) {
 	const { data: club, error: clubErr } = await sb!
 		.from('clubs')
-		.select('name, slug, license_tier, accent')
+		.select('id, name, slug, license_tier, accent')
 		.eq('slug', slug)
 		.maybeSingle();
 
 	if (clubErr) throw error(500, clubErr.message);
 	if (!club) throw error(404, 'Verein nicht gefunden');
 	return club;
+}
+
+/**
+ * 'league_import' nur, solange AUSNAHMSLOS jedes bestätigte Match dieses
+ * Vereins aus einem Import stammt (matches.source, siehe 0001_schema.sql) —
+ * sobald ein einziges Match über die App gemeldet und bestätigt wurde, ist
+ * die Rangliste nicht mehr reine Altdaten und der Hinweis verschwindet.
+ * anon darf matches.source nicht lesen (RLS: nur Teilnehmer), deshalb hier
+ * service_role — best-effort: ein Fehler darf die öffentliche Seite nicht
+ * mitreißen, im Zweifel lieber kein Badge als ein blockierendes Ranking.
+ */
+async function resolveDataOrigin(
+	platform: App.Platform | undefined,
+	clubId: string
+): Promise<'live' | 'league_import'> {
+	try {
+		const admin = supabaseAdmin(platform);
+		const { data, error: err } = await admin
+			.from('matches')
+			.select('source')
+			.eq('club_id', clubId)
+			.eq('status', 'confirmed')
+			.limit(1000);
+		if (err || !data || data.length === 0) return 'live';
+		const allImported = data.every((m) => m.source === 'club_league' || m.source === 'import');
+		return allImported ? 'league_import' : 'live';
+	} catch {
+		return 'live';
+	}
 }
 
 /** Fürs Widget/Embed: kurze Liste, Länge über die license_tier des Vereins gedeckelt. */
@@ -92,10 +121,12 @@ export async function getClubLeaderboard(
 	const rows = (data ?? []) as LeaderboardRow[];
 	const players = rows.map((row, i) => toPlayer(row, i + 1));
 	const updatedAt = latestMatchAt(rows) ?? new Date().toISOString();
+	const dataOrigin = players.length ? await resolveDataOrigin(platform, club.id) : 'live';
 
 	return {
 		club: { name: club.name, slug: club.slug, accent: club.accent },
 		updated_at: players.length ? updatedAt : null,
+		dataOrigin,
 		players
 	};
 }
@@ -151,10 +182,12 @@ export async function getClubLeaderboardPage(
 
 	const players = rows.map((row, i) => toPlayer(row, from + i + 1));
 	const updatedAt = latestMatchAt(rows) ?? new Date().toISOString();
+	const dataOrigin = players.length ? await resolveDataOrigin(platform, club.id) : 'live';
 
 	return {
 		club: { name: club.name, slug: club.slug, accent: club.accent },
 		updated_at: players.length ? updatedAt : null,
+		dataOrigin,
 		players,
 		total,
 		page,

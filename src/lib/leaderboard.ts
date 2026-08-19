@@ -17,6 +17,12 @@ export type LeaderboardPlayer = {
 export type LeaderboardResponse = {
 	club: { name: string; slug: string; accent?: string | null };
 	updated_at: string | null;
+	/**
+	 * 'league_import': alle bestätigten Matches dieses Vereins stammen aus
+	 * importierten Liga-Ergebnissen, noch keine über die App gemeldet — das
+	 * "Stand"-Datum würde sonst Aktualität suggerieren, die nicht da ist.
+	 */
+	dataOrigin: 'live' | 'league_import';
 	players: LeaderboardPlayer[];
 };
 
