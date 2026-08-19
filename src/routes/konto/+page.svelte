@@ -12,6 +12,8 @@
 	let redeemingId = $state<string | null>(null);
 	let profileBusy = $state(false);
 
+	const unreadCount = $derived(data.notifications.filter((n) => n.readAt === null).length);
+
 	const claimLabel: Record<'unclaimed' | 'pending' | 'claimed', string> = {
 		unclaimed: 'Nicht beansprucht',
 		pending: 'Wird geprüft',
@@ -206,10 +208,48 @@
 				{#if data.player.claimStatus === 'claimed'}
 					<a class="btn btn-ghost-light" href="/p/{data.player.handle}">Mein öffentliches Profil</a>
 				{/if}
+				<a class="btn btn-ghost-light" href="/spieler-finden">Spieler finden</a>
+				<a class="btn btn-ghost-light" href="/spielzeiten">Meine Spielzeiten</a>
+				<a class="btn btn-ghost-light" href="/anfragen">Anfragen</a>
+				<a class="btn btn-ghost-light" href="/challenges">Challenges</a>
 				{#each data.adminClubs as ac (ac.id)}
 					<a class="btn btn-ghost-light" href="/verein/{ac.slug}">Vereins-Admin · {ac.name}</a>
 				{/each}
 			</div>
+
+			{#if data.notifications.length > 0}
+				<div class="card">
+					<div class="card-head">
+						<h3 class="card-title" style="margin: 0">
+							Benachrichtigungen
+							{#if unreadCount > 0}<span class="unread-dot">{unreadCount}</span>{/if}
+						</h3>
+						{#if unreadCount > 0}
+							<form method="POST" action="?/markNotificationsRead" use:enhance>
+								<button class="btn btn-ghost-light" type="submit">Als gelesen markieren</button>
+							</form>
+						{/if}
+					</div>
+					<ul class="notifications">
+						{#each data.notifications as n (n.id)}
+							<li class:unread={n.readAt === null}>
+								{#if n.link}
+									<a href={n.link} class="n-title">{n.title}</a>
+								{:else}
+									<span class="n-title">{n.title}</span>
+								{/if}
+								{#if n.body}<span class="n-body">{n.body}</span>{/if}
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+
+			{#if data.challengeHinweis}
+				<p class="err" role="alert">
+					Match gemeldet, aber nicht mit der Challenge verknüpft: {data.challengeHinweis}
+				</p>
+			{/if}
 
 			{#if data.pendingMatches.length > 0}
 				<div class="card" id="ausstehend">
@@ -539,6 +579,69 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
+		color: var(--muted-light);
+	}
+
+	.card-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+
+	.card-head button {
+		padding: 7px 13px;
+		font-size: 12.5px;
+	}
+
+	.unread-dot {
+		display: inline-block;
+		margin-left: 6px;
+		min-width: 18px;
+		padding: 1px 6px;
+		border-radius: 100px;
+		background: var(--court-deep, #0f6e5c);
+		color: #fff;
+		font-size: 11px;
+		text-align: center;
+	}
+
+	.notifications {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.notifications li {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: 11px 0;
+		border-top: 1px solid var(--line-light, rgba(0, 0, 0, 0.1));
+	}
+
+	.notifications li:first-child {
+		border-top: none;
+		padding-top: 0;
+	}
+
+	.notifications li.unread .n-title {
+		font-weight: 600;
+	}
+
+	.n-title {
+		font-size: 13.5px;
+		color: var(--ink);
+		text-decoration: none;
+	}
+
+	a.n-title:hover {
+		text-decoration: underline;
+	}
+
+	.n-body {
+		font-size: 12.5px;
 		color: var(--muted-light);
 	}
 

@@ -18,8 +18,10 @@ import {
 } from '$lib/server/player-profile';
 import { computeFormCurve, computePreferredPartners } from '$lib/profile-stats';
 import { computeBadges, longestStreak } from '$lib/badges';
+import { loadClubRanking } from '$lib/server/challenges';
+import { isRankChallengeable } from '$lib/challenge-rules';
 
-export const load: PageServerLoad = async ({ params, platform }) => {
+export const load: PageServerLoad = async ({ params, locals, platform }) => {
 	const admin = supabaseAdmin(platform);
 
 	const profile = await loadPublicProfile(admin, params.handle);
@@ -51,6 +53,28 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 	const preferredPartners = computePreferredPartners(entries, 3);
 	const tournamentMatches = entries.filter((e) => e.matchType === 'turnier');
 
+	// Matchmaking-Aktionen nur für eingeloggte Besucher auf FREMDEN Profilen.
+	// challengeable prüft dieselbe Range wie /challenges — der Button taucht
+	// gar nicht erst auf, wenn die Challenge ohnehin abgelehnt würde. Die
+	// eigentliche Prüfung passiert trotzdem nochmal serverseitig beim Senden
+	// (createChallenge), das hier ist reine UI-Vorfilterung.
+	const viewer = locals.player;
+	const isOwnProfile = viewer?.id === profile.id;
+	let challengeable = false;
+
+	if (viewer && !isOwnProfile && club) {
+		const viewerClub = await loadPlayerClub(admin, viewer.id);
+		if (viewerClub?.id === club.id) {
+			const ranking = await loadClubRanking(admin, club.id);
+			const meRank = ranking.find((r) => r.playerId === viewer.id)?.rank;
+			const targetRank = ranking.find((r) => r.playerId === profile.id)?.rank;
+			challengeable =
+				meRank !== undefined &&
+				targetRank !== undefined &&
+				isRankChallengeable(meRank, targetRank, ranking.length);
+		}
+	}
+
 	return {
 		profile,
 		club,
@@ -59,6 +83,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 		preferredPartners,
 		badges,
 		tournamentMatches,
-		longestStreakEver: longestStreak(chronological)
+		longestStreakEver: longestStreak(chronological),
+		viewer: viewer ? { isLoggedIn: true, isOwnProfile, challengeable } : null
 	};
 };

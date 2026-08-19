@@ -27,6 +27,54 @@ export function formatScore(sets: SetScore[]): string {
 	return sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ');
 }
 
+export type PlayRequestEmailInput = {
+	senderName: string;
+	date: string;
+	startTime: string;
+	endTime: string;
+	url: string;
+};
+
+export function playRequestEmail(input: PlayRequestEmailInput): { subject: string; html: string } {
+	const when = `${formatGermanDate(input.date)}, ${input.startTime}–${input.endTime}`;
+	return {
+		subject: `Neue Spielanfrage von ${input.senderName} — PadelIndex`,
+		html: `
+			<p><strong>${escapeHtml(input.senderName)}</strong> möchte mit dir spielen:</p>
+			<p>${escapeHtml(when)}</p>
+			<p><a href="${input.url}">Anfrage ansehen</a></p>
+		`.trim()
+	};
+}
+
+export type ChallengeEmailInput = {
+	challengerName: string;
+	challengerRank: number;
+	yourRank: number;
+	url: string;
+};
+
+export function challengeReceivedEmail(input: ChallengeEmailInput): {
+	subject: string;
+	html: string;
+} {
+	return {
+		subject: `${input.challengerName} fordert dich heraus — PadelIndex`,
+		html: `
+			<p><strong>${escapeHtml(input.challengerName)}</strong> (Platz ${input.challengerRank}) fordert dich als Platz ${input.yourRank} heraus.</p>
+			<p>Nimmst du an? Die Challenge läuft nach 7 Tagen automatisch ab.</p>
+			<p><a href="${input.url}">Challenge ansehen</a></p>
+		`.trim()
+	};
+}
+
+/** ISO-Datum -> "13.04.2026". Fällt bei Unsinn auf die Eingabe zurück, statt "Invalid Date" zu zeigen. */
+function formatGermanDate(isoDate: string): string {
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return isoDate;
+	const [y, m, d] = isoDate.split('-');
+	return `${d}.${m}.${y}`;
+}
+
 export function matchReportedEmail(input: MatchReportedInput): { subject: string; html: string } {
 	const score = formatScore(input.sets);
 	const reporterName = escapeHtml(input.reporterName);

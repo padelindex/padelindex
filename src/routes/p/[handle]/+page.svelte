@@ -113,6 +113,15 @@
 			</div>
 		{/if}
 
+		{#if data.viewer && !data.viewer.isOwnProfile}
+			<div class="viewer-actions">
+				<a class="btn btn-primary" href="/spieler-finden">Spielanfrage senden</a>
+				{#if data.viewer.challengeable}
+					<a class="btn btn-ghost-light" href="/challenges">Herausfordern</a>
+				{/if}
+			</div>
+		{/if}
+
 		{#if data.history.length === 0}
 			<div class="card">
 				<p class="muted" style="margin: 0; font-size: 14px">
@@ -272,6 +281,13 @@
 		flex-wrap: wrap;
 		gap: 8px;
 		margin-top: 14px;
+	}
+
+	.viewer-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-top: 20px;
 	}
 	.badge {
 		font-size: 12.5px;

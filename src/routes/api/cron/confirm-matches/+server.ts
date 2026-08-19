@@ -12,6 +12,8 @@
 import { error, json } from '@sveltejs/kit';
 import { requireServiceRole } from '$lib/server/env';
 import { runConfirmCron } from '$lib/server/rating/confirm';
+import { supabaseAdmin } from '$lib/server/supabase';
+import { expireOldRequestsAndChallenges } from '$lib/server/challenges';
 
 export const POST = async ({ request, platform }) => {
 	const configuredSecret = (platform?.env as Record<string, unknown> | undefined)?.CRON_SECRET;
@@ -27,5 +29,17 @@ export const POST = async ({ request, platform }) => {
 		SUPABASE_SERVICE_ROLE_KEY: env.supabaseServiceRoleKey
 	});
 
-	return json({ ok: true, outcomes });
+	// Läuft im selben 15-Minuten-Takt mit, statt einen zweiten Zeitplan
+	// einzurichten: abgelaufene Spielanfragen/Challenges markieren und für
+	// bald ablaufende Challenges erinnern. Ein Fehler hier darf die
+	// Match-Bestätigung oben nicht nachträglich als fehlgeschlagen ausweisen.
+	let expiry: unknown = null;
+	try {
+		expiry = await expireOldRequestsAndChallenges(supabaseAdmin(platform));
+	} catch (e) {
+		console.error('Ablauf-Lauf fehlgeschlagen', e);
+		expiry = { error: (e as Error).message };
+	}
+
+	return json({ ok: true, outcomes, expiry });
 };
