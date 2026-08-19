@@ -46,7 +46,7 @@ export async function loadPublicProfile(
 	const { data, error: err } = await admin
 		.from('players')
 		.select(
-			'id, handle, display_name, claim_status, rating, sigma, matches_played, is_provisional, profile_public, city, playing_hand, preferred_side, gender, self_assessed_level'
+			'id, handle, display_name, claim_status, show_full_name, rating, sigma, matches_played, is_provisional, profile_public, city, playing_hand, preferred_side, gender, self_assessed_level'
 		)
 		.eq('handle', handle)
 		.maybeSingle();
@@ -61,7 +61,7 @@ export async function loadPublicProfile(
 	return {
 		id: data.id,
 		handle: data.handle,
-		name: formatPlayerName(data.display_name, data.claim_status),
+		name: formatPlayerName(data.display_name, data.claim_status, data.show_full_name),
 		claimed,
 		rating: Number(data.rating),
 		confidence: Number(confidence.toFixed(4)),
@@ -93,11 +93,17 @@ type RawParticipant = {
 	match_id: string;
 	player_id: string;
 	team: 1 | 2;
-	players: { handle: string; display_name: string; claim_status: string; gender: string | null } | null;
+	players: {
+		handle: string;
+		display_name: string;
+		claim_status: string;
+		show_full_name: boolean;
+		gender: string | null;
+	} | null;
 };
 
 const nameOf = (p: RawParticipant['players']) =>
-	p ? formatPlayerName(p.display_name, p.claim_status) : '?';
+	p ? formatPlayerName(p.display_name, p.claim_status, p.show_full_name) : '?';
 
 /**
  * Matchhistorie neueste-zuerst (für die Anzeige) — Formkurve/Badges
@@ -129,7 +135,9 @@ export async function loadPublicMatchHistory(
 			admin.from('matches').select('id, played_at, match_type').in('id', matchIds),
 			admin
 				.from('match_participants')
-				.select('match_id, player_id, team, players(handle, display_name, claim_status, gender)')
+				.select(
+					'match_id, player_id, team, players(handle, display_name, claim_status, show_full_name, gender)'
+				)
 				.in('match_id', matchIds),
 			admin
 				.from('match_sets')

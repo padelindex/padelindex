@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { isUsableClaimQuery, matchClaimName, normalizeName, similarity } from './claim-match';
+import {
+	formatPlayerName,
+	isUsableClaimQuery,
+	matchClaimName,
+	normalizeName,
+	similarity
+} from './claim-match';
 
 // Erfundene Namen. Sie bilden bewusst die Eigenschaften nach, die im
 // echten Bestand vorkommen und den Abgleich schwer machen: Umlaute,
@@ -25,6 +31,18 @@ describe('normalizeName', () => {
 	it('normalisiert Leerraum und Satzzeichen', () => {
 		expect(normalizeName('  Lars   Vogt ')).toBe('lars vogt');
 		expect(normalizeName('Jean-Luc Picard')).toBe('jean luc picard');
+	});
+});
+
+describe('formatPlayerName', () => {
+	it('kürzt unbeanspruchte Profile immer ab', () => {
+		expect(formatPlayerName('Jörg Feldkamp', 'unclaimed', true)).toBe('Jörg F.');
+		expect(formatPlayerName('Jörg Feldkamp', 'unclaimed', false)).toBe('Jörg F.');
+	});
+
+	it('zeigt bei beanspruchten Profilen den vollen Namen nur mit Zustimmung', () => {
+		expect(formatPlayerName('Jörg Feldkamp', 'claimed', false)).toBe('Jörg F.');
+		expect(formatPlayerName('Jörg Feldkamp', 'claimed', true)).toBe('Jörg Feldkamp');
 	});
 });
 

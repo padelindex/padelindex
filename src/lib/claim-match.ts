@@ -19,12 +19,18 @@ export function abbreviateName(fullName: string): string {
 /**
  * Zentrale Stelle für die Namensdarstellung im JS-Teil der App — jede Anzeige
  * eines Spielernamens gegenüber Dritten geht hier durch (player-profile.ts,
- * matchmaking.ts, club-members.ts). Spiegelt public_display_name() aus
- * 0005_claimable_profiles.sql, das dieselbe Regel für die SQL-Seite
- * (club_leaderboard-View) übernimmt.
+ * matchmaking.ts, club-members.ts, matches.ts, play-requests.ts). Spiegelt
+ * public_display_name() aus 0014_block0_privacy.sql, das dieselbe Regel für
+ * die SQL-Seite (club_leaderboard-View) übernimmt: voller Name nur bei
+ * beanspruchtem UND dafür freigegebenem Profil (players.show_full_name),
+ * sonst Vorname + Nachname-Initial.
  */
-export function formatPlayerName(fullName: string, claimStatus: string): string {
-	return claimStatus === 'claimed' ? fullName : abbreviateName(fullName);
+export function formatPlayerName(
+	fullName: string,
+	claimStatus: string,
+	showFullName: boolean
+): string {
+	return claimStatus === 'claimed' && showFullName ? fullName : abbreviateName(fullName);
 }
 
 /** Kleinschreibung, Umlaute aufgelöst, Satzzeichen weg, Leerraum normalisiert. */

@@ -124,13 +124,13 @@ export async function loadPlayerNames(
 
 	const { data } = await admin
 		.from('players')
-		.select('id, handle, display_name, claim_status')
+		.select('id, handle, display_name, claim_status, show_full_name')
 		.in('id', ids);
 
 	for (const row of data ?? []) {
 		map.set(row.id, {
 			handle: row.handle,
-			name: formatPlayerName(row.display_name, row.claim_status)
+			name: formatPlayerName(row.display_name, row.claim_status, row.show_full_name)
 		});
 	}
 	return map;

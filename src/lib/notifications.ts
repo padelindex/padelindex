@@ -149,6 +149,20 @@ function formatGermanDate(isoDate: string): string {
 	return `${d}.${m}.${y}`;
 }
 
+export type DelistingConfirmInput = { playerName: string; confirmUrl: string };
+
+export function delistingConfirmEmail(input: DelistingConfirmInput): { subject: string; html: string } {
+	return {
+		subject: 'Bestätige, dass dein Profil aus der Rangliste soll — PadelIndex',
+		html: `
+			<p>Jemand hat für das Profil „${escapeHtml(input.playerName)}" auf PadelIndex angefragt, es aus der öffentlichen Rangliste zu nehmen.</p>
+			<p>Wenn das dein Profil ist und du das möchtest, bestätige das hier — das Profil verschwindet danach sofort aus der öffentlichen Ansicht:</p>
+			<p><a href="${input.confirmUrl}">Profil aus der Rangliste nehmen</a></p>
+			<p>Wenn du das nicht angefragt hast, kannst du diese E-Mail einfach ignorieren — es passiert dann nichts.</p>
+		`.trim()
+	};
+}
+
 export function matchReportedEmail(input: MatchReportedInput): { subject: string; html: string } {
 	const score = formatScore(input.sets);
 	const reporterName = escapeHtml(input.reporterName);

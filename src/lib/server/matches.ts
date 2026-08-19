@@ -61,22 +61,29 @@ export async function loadClubRoster(
 ): Promise<RosterPlayer[]> {
 	const { data, error: err } = await admin
 		.from('club_memberships')
-		.select('players!inner(id, handle, display_name, claim_status)')
+		.select('players!inner(id, handle, display_name, claim_status, show_full_name)')
 		.eq('club_id', clubId);
 
 	if (err) throw error(500, err.message);
 
 	const rows = (data ?? []).map(
 		(row) =>
-			(row as unknown as { players: { id: string; handle: string; display_name: string; claim_status: string } })
-				.players
+			(row as unknown as {
+				players: {
+					id: string;
+					handle: string;
+					display_name: string;
+					claim_status: string;
+					show_full_name: boolean;
+				};
+			}).players
 	);
 
 	return rows
 		.map((p) => ({
 			id: p.id,
 			handle: p.handle,
-			name: formatPlayerName(p.display_name, p.claim_status),
+			name: formatPlayerName(p.display_name, p.claim_status, p.show_full_name),
 			claimed: p.claim_status === 'claimed'
 		}))
 		.sort((a, b) => a.name.localeCompare(b.name, 'de'));
@@ -129,7 +136,7 @@ async function notifyOpponentsOfPendingMatch(
 	try {
 		const { data: players, error: err } = await admin
 			.from('players')
-			.select('id, display_name, claim_status, user_id')
+			.select('id, display_name, claim_status, show_full_name, user_id')
 			.in('id', [input.reporterId, input.partnerId, input.opponent1Id, input.opponent2Id]);
 		if (err || !players) return;
 
@@ -137,7 +144,7 @@ async function notifyOpponentsOfPendingMatch(
 		const nameOf = (id: string) => {
 			const p = byId.get(id);
 			if (!p) return '?';
-			return formatPlayerName(p.display_name, p.claim_status);
+			return formatPlayerName(p.display_name, p.claim_status, p.show_full_name);
 		};
 
 		const { subject, html } = matchReportedEmail({
@@ -206,7 +213,7 @@ export async function loadPendingMatches(
 		await Promise.all([
 			admin
 				.from('match_participants')
-				.select('match_id, player_id, team, confirmed, players(display_name, claim_status)')
+				.select('match_id, player_id, team, confirmed, players(display_name, claim_status, show_full_name)')
 				.in('match_id', pendingIds),
 			supabase
 				.from('match_sets')
@@ -220,8 +227,8 @@ export async function loadPendingMatches(
 		const myTeam = myTeamByMatch.get(m.id) ?? 1;
 		const mine = (participants ?? []).filter((p) => p.match_id === m.id);
 		const toEntry = (p: (typeof mine)[number]) => {
-			const player = p.players as unknown as { display_name: string; claim_status: string } | null;
-			const name = player ? formatPlayerName(player.display_name, player.claim_status) : '?';
+			const player = p.players as unknown as { display_name: string; claim_status: string; show_full_name: boolean } | null;
+			const name = player ? formatPlayerName(player.display_name, player.claim_status, player.show_full_name) : '?';
 			return { name, claimed: player?.claim_status === 'claimed' };
 		};
 
@@ -313,7 +320,7 @@ export async function loadClubPendingMatches(
 		await Promise.all([
 			admin
 				.from('match_participants')
-				.select('match_id, team, players(display_name, claim_status)')
+				.select('match_id, team, players(display_name, claim_status, show_full_name)')
 				.in('match_id', matchIds),
 			admin
 				.from('match_sets')
@@ -326,8 +333,8 @@ export async function loadClubPendingMatches(
 	return matches.map((m) => {
 		const mine = (participants ?? []).filter((p) => p.match_id === m.id);
 		const toEntry = (p: (typeof mine)[number]) => {
-			const player = p.players as unknown as { display_name: string; claim_status: string } | null;
-			const name = player ? formatPlayerName(player.display_name, player.claim_status) : '?';
+			const player = p.players as unknown as { display_name: string; claim_status: string; show_full_name: boolean } | null;
+			const name = player ? formatPlayerName(player.display_name, player.claim_status, player.show_full_name) : '?';
 			return { name, claimed: player?.claim_status === 'claimed' };
 		};
 
