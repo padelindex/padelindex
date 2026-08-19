@@ -76,6 +76,10 @@
 				Du stehst in der Ligatabelle?
 				<a href="/c/{data.board.club.slug}/beanspruchen">Profil beanspruchen</a>
 			</p>
+			<p class="claim-cta muted-cta">
+				Dein Verein ist noch nicht dabei?
+				<a href="/#anmelden">Für deinen Verein eintragen</a>
+			</p>
 		{/if}
 	</div>
 </section>
@@ -120,5 +124,8 @@
 		text-align: center;
 		font-size: 13px;
 		color: var(--muted-light);
+	}
+	.claim-cta.muted-cta {
+		margin-top: 8px;
 	}
 </style>

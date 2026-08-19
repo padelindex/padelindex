@@ -15,10 +15,12 @@
 
 	const unreadCount = $derived(data.notifications.filter((n) => n.readAt === null).length);
 
-	const claimLabel: Record<'unclaimed' | 'pending' | 'claimed', string> = {
+	const claimLabel: Record<'unclaimed' | 'pending' | 'awaiting_review' | 'claimed' | 'rejected', string> = {
 		unclaimed: 'Nicht beansprucht',
 		pending: 'Wird geprüft',
-		claimed: 'Bestätigt'
+		awaiting_review: 'Wartet auf Freigabe',
+		claimed: 'Bestätigt',
+		rejected: 'Abgelehnt'
 	};
 
 	const reasonLabel: Record<string, string> = {
@@ -170,8 +172,10 @@
 			<div class="sec-head">
 				<h2>Angemeldet</h2>
 				<p class="muted">
-					Eingeloggt als {data.email}, aber kein Spielerprofil verknüpft. Das sollte nicht passieren
-					— melde dich bei uns, falls du das hier siehst.
+					Eingeloggt als {data.email}, aber kein Spielerprofil verknüpft. Falls du zuletzt versucht
+					hast, ein Profil zu beanspruchen: dein Verein hat die Anfrage möglicherweise abgelehnt
+					(z. B. weil der Name nicht eindeutig zugeordnet werden konnte) — wende dich an deine
+					Vereinsleitung. Falls das hier unerwartet ist, melde dich bei uns.
 				</p>
 			</div>
 		{:else}
@@ -180,6 +184,13 @@
 				<h2>{data.player.displayName}</h2>
 				<p class="muted">{data.email}</p>
 			</div>
+
+			{#if data.player.claimStatus === 'awaiting_review'}
+				<p class="notice" role="status">
+					Dein Profil wartet noch auf Freigabe durch deinen Verein — dein Verein bestätigt, dass du
+					wirklich die Person hinter diesem Profil bist. Das kann etwas dauern.
+				</p>
+			{/if}
 
 			<div class="card">
 				<div class="stat-row">
@@ -586,6 +597,16 @@
 		margin: 16px 0 0;
 		font-size: 13px;
 		color: #a3341f;
+	}
+
+	.notice {
+		margin: 20px 0 0;
+		padding: 14px 18px;
+		border-radius: 14px;
+		background: rgba(15, 110, 92, 0.08);
+		border: 1px solid rgba(15, 110, 92, 0.2);
+		font-size: 13.5px;
+		color: var(--muted-light);
 	}
 
 	.card-title {

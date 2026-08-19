@@ -15,7 +15,7 @@ export type SessionPlayer = {
 	handle: string;
 	rating: number;
 	matchesPlayed: number;
-	claimStatus: 'unclaimed' | 'pending' | 'claimed';
+	claimStatus: 'unclaimed' | 'pending' | 'awaiting_review' | 'claimed' | 'rejected';
 	city: string | null;
 	playingHand: 'rechts' | 'links' | null;
 	preferredSide: 'rechts' | 'links' | null;

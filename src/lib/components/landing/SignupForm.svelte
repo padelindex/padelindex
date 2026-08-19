@@ -8,6 +8,7 @@
 	// dafür einen keydown-Handler brauchen.
 
 	let email = $state('');
+	let club = $state('');
 	let busy = $state(false);
 	let status = $state<'idle' | 'ok' | 'error'>('idle');
 	let message = $state('');
@@ -32,7 +33,7 @@
 			const res = await fetch('/api/waitlist', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ email: value })
+				body: JSON.stringify({ email: value, clubName: club.trim() })
 			});
 			const data = (await res.json().catch(() => ({}))) as { message?: string };
 
@@ -43,8 +44,9 @@
 			}
 
 			status = 'ok';
-			message = 'Eingetragen. Wir melden uns, sobald dein Verein dabei ist.';
+			message = 'Fast geschafft — wir haben dir einen Bestätigungslink geschickt.';
 			email = '';
+			club = '';
 		} catch {
 			status = 'error';
 			message = 'Netzwerkfehler. Bitte später erneut versuchen.';
@@ -67,6 +69,17 @@
 		aria-invalid={status === 'error'}
 		aria-describedby="waitlist-msg"
 	/>
+	<label class="sr-only" for="waitlist-club">Dein Verein (optional)</label>
+	<input
+		id="waitlist-club"
+		name="clubName"
+		type="text"
+		autocomplete="organization"
+		placeholder="Dein Verein (optional)"
+		maxlength="120"
+		bind:value={club}
+		disabled={status === 'ok'}
+	/>
 	<button class="btn btn-primary" type="submit" disabled={busy || status === 'ok'}>
 		{#if busy}Wird gesendet …{:else if status === 'ok'}Notiert{:else}Platz sichern{/if}
 	</button>
@@ -81,9 +94,17 @@
 >
 	{message}
 </p>
+<p class="signup-hint">
+	Sag uns, welcher Verein — dann fragen wir ihn direkt an. Kein Spam, keine Weitergabe.
+</p>
 
 <style>
 	.signup-msg.err {
 		color: var(--signal);
+	}
+	.signup-hint {
+		margin-top: 10px;
+		font-size: 12.5px;
+		color: var(--muted-dark);
 	}
 </style>

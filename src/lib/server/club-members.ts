@@ -16,6 +16,8 @@ export type ClubMember = {
 	handle: string;
 	name: string;
 	claimed: boolean;
+	/** true = Bestätigungslink geklickt, wartet noch auf Freigabe durch diesen Vereins-Admin. */
+	awaitingReview: boolean;
 	rating: number;
 	matchesPlayed: number;
 };
@@ -45,10 +47,75 @@ export async function loadClubMembers(admin: SupabaseClient, clubId: string): Pr
 			handle: p.handle,
 			name: formatPlayerName(p.display_name, p.claim_status, p.show_full_name),
 			claimed: p.claim_status === 'claimed',
+			awaitingReview: p.claim_status === 'awaiting_review',
 			rating: Number(p.rating),
 			matchesPlayed: p.matches_played
 		}))
 		.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+/**
+ * Beanspruchen-Verifizierung: E-Mail-Bestätigung allein war kein Nachweis,
+ * dass die Adresse wirklich der genannten Person gehört (siehe
+ * 0015_block2.sql). handle_new_user() setzt den Status jetzt auf
+ * 'awaiting_review' statt sofort 'claimed' — hier bestätigt oder lehnt der
+ * Vereins-Admin ab, der die Mitglieder persönlich kennt.
+ */
+export async function approveClaim(
+	admin: SupabaseClient,
+	clubId: string,
+	playerId: string,
+	approvedById: string
+): Promise<MemberWriteResult> {
+	const isMember = await isClubMember(admin, clubId, playerId);
+	if (!isMember) return { ok: false, message: 'Nicht Mitglied dieses Vereins.' };
+
+	const { data, error } = await admin
+		.from('players')
+		.update({ claim_status: 'claimed', approved_at: new Date().toISOString(), approved_by: approvedById })
+		.eq('id', playerId)
+		.eq('claim_status', 'awaiting_review')
+		.select('id');
+
+	if (error) return { ok: false, message: error.message };
+	if (!data || data.length === 0) return { ok: false, message: 'Keine offene Freigabe mehr für dieses Profil.' };
+	return { ok: true };
+}
+
+/**
+ * Setzt das Profil zurück auf 'unclaimed' — die verlinkte auth.users-Zeile
+ * bleibt bestehen (kein Löschen von Zugangsdaten hier), aber das Profil
+ * ist wieder frei beanspruchbar, falls sich die falsche Person gemeldet
+ * hatte.
+ */
+export async function rejectClaim(
+	admin: SupabaseClient,
+	clubId: string,
+	playerId: string
+): Promise<MemberWriteResult> {
+	const isMember = await isClubMember(admin, clubId, playerId);
+	if (!isMember) return { ok: false, message: 'Nicht Mitglied dieses Vereins.' };
+
+	const { data, error } = await admin
+		.from('players')
+		.update({ claim_status: 'unclaimed', user_id: null, claimed_at: null })
+		.eq('id', playerId)
+		.eq('claim_status', 'awaiting_review')
+		.select('id');
+
+	if (error) return { ok: false, message: error.message };
+	if (!data || data.length === 0) return { ok: false, message: 'Keine offene Freigabe mehr für dieses Profil.' };
+	return { ok: true };
+}
+
+async function isClubMember(admin: SupabaseClient, clubId: string, playerId: string): Promise<boolean> {
+	const { data } = await admin
+		.from('club_memberships')
+		.select('club_id')
+		.eq('club_id', clubId)
+		.eq('player_id', playerId)
+		.maybeSingle();
+	return data !== null;
 }
 
 export type PlayerSearchResult = { id: string; handle: string; name: string };

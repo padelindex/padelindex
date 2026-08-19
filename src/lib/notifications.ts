@@ -149,6 +149,19 @@ function formatGermanDate(isoDate: string): string {
 	return `${d}.${m}.${y}`;
 }
 
+export type WaitlistConfirmInput = { confirmUrl: string };
+
+export function waitlistConfirmEmail(input: WaitlistConfirmInput): { subject: string; html: string } {
+	return {
+		subject: 'Bitte bestätige deinen Platz auf der Warteliste — PadelIndex',
+		html: `
+			<p>Fast geschafft — bestätige deine E-Mail-Adresse, dann bist du auf der Warteliste:</p>
+			<p><a href="${input.confirmUrl}">Platz bestätigen</a></p>
+			<p>Wenn du dich nicht eingetragen hast, kannst du diese E-Mail einfach ignorieren.</p>
+		`.trim()
+	};
+}
+
 export type DelistingConfirmInput = { playerName: string; confirmUrl: string };
 
 export function delistingConfirmEmail(input: DelistingConfirmInput): { subject: string; html: string } {

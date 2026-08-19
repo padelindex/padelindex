@@ -237,25 +237,65 @@
 						<li class="member-row">
 							<span class="member-name">
 								{m.name}
-								{#if !m.claimed}<span class="tag-inactive">unbeansprucht</span>{/if}
+								{#if m.awaitingReview}
+									<span class="tag-review">wartet auf Freigabe</span>
+								{:else if !m.claimed}
+									<span class="tag-inactive">unbeansprucht</span>
+								{/if}
 							</span>
 							<span class="member-rating num">{m.rating.toFixed(2)}</span>
-							<form
-								method="POST"
-								action="?/removeMember"
-								use:enhance={() => {
-									memberBusyId = m.id;
-									return async ({ update }) => {
-										await update();
-										memberBusyId = null;
-									};
-								}}
-							>
-								<input type="hidden" name="playerId" value={m.id} />
-								<button class="btn btn-ghost-light" type="submit" disabled={memberBusyId === m.id}>
-									Entfernen
-								</button>
-							</form>
+							<div class="member-actions">
+								{#if m.awaitingReview}
+									<form
+										method="POST"
+										action="?/approveClaim"
+										use:enhance={() => {
+											memberBusyId = m.id;
+											return async ({ update }) => {
+												await update();
+												memberBusyId = null;
+											};
+										}}
+									>
+										<input type="hidden" name="playerId" value={m.id} />
+										<button class="btn btn-primary" type="submit" disabled={memberBusyId === m.id}>
+											Freigeben
+										</button>
+									</form>
+									<form
+										method="POST"
+										action="?/rejectClaim"
+										use:enhance={() => {
+											memberBusyId = m.id;
+											return async ({ update }) => {
+												await update();
+												memberBusyId = null;
+											};
+										}}
+									>
+										<input type="hidden" name="playerId" value={m.id} />
+										<button class="btn btn-ghost-light" type="submit" disabled={memberBusyId === m.id}>
+											Ablehnen
+										</button>
+									</form>
+								{/if}
+								<form
+									method="POST"
+									action="?/removeMember"
+									use:enhance={() => {
+										memberBusyId = m.id;
+										return async ({ update }) => {
+											await update();
+											memberBusyId = null;
+										};
+									}}
+								>
+									<input type="hidden" name="playerId" value={m.id} />
+									<button class="btn btn-ghost-light" type="submit" disabled={memberBusyId === m.id}>
+										Entfernen
+									</button>
+								</form>
+							</div>
 						</li>
 					{/each}
 				</ul>
@@ -527,6 +567,18 @@
 		border-radius: 100px;
 	}
 
+	.tag-review {
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--court-deep, #0f6e5c);
+		background: rgba(15, 110, 92, 0.12);
+		padding: 2px 7px;
+		border-radius: 100px;
+		white-space: nowrap;
+	}
+
 	.reward-desc {
 		font-size: 12.5px;
 		color: var(--muted-light);
@@ -631,6 +683,7 @@
 	.member-row {
 		display: flex;
 		align-items: center;
+		flex-wrap: wrap;
 		gap: 12px;
 		padding: 12px 0;
 		border-top: 1px solid var(--line-light, rgba(0, 0, 0, 0.1));
@@ -641,11 +694,12 @@
 	}
 	.member-name {
 		flex: 1;
-		min-width: 0;
+		min-width: 160px;
 		font-size: 14px;
 		font-weight: 500;
 		display: flex;
 		align-items: center;
+		flex-wrap: wrap;
 		gap: 8px;
 	}
 	.member-rating {
@@ -653,6 +707,21 @@
 		font-size: 14px;
 		font-weight: 600;
 		color: var(--court-deep, #0f6e5c);
+	}
+	.member-actions {
+		/* min-width:0 statt des Flexbox-Defaults (min-width:auto) — sonst
+		   verweigert sich die Gruppe dem Schrumpfen und läuft bei drei
+		   Buttons (Freigeben/Ablehnen/Entfernen) über den Kartenrand
+		   hinaus, statt intern umzubrechen. Live bei 360px gefunden. */
+		flex: 1 1 auto;
+		min-width: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.member-actions button {
+		padding: 8px 14px;
+		font-size: 13px;
 	}
 
 	.pending-list {

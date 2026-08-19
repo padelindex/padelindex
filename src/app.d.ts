@@ -27,6 +27,8 @@ declare global {
 				MAIL_FROM?: string;
 				/** /admin — siehe lib/server/platform-owner.ts. Fehlt sie, ist /admin für niemanden erreichbar (fail closed). */
 				PLATFORM_OWNER_EMAIL?: string;
+				/** "true" schaltet die "12 Monate kostenlos"-Aktion im Vereins-Bereich frei, siehe lib/server/env.ts. */
+				PUBLIC_TRIAL_OFFER_ENABLED?: string;
 			};
 			ctx: ExecutionContext;
 			caches: CacheStorage;
