@@ -154,7 +154,7 @@ L.push('on conflict (cycle_id, ladder_position) do nothing;');
 L.push('');
 
 L.push('-- Boxen dieses Zyklus, für die folgenden Schritte einmal aufgelöst.');
-L.push('-- with wird pro Statement neu ausgewertet (kein CREATE TEMP nötig),');
+L.push('-- with wird pro Statement neu ausgewertet (keine Temp-Tabelle nötig),');
 L.push('-- das hält die Datei diff-freundlich und ohne Aufräumschritt am Ende.');
 L.push('with this_cycle_boxes as (');
 L.push('  select b.id as box_id, b.ladder_position');
