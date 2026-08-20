@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 import { computeMatchRatings, toDisplayRating, PROVISIONAL_MATCHES } from '../src/lib/server/rating/rating';
 import { seedFromLeagueRank, seedWithoutRank } from '../src/lib/server/rating/league-seed';
+import { BOX_AMERICANO_4_DEFAULTS } from '../src/lib/league/box-americano';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const IN = resolve(ROOT, 'data/bavaro-zyklus5.json');
@@ -250,6 +251,108 @@ for (const m of matches) {
 }
 L.push(histRows.join(',\n') + ';');
 L.push('');
+
+// ---------- Liga-Boxen (Zyklus data.cycle) ----------
+// Läuft in derselben Transaktion wie Spieler/Matches oben: league_boxes
+// braucht players.id und, für gespielte Runden, matches.id — beides muss
+// schon existieren. Match-IDs werden NICHT neu vergeben, sondern über
+// dieselbe uuidv5('match:...')-Ableitung wiederverwendet wie oben, sonst
+// gäbe es dieselben Ergebnisse doppelt (einmal frei, einmal an eine Box
+// gehängt) und das Rating würde ein zweites Mal angewendet.
+//
+// Alle 54 erfassten Matches — auch das bei 7:5, 0:3 abgebrochene in
+// Gruppe 19 — laufen als status='played': genau das hat
+// verify-bavaro-standings.ts bereits gegen die offizielle PDF-Tabelle
+// geprüft (0 Abweichungen), ein eigener 'abandoned'-Status hier würde
+// von der schon verifizierten Berechnung abweichen.
+const byGroup = new Map();
+for (const p of data.players) {
+  if (p.group === null) continue;
+  const list = byGroup.get(p.group) ?? [];
+  list.push(players.get(p.name));
+  byGroup.set(p.group, list);
+}
+const matchesByGroup = new Map();
+for (const m of matches) {
+  const list = matchesByGroup.get(m.group) ?? [];
+  list.push(m);
+  matchesByGroup.set(m.group, list);
+}
+
+const seasonId = uuidv5(`season:${data.league}:${data.season}`);
+const cycleId = uuidv5(`cycle:${data.league}:${data.cycle}`);
+// Das Enddatum liegt in der Vergangenheit -> ehrlich als abgeschlossen
+// markieren statt "läuft" zu behaupten.
+const cycleStatus = new Date(`${data.cycle_end}T00:00:00Z`) < new Date() ? 'completed' : 'running';
+
+L.push(`-- ---------- Liga-Boxen (Zyklus ${data.cycle}) ----------`);
+L.push('do $$');
+L.push('declare');
+L.push('  v_league_id uuid;');
+L.push('begin');
+L.push(`  select id into v_league_id from leagues where club_id = (select id from clubs where slug = ${q(data.club_slug)});`);
+L.push('  if v_league_id is null then');
+L.push(`    raise exception 'Keine Liga für Verein % — 0016_league_module.sql zuerst ausführen', ${q(data.club_slug)};`);
+L.push('  end if;');
+L.push('');
+L.push(`  insert into league_seasons (id, league_id, name, status) values (${q(seasonId)}, v_league_id, ${q(data.season)}, 'running')`);
+L.push('  on conflict (id) do nothing;');
+L.push('');
+L.push(
+  `  insert into league_cycles (id, season_id, ordinal, start_date, end_date, status) values (${q(cycleId)}, ${q(seasonId)}, ${n(data.cycle)}, ${q(data.cycle_start)}, ${q(data.cycle_end)}, ${q(cycleStatus)})`
+);
+L.push('  on conflict (id) do update set status = excluded.status;');
+L.push('end $$;');
+L.push('');
+
+L.push('-- ---------- Boxen ----------');
+L.push('insert into league_boxes (id, cycle_id, ladder_position) values');
+const boxRows = [...byGroup.keys()]
+  .sort((a, b) => a - b)
+  .map((g) => `  (${q(uuidv5(`box:${data.league}:${data.cycle}:${g}`))}, ${q(cycleId)}, ${n(g)})`);
+L.push(boxRows.join(',\n'));
+L.push('on conflict (id) do nothing;');
+L.push('');
+
+L.push('-- ---------- Aufstellung ----------');
+L.push('-- Sitz = Position in der offiziellen Tabelle je Box; das legt die');
+L.push('-- Rotation fest (roundPairings() in box-americano.ts).');
+L.push('insert into league_box_members (box_id, player_id, seat, role) values');
+const memberRows = [];
+for (const g of [...byGroup.keys()].sort((a, b) => a - b)) {
+  const boxId = uuidv5(`box:${data.league}:${data.cycle}:${g}`);
+  byGroup.get(g).forEach((p, i) => {
+    memberRows.push(`  (${q(boxId)}, ${q(p.id)}, ${n(i + 1)}, 'regular')`);
+  });
+}
+L.push(memberRows.join(',\n'));
+L.push('on conflict (box_id, player_id) do nothing;');
+L.push('');
+
+L.push('-- ---------- Runden ----------');
+L.push('-- Gespielte Boxen verweisen auf die oben angelegten matches-Zeilen');
+L.push('-- (dieselbe uuidv5-Ableitung, keine neuen Matches). Unbespielte');
+L.push('-- Boxen (1, 13, 21 in Zyklus 5) bekommen offene Platzhalter, damit');
+L.push('-- die Ergebniseingabe etwas zum Buchen hat.');
+L.push('insert into league_box_matches (box_id, round_number, match_id, status) values');
+const roundRows = [];
+for (const g of [...byGroup.keys()].sort((a, b) => a - b)) {
+  const boxId = uuidv5(`box:${data.league}:${data.cycle}:${g}`);
+  const played = matchesByGroup.get(g) ?? [];
+  if (played.length === 0) {
+    for (let r = 1; r <= BOX_AMERICANO_4_DEFAULTS.rounds; r++) {
+      roundRows.push(`  (${q(boxId)}, ${n(r)}, null, 'scheduled')`);
+    }
+  } else {
+    played.forEach((m, i) => {
+      roundRows.push(`  (${q(boxId)}, ${n(i + 1)}, ${q(m.id)}, 'played')`);
+    });
+  }
+}
+L.push(roundRows.join(',\n'));
+L.push('on conflict (box_id, round_number) do update set match_id = excluded.match_id, status = excluded.status;');
+L.push('');
+
 L.push('commit;');
 L.push('');
 
