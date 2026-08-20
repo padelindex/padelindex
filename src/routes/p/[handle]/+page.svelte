@@ -1,9 +1,34 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import type { PageData } from './$types';
 	import { MATCH_TYPE_LABELS } from '$lib/match-report';
 	import RatingLegend from '$lib/components/RatingLegend.svelte';
+	import { isProfileIndexable } from '$lib/seo';
+	import { jsonLd } from '$lib/jsonld';
 
 	let { data }: { data: PageData } = $props();
+
+	const indexable = $derived(isProfileIndexable(data.profile.matchesPlayed));
+	const canonical = $derived(`https://padelindex.de/p/${page.params.handle}`);
+
+	const breadcrumbs = $derived.by(() => {
+		const items = [{ '@type': 'ListItem', position: 1, name: 'PadelIndex', item: 'https://padelindex.de/' }];
+		if (data.club) {
+			items.push({
+				'@type': 'ListItem',
+				position: 2,
+				name: data.club.name,
+				item: `https://padelindex.de/c/${data.club.slug}`
+			});
+		}
+		items.push({
+			'@type': 'ListItem',
+			position: items.length + 1,
+			name: data.profile.name,
+			item: canonical
+		});
+		return jsonLd({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items });
+	});
 
 	const RING = 2 * Math.PI * 22;
 	const dash = (confidence: number) => {
@@ -68,6 +93,15 @@
 		name="description"
 		content="Spielerprofil von {data.profile.name} auf PadelIndex — Rating, Formkurve und Matchhistorie aus bestätigten Ergebnissen."
 	/>
+	{#if indexable}
+		<link rel="canonical" href={canonical} />
+	{:else}
+		<!-- Zu wenige bestätigte Matches für eine belastbare Aussage — siehe
+		     lib/seo.ts. Noch "follow", damit Google trotzdem der Rangliste
+		     und den Vereinsseiten folgen kann, die hierher verlinken. -->
+		<meta name="robots" content="noindex, follow" />
+	{/if}
+	{@html `<script type="application/ld+json">${breadcrumbs}</script>`}
 </svelte:head>
 
 <nav class="nav">

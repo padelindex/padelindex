@@ -210,7 +210,7 @@ section{position:relative}
 .factors{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(18px,2.4vw,34px);margin-top:54px}
 @media(max-width:860px){.factors{grid-template-columns:1fr}}
 .factor{padding-top:22px;border-top:2px solid var(--court-deep)}
-.factor h3{font-size:22px;margin-bottom:12px}
+.factor h2,.factor h3{font-size:22px;margin-bottom:12px}
 .factor p{font-size:14.5px}
 .factor .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--court-deep);display:block;margin-bottom:16px}
 
@@ -265,23 +265,17 @@ a.row:hover{background:rgba(15,110,92,.05)}
 @media(max-width:800px){.tiers{grid-template-columns:1fr}}
 .tier{background:var(--chalk-2);padding:26px 22px}
 .tier.hl{background:#fff}
-.tier h4{font-size:19px}
+.tier h2,.tier h3{font-size:19px}
 .tier .lvl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--court-deep);display:block;margin-bottom:14px}
 .tier ul{list-style:none;padding:0;margin:16px 0 0;font-size:13.5px;color:var(--muted-light)}
 .tier li{padding:7px 0 7px 20px;position:relative;border-bottom:1px solid var(--line-light)}
 .tier li:last-child{border-bottom:0}
 .tier li::before{content:"";position:absolute;left:0;top:14px;width:8px;height:2px;background:var(--court-deep)}
 
-.sec-break{padding:clamp(40px,6vh,64px) 0;background:var(--night-2);border-top:1px solid var(--line-dark);border-bottom:1px solid var(--line-dark)}
-.sec-break .wrap{max-width:640px}
-.sec-break .eyebrow{color:var(--court)}
-.sec-break p{margin-top:14px;font-size:15px;color:var(--muted-dark)}
-.sec-break p a{color:var(--court);text-decoration:underline}
-
 .trial-banner{margin-top:32px;padding:14px 20px;border-radius:100px;background:rgba(15,110,92,.08);border:1px solid rgba(15,110,92,.2);color:var(--court-deep);font-size:14px;font-weight:600;text-align:center}
 
 .demo-block{margin-top:56px;padding-top:40px;border-top:1px solid var(--line-light)}
-.demo-block h3{font-size:24px}
+.demo-block h2,.demo-block h3{font-size:24px}
 .demo-block > .muted{margin-top:10px;margin-bottom:20px}
 
 /* CTA */
