@@ -60,7 +60,7 @@
 				<a class="btn btn-ghost" href="/rating">Erst mal ausprobieren</a>
 			</div>
 			<p class="hero-note" use:reveal={{ delay: 0.24 }}>
-				Gründungsvereine · Oberland &amp; Umgebung
+				Pilotverein: STC Oberland
 			</p>
 		</div>
 
@@ -177,7 +177,7 @@
 		<i style="left:20%"></i><i style="left:40%"></i><i style="left:60%"></i><i style="left:80%"></i>
 	</div>
 	<div class="wrap cta-in">
-		<span class="eyebrow" use:reveal>Gründungsvereine</span>
+		<span class="eyebrow" use:reveal>Pilotphase</span>
 		<h2 use:reveal={{ delay: 0.05 }}>Der erste Wert entsteht<br />mit deinem ersten Match.</h2>
 		<p class="muted" use:reveal={{ delay: 0.1 }} style="margin-top:22px">
 			Wir starten im Oberland. Trag dich ein, dann melden wir uns, sobald dein Club dabei ist — oder
