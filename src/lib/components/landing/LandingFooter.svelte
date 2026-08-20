@@ -16,6 +16,7 @@
 			<a href="/rating">Rating</a>
 			<a href="/level-schaetzen">Level-Schätzer</a>
 			<a href="/vereine">Vereine</a>
+			<a href="/karte">Karte</a>
 			<a href="/liga/bavaro">Liga</a>
 			<a href="/faq">FAQ</a>
 			<a href="/ueber">Über uns</a>
