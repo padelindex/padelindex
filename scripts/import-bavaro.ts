@@ -252,19 +252,11 @@ for (const m of matches) {
 L.push(histRows.join(',\n') + ';');
 L.push('');
 
-// ---------- Liga-Boxen (Zyklus data.cycle) ----------
+// ---------- Liga-Boxen ----------
 // Läuft in derselben Transaktion wie Spieler/Matches oben: league_boxes
-// braucht players.id und, für gespielte Runden, matches.id — beides muss
-// schon existieren. Match-IDs werden NICHT neu vergeben, sondern über
-// dieselbe uuidv5('match:...')-Ableitung wiederverwendet wie oben, sonst
-// gäbe es dieselben Ergebnisse doppelt (einmal frei, einmal an eine Box
-// gehängt) und das Rating würde ein zweites Mal angewendet.
-//
-// Alle 54 erfassten Matches — auch das bei 7:5, 0:3 abgebrochene in
-// Gruppe 19 — laufen als status='played': genau das hat
-// verify-bavaro-standings.ts bereits gegen die offizielle PDF-Tabelle
-// geprüft (0 Abweichungen), ein eigener 'abandoned'-Status hier würde
-// von der schon verifizierten Berechnung abweichen.
+// braucht players.id, das muss schon existieren. Gruppiert die echten
+// Zyklus-5-Endstände nach Box, unabhängig davon, ob und wie sie in der
+// neuen Liga-Ansicht später verwendet werden.
 const byGroup = new Map();
 for (const p of data.players) {
   if (p.group === null) continue;
@@ -272,20 +264,37 @@ for (const p of data.players) {
   list.push(players.get(p.name));
   byGroup.set(p.group, list);
 }
-const matchesByGroup = new Map();
-for (const m of matches) {
-  const list = matchesByGroup.get(m.group) ?? [];
-  list.push(m);
-  matchesByGroup.set(m.group, list);
-}
 
-const seasonId = uuidv5(`season:${data.league}:${data.season}`);
-const cycleId = uuidv5(`cycle:${data.league}:${data.cycle}`);
-// Das Enddatum liegt in der Vergangenheit -> ehrlich als abgeschlossen
-// markieren statt "läuft" zu behaupten.
-const cycleStatus = new Date(`${data.cycle_end}T00:00:00Z`) < new Date() ? 'completed' : 'running';
+// Entscheidung mit dem Auftraggeber (20.08.): die Liga-ANSICHT auf
+// PadelIndex soll frisch starten — keine offenen/unbespielten Boxen aus
+// Zyklus 5, kein Zyklus, der schon "läuft". Die Box-EINTEILUNG (wer mit
+// wem in einer Box) wird trotzdem von den echten Zyklus-5-Endständen
+// übernommen, unverändert, ohne Auf-/Abstieg anzuwenden — wir wissen
+// nicht, ob der reale Auf-/Abstieg nach Zyklus 5 schon anderswo
+// vollzogen wurde, und wollen ihn nicht doppelt oder abweichend
+// berechnen. Name bewusst neutral statt einer erfundenen Zyklusnummer,
+// die nach einer echten offiziellen Bezeichnung aussehen könnte.
+//
+// Das allgemeine Index-Rating (Spieler/Matches/Rating-Historie oben)
+// bleibt davon unberührt — das ist ein eigenes System und bezieht seine
+// Werte weiter aus den echten Zyklus-5-Ergebnissen.
+const NEW_SEASON_NAME = 'Start auf PadelIndex';
+const NEW_CYCLE_ORDINAL = 1;
+const seasonId = uuidv5(`league-season:padelindex-start`);
+const cycleId = uuidv5(`league-cycle:padelindex-start:${NEW_CYCLE_ORDINAL}`);
 
-L.push(`-- ---------- Liga-Boxen (Zyklus ${data.cycle}) ----------`);
+// Zykluslänge orientiert sich an der echten Zyklus-5-Dauer (41 Tage) —
+// kein Wert aus der Luft gegriffen. Startdatum: heute, zum Zeitpunkt
+// dieses Skriptlaufs. Vor dem Ausführen im SQL Editor bei Bedarf von
+// Hand anpassen.
+const cycleDurationDays = Math.round(
+  (new Date(`${data.cycle_end}T00:00:00Z`).getTime() - new Date(`${data.cycle_start}T00:00:00Z`).getTime()) /
+    86400000
+);
+const todayISO = new Date().toISOString().slice(0, 10);
+const endISO = new Date(Date.now() + cycleDurationDays * 86400000).toISOString().slice(0, 10);
+
+L.push(`-- ---------- Liga-Start (neue Saison, Box-Aufstellung aus Zyklus ${data.cycle} übernommen) ----------`);
 L.push('do $$');
 L.push('declare');
 L.push('  v_league_id uuid;');
@@ -295,13 +304,13 @@ L.push('  if v_league_id is null then');
 L.push(`    raise exception 'Keine Liga für Verein % — 0016_league_module.sql zuerst ausführen', ${q(data.club_slug)};`);
 L.push('  end if;');
 L.push('');
-L.push(`  insert into league_seasons (id, league_id, name, status) values (${q(seasonId)}, v_league_id, ${q(data.season)}, 'running')`);
+L.push(`  insert into league_seasons (id, league_id, name, status) values (${q(seasonId)}, v_league_id, ${q(NEW_SEASON_NAME)}, 'running')`);
 L.push('  on conflict (id) do nothing;');
 L.push('');
 L.push(
-  `  insert into league_cycles (id, season_id, ordinal, start_date, end_date, status) values (${q(cycleId)}, ${q(seasonId)}, ${n(data.cycle)}, ${q(data.cycle_start)}, ${q(data.cycle_end)}, ${q(cycleStatus)})`
+  `  insert into league_cycles (id, season_id, ordinal, start_date, end_date, status) values (${q(cycleId)}, ${q(seasonId)}, ${n(NEW_CYCLE_ORDINAL)}, ${q(todayISO)}, ${q(endISO)}, 'running')`
 );
-L.push('  on conflict (id) do update set status = excluded.status;');
+L.push('  on conflict (id) do nothing;');
 L.push('end $$;');
 L.push('');
 
@@ -309,18 +318,19 @@ L.push('-- ---------- Boxen ----------');
 L.push('insert into league_boxes (id, cycle_id, ladder_position) values');
 const boxRows = [...byGroup.keys()]
   .sort((a, b) => a - b)
-  .map((g) => `  (${q(uuidv5(`box:${data.league}:${data.cycle}:${g}`))}, ${q(cycleId)}, ${n(g)})`);
+  .map((g) => `  (${q(uuidv5(`league-box:padelindex-start:${g}`))}, ${q(cycleId)}, ${n(g)})`);
 L.push(boxRows.join(',\n'));
 L.push('on conflict (id) do nothing;');
 L.push('');
 
 L.push('-- ---------- Aufstellung ----------');
+L.push('-- Aus den echten Zyklus-5-Endständen übernommen, unverändert.');
 L.push('-- Sitz = Position in der offiziellen Tabelle je Box; das legt die');
 L.push('-- Rotation fest (roundPairings() in box-americano.ts).');
 L.push('insert into league_box_members (box_id, player_id, seat, role) values');
 const memberRows = [];
 for (const g of [...byGroup.keys()].sort((a, b) => a - b)) {
-  const boxId = uuidv5(`box:${data.league}:${data.cycle}:${g}`);
+  const boxId = uuidv5(`league-box:padelindex-start:${g}`);
   byGroup.get(g).forEach((p, i) => {
     memberRows.push(`  (${q(boxId)}, ${q(p.id)}, ${n(i + 1)}, 'regular')`);
   });
@@ -330,27 +340,20 @@ L.push('on conflict (box_id, player_id) do nothing;');
 L.push('');
 
 L.push('-- ---------- Runden ----------');
-L.push('-- Gespielte Boxen verweisen auf die oben angelegten matches-Zeilen');
-L.push('-- (dieselbe uuidv5-Ableitung, keine neuen Matches). Unbespielte');
-L.push('-- Boxen (1, 13, 21 in Zyklus 5) bekommen offene Platzhalter, damit');
-L.push('-- die Ergebniseingabe etwas zum Buchen hat.');
+L.push('-- Bewusst KEIN Bezug zu den echten Zyklus-5-Matches oben: die neue');
+L.push('-- Liga-Ansicht startet ohne jedes Ergebnis, jede Box mit drei');
+L.push('-- offenen Runden. Das echte Rating aus Zyklus 5 bleibt trotzdem');
+L.push('-- über die Rating-Historie im allgemeinen Index erhalten.');
 L.push('insert into league_box_matches (box_id, round_number, match_id, status) values');
 const roundRows = [];
 for (const g of [...byGroup.keys()].sort((a, b) => a - b)) {
-  const boxId = uuidv5(`box:${data.league}:${data.cycle}:${g}`);
-  const played = matchesByGroup.get(g) ?? [];
-  if (played.length === 0) {
-    for (let r = 1; r <= BOX_AMERICANO_4_DEFAULTS.rounds; r++) {
-      roundRows.push(`  (${q(boxId)}, ${n(r)}, null, 'scheduled')`);
-    }
-  } else {
-    played.forEach((m, i) => {
-      roundRows.push(`  (${q(boxId)}, ${n(i + 1)}, ${q(m.id)}, 'played')`);
-    });
+  const boxId = uuidv5(`league-box:padelindex-start:${g}`);
+  for (let r = 1; r <= BOX_AMERICANO_4_DEFAULTS.rounds; r++) {
+    roundRows.push(`  (${q(boxId)}, ${n(r)}, null, 'scheduled')`);
   }
 }
 L.push(roundRows.join(',\n'));
-L.push('on conflict (box_id, round_number) do update set match_id = excluded.match_id, status = excluded.status;');
+L.push('on conflict (box_id, round_number) do nothing;');
 L.push('');
 
 L.push('commit;');
