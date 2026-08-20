@@ -13,6 +13,7 @@
 	import ConfidenceCurve from '$lib/components/landing/ConfidenceCurve.svelte';
 	import RatingJourney from '$lib/components/landing/RatingJourney.svelte';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
+	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 
 	const NAV = [
 		{ href: '/#problem', label: 'Warum' },
@@ -191,15 +192,4 @@
 	</section>
 </main>
 
-<footer>
-	<div class="wrap foot-in">
-		<span>© 2026 PadelIndex</span>
-		<div class="foot-links">
-			<a href="/rating">Rating</a>
-			<a href="/vereine">Vereine</a>
-			<a href="/anmelden">Anmelden</a>
-			<a href="/datenschutz">Datenschutz</a>
-			<a href="/impressum">Impressum</a>
-		</div>
-	</div>
-</footer>
+<LandingFooter />
