@@ -17,7 +17,9 @@ const ORIGIN = 'https://padelindex.de';
 const STATIC_PAGES = [
 	{ path: '/', priority: '1.0', changefreq: 'weekly' },
 	{ path: '/rating', priority: '0.8', changefreq: 'monthly' },
-	{ path: '/vereine', priority: '0.8', changefreq: 'monthly' }
+	{ path: '/vereine', priority: '0.8', changefreq: 'monthly' },
+	{ path: '/faq', priority: '0.6', changefreq: 'monthly' },
+	{ path: '/ueber', priority: '0.5', changefreq: 'yearly' }
 ];
 
 export const GET: RequestHandler = async ({ platform, setHeaders }) => {

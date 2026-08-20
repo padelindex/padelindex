@@ -5,6 +5,7 @@
 	import TokenFlow from '$lib/components/landing/TokenFlow.svelte';
 	import SignupForm from '$lib/components/landing/SignupForm.svelte';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
+	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -60,7 +61,7 @@
 				<a class="btn btn-ghost" href="/rating">Erst mal ausprobieren</a>
 			</div>
 			<p class="hero-note" use:reveal={{ delay: 0.24 }}>
-				Gründungsvereine · Oberland &amp; Umgebung
+				Pilotverein: STC Oberland
 			</p>
 		</div>
 
@@ -177,7 +178,7 @@
 		<i style="left:20%"></i><i style="left:40%"></i><i style="left:60%"></i><i style="left:80%"></i>
 	</div>
 	<div class="wrap cta-in">
-		<span class="eyebrow" use:reveal>Gründungsvereine</span>
+		<span class="eyebrow" use:reveal>Pilotphase</span>
 		<h2 use:reveal={{ delay: 0.05 }}>Der erste Wert entsteht<br />mit deinem ersten Match.</h2>
 		<p class="muted" use:reveal={{ delay: 0.1 }} style="margin-top:22px">
 			Wir starten im Oberland. Trag dich ein, dann melden wir uns, sobald dein Club dabei ist — oder
@@ -200,15 +201,4 @@
 </section>
 </main>
 
-<footer>
-	<div class="wrap foot-in">
-		<span>© 2026 PadelIndex</span>
-		<div class="foot-links">
-			<a href="/rating">Rating</a>
-			<a href="/vereine">Vereine</a>
-			<a href="/anmelden">Anmelden</a>
-			<a href="/datenschutz">Datenschutz</a>
-			<a href="/impressum">Impressum</a>
-		</div>
-	</div>
-</footer>
+<LandingFooter />
