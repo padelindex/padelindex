@@ -1,35 +1,12 @@
 // Liga-Verwaltung: Auf-/Abstiegsvorschlag prüfen und bestätigen.
 // Zugriff hat, wer Admin des Vereins ist, zu dem die Liga gehört —
-// geprüft bei jedem Laden UND bei jeder Aktion (isClubAdmin).
+// geprüft bei jedem Laden UND bei jeder Aktion (requireLeagueAdmin).
 
-import { error, fail, redirect } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { supabaseAdmin, supabasePublic } from '$lib/server/supabase';
-import { isClubAdmin } from '$lib/server/club-admin';
-import {
-	applyPromotionProposal,
-	loadCurrentCycle,
-	loadLadder,
-	loadLeague,
-	loadPromotionProposal
-} from '$lib/server/league';
-
-async function requireLeagueAdmin(
-	platform: App.Platform | undefined,
-	slug: string,
-	playerId: string | undefined,
-	pathname: string
-) {
-	const league = await loadLeague(supabasePublic(platform), slug);
-	if (!league) throw error(404, 'Diese Liga gibt es nicht.');
-	if (!playerId) throw redirect(303, `/anmelden?next=${encodeURIComponent(pathname)}`);
-	if (!league.clubId) throw error(403, 'Diese Liga hat keinen Verein, der sie verwalten könnte.');
-
-	const ok = await isClubAdmin(supabaseAdmin(platform), league.clubId, playerId);
-	if (!ok) throw error(403, 'Nur Vereins-Admins können diese Liga verwalten.');
-
-	return league;
-}
+import { supabaseAdmin } from '$lib/server/supabase';
+import { applyPromotionProposal, loadCurrentCycle, loadLadder, loadPromotionProposal } from '$lib/server/league';
+import { requireLeagueAdmin } from '$lib/server/league-admin';
 
 export const load: PageServerLoad = async ({ params, url, platform, locals }) => {
 	const league = await requireLeagueAdmin(platform, params.slug, locals.player?.id, url.pathname);
@@ -65,12 +42,7 @@ export const actions: Actions = {
 			});
 		}
 
-		const count = await applyPromotionProposal(
-			admin,
-			cycle.id,
-			locals.player!.id,
-			league.config
-		);
+		const count = await applyPromotionProposal(admin, cycle.id, locals.player!.id, league.config);
 		return { success: true, count };
 	}
 };

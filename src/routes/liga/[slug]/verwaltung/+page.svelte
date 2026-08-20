@@ -44,9 +44,13 @@
 			<span class="eyebrow" use:reveal>Verwaltung</span>
 			<h1 use:reveal={{ delay: 0.05 }}>{data.league.name}</h1>
 
+			<p class="cycles-link" use:reveal={{ delay: 0.08 }}>
+				<a href="/liga/{data.league.slug}/verwaltung/zyklen">Zyklen und Boxen verwalten →</a>
+			</p>
+
 			{#if !data.cycle}
 				<p class="muted intro" use:reveal={{ delay: 0.1 }}>
-					Für diese Liga läuft gerade kein Zyklus.
+					Für diese Liga läuft gerade kein Zyklus. Leg unter „Zyklen und Boxen verwalten" einen an.
 				</p>
 			{:else}
 				<p class="muted intro" use:reveal={{ delay: 0.1 }}>
@@ -158,6 +162,14 @@
 <style>
 	h1 {
 		margin-top: 18px;
+	}
+	.cycles-link {
+		margin-top: 14px;
+		font-size: 14px;
+	}
+	.cycles-link a {
+		color: var(--court-deep, #0f6e5c);
+		font-weight: 600;
 	}
 	.intro {
 		margin-top: 14px;
