@@ -2,11 +2,22 @@
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import { createBrowserSupabase, readMagicLinkTokensFromHash } from '$lib/supabase-browser';
 	import { abbreviateName } from '$lib/claim-match';
+	import { parseLevelParam } from '$lib/level-estimator';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// Kommt jemand vom Level-Schätzer (?levelschaetzung=X), füllen wir das
+	// Feld nur vor, wenn noch keine eigene Selbsteinschätzung gespeichert
+	// ist — eine bestehende Angabe wird nie überschrieben.
+	const levelSuggestion = $derived(
+		data.player && data.player.selfAssessedLevel === null
+			? parseLevelParam(page.url.searchParams.get('levelschaetzung'))
+			: null
+	);
 
 	let emailBusy = $state(false);
 	let confirmingId = $state<string | null>(null);
@@ -470,6 +481,13 @@
 							<span class="num">· {data.player.selfAssessedLevel.toFixed(1)}</span>
 						{/if}
 					</label>
+					{#if levelSuggestion !== null}
+						<p class="muted" style="font-size: 12px; margin: 6px 0 10px">
+							Vorschlag aus deinem <a href="/level-schaetzen">Level-Schätzer</a>-Ergebnis: {levelSuggestion.toFixed(
+								1
+							)}. Übernommen, du kannst es unten noch anpassen.
+						</p>
+					{/if}
 					<input
 						id="selfAssessedLevel"
 						name="selfAssessedLevel"
@@ -477,7 +495,7 @@
 						min="0"
 						max="7"
 						step="0.5"
-						value={data.player.selfAssessedLevel ?? ''}
+						value={data.player.selfAssessedLevel ?? levelSuggestion ?? ''}
 						placeholder="ohne Angabe"
 					/>
 

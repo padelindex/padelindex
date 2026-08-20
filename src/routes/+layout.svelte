@@ -2,7 +2,7 @@
 	import '$lib/styles/landing.css';
 	import { jsonLd } from '$lib/jsonld';
 
-	let { children } = $props();
+	let { children, data } = $props();
 
 	const organization = {
 		'@context': 'https://schema.org',
@@ -17,6 +17,16 @@
 
 <svelte:head>
 	{@html `<script type="application/ld+json">${jsonLd(organization)}</script>`}
+	{#if data.cfBeaconToken}
+		<!-- Cloudflare Web Analytics: cookiefrei, kein eigenes Deployment
+		     nötig (Website-Audit Block 6). Ohne Token im Dashboard konfiguriert
+		     bleibt dieses Script komplett weg, siehe lib/server/env.ts. -->
+		<script
+			defer
+			src="https://static.cloudflareinsights.com/beacon.min.js"
+			data-cf-beacon={JSON.stringify({ token: data.cfBeaconToken })}
+		></script>
+	{/if}
 </svelte:head>
 
 {@render children()}

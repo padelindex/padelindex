@@ -68,3 +68,16 @@ export function readTrialOfferEnabled(platform?: App.Platform): boolean {
 	);
 	return value === 'true';
 }
+
+/**
+ * Cloudflare Web Analytics (Website-Audit Block 6): cookiefreies Beacon-Script,
+ * ohne eigenes Deployment. Leer, bis das Team es im Cloudflare-Dashboard
+ * unter "Web Analytics" aktiviert und den Site-Token hier einträgt — bis
+ * dahin wird gar kein Script eingebunden (siehe +layout.svelte).
+ */
+export function readCfBeaconToken(platform?: App.Platform): string {
+	return first(
+		fromPlatform(platform, 'PUBLIC_CF_BEACON_TOKEN'),
+		asString(publicEnv.PUBLIC_CF_BEACON_TOKEN)
+	);
+}

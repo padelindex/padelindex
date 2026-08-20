@@ -6,11 +6,12 @@
 // public by design, unbedenklich im Seiten-Payload.
 
 import type { LayoutServerLoad } from './$types';
-import { readAppEnv } from '$lib/server/env';
+import { readAppEnv, readCfBeaconToken } from '$lib/server/env';
 
 export const load: LayoutServerLoad = ({ platform }) => {
 	const env = readAppEnv(platform);
 	return {
-		supabaseConfig: env ? { url: env.supabaseUrl, anonKey: env.supabaseAnonKey } : null
+		supabaseConfig: env ? { url: env.supabaseUrl, anonKey: env.supabaseAnonKey } : null,
+		cfBeaconToken: readCfBeaconToken(platform)
 	};
 };

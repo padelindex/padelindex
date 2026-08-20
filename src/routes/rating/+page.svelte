@@ -94,6 +94,10 @@
 				Das war nur die Simulation — für dein echtes Level braucht es ein echtes Match.
 				<a href="/#anmelden">Platz sichern →</a>
 			</p>
+			<p class="rechnen-cta" use:reveal={{ delay: 0.22 }}>
+				Noch keine Ahnung, wo du ungefähr stehst?
+				<a href="/level-schaetzen">Level grob schätzen →</a>
+			</p>
 		</div>
 	</section>
 
