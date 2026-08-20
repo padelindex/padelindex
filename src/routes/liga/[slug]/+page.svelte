@@ -11,15 +11,13 @@
 	// jede Box ihre eigene, in sich geschlossene Tabelle statt einer
 	// durchgehenden Rangliste über alle Boxen.
 
-	import { enhance } from '$app/forms';
 	import { reveal } from '$lib/landing/reveal';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
-	import type { ActionData, PageData } from './$types';
+	import SignupForm from '$lib/components/landing/SignupForm.svelte';
+	import type { PageData } from './$types';
 
-	let { data, form }: { data: PageData; form: ActionData } = $props();
-
-	let signupBusy = $state(false);
+	let { data }: { data: PageData } = $props();
 
 	const NAV = [
 		{ href: '/#problem', label: 'Warum' },
@@ -184,48 +182,11 @@
 				{:else}
 					<h2>Neu hier? Mitspielen.</h2>
 					<p class="muted">
-						Name und E-Mail reichen — wir schicken dir einen Anmelde-Link. Danach trägst du dich in
-						deinem Konto selbst auf die Warteliste ein, ein Box-Platz kommt dann von eurem
-						Vereins-Admin.
+						Trag dich mit deiner E-Mail ein — {data.league.clubName ?? 'euer Verein'} meldet sich
+						bei dir, sobald ein Platz frei wird. Ein Box-Platz ist immer eine Zuteilung durch den
+						Vereins-Admin, kein automatischer Login.
 					</p>
-
-					{#if form?.signupError}
-						<p class="warn" role="alert">{form.signupError}</p>
-					{/if}
-
-					{#if form?.signupSent}
-						<p class="ok" role="status">
-							Link verschickt — schau in dein Postfach (auch Spam-Ordner) und klick drauf.
-						</p>
-					{:else}
-						<form
-							method="POST"
-							action="?/signup"
-							use:enhance={() => {
-								signupBusy = true;
-								return async ({ update }) => {
-									await update();
-									signupBusy = false;
-								};
-							}}
-						>
-							<div class="joinfields">
-								<label class="sr-only" for="signup-name">Name</label>
-								<input id="signup-name" name="name" placeholder="Dein Name" required maxlength="120" />
-								<label class="sr-only" for="signup-email">E-Mail</label>
-								<input
-									id="signup-email"
-									name="email"
-									type="email"
-									placeholder="deine@email.de"
-									required
-								/>
-								<button class="btn btn-primary" type="submit" disabled={signupBusy}>
-									{signupBusy ? 'Wird verschickt …' : 'Anmelde-Link schicken'}
-								</button>
-							</div>
-						</form>
-					{/if}
+					<SignupForm defaultClub={data.league.clubName ?? ''} />
 				{/if}
 			</section>
 		</div>
@@ -434,34 +395,23 @@
 		color: var(--court-deep, #0f6e5c);
 		font-weight: 600;
 	}
-	.joinfields {
+	/* .signup ist global für den dunklen Hero-Kontext gestylt (heller Text
+	   auf fast-transparentem Feld) — hier auf hellem Kartenhintergrund
+	   sonst unlesbar. Eigene, helle Variante statt den globalen Regeln zu
+	   vertrauen. */
+	.joinbox :global(.signup) {
 		margin-top: 18px;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 10px;
+		justify-content: flex-start;
 	}
-	.joinfields input {
-		flex: 1 1 200px;
-		padding: 11px 14px;
-		border: 1px solid var(--line-light);
-		border-radius: 10px;
+	.joinbox :global(.signup input) {
 		background: #fff;
+		border-color: var(--line-light);
 		color: var(--ink);
-		font-size: 14px;
 	}
-	.warn,
-	.ok {
-		margin-top: 14px;
-		padding: 10px 14px;
-		border-radius: 10px;
-		font-size: 14px;
+	.joinbox :global(.signup input::placeholder) {
+		color: var(--muted-light);
 	}
-	.warn {
-		background: rgba(179, 65, 31, 0.1);
-		color: #8f3419;
-	}
-	.ok {
-		background: rgba(22, 163, 148, 0.14);
-		color: var(--court-deep, #0f6e5c);
+	.joinbox :global(.signup-hint) {
+		color: var(--muted-light);
 	}
 </style>
