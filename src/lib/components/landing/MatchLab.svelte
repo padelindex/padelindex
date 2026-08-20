@@ -88,6 +88,20 @@
 		touched();
 	}
 
+	// Presets statt vieler Stepper-Taps: auf dem Handy ist "sechsmal auf +
+	// tippen" die eigentliche Hürde, nicht die Eingabe selbst. Steppers
+	// bleiben für Feinjustierung erhalten, Presets sind nur ein Sprungbrett.
+	const PRESETS: { label: string; sets: { a: number; b: number }[] }[] = [
+		{ label: 'Klar gewonnen', sets: [{ a: 6, b: 2 }, { a: 6, b: 3 }] },
+		{ label: 'Knapp gewonnen', sets: [{ a: 7, b: 6 }, { a: 4, b: 6 }, { a: 7, b: 5 }] },
+		{ label: 'Klar verloren', sets: [{ a: 2, b: 6 }, { a: 3, b: 6 }] }
+	];
+
+	function applyPreset(preset: { a: number; b: number }[]) {
+		sets = preset.map((s) => ({ ...s }));
+		touched();
+	}
+
 	function removeSet() {
 		if (sets.length <= 1) return;
 		sets.pop();
@@ -170,6 +184,14 @@
 
 			<!-- Ergebnis -->
 			<div class="lab-score">
+				<div class="lab-presets" role="group" aria-label="Ergebnis-Vorlagen">
+					{#each PRESETS as preset (preset.label)}
+						<button type="button" class="lab-preset-btn" onclick={() => applyPreset(preset.sets)}>
+							{preset.label}
+						</button>
+					{/each}
+				</div>
+
 				<div class="lab-srow">
 					<span class="lab-slabel">Ergebnis</span>
 					<div class="lab-sbtns">
@@ -459,6 +481,29 @@
 		margin-top: 22px;
 		padding-top: 18px;
 		border-top: 1px solid var(--line-light);
+	}
+	.lab-presets {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-bottom: 16px;
+	}
+	.lab-preset-btn {
+		padding: 7px 13px;
+		border-radius: 100px;
+		border: 1px solid var(--line-light);
+		background: #fff;
+		color: var(--muted-light);
+		font-size: 12.5px;
+		font-family: var(--body);
+		cursor: pointer;
+		transition:
+			border-color 0.2s,
+			color 0.2s;
+	}
+	.lab-preset-btn:hover {
+		border-color: var(--court-deep);
+		color: var(--court-deep);
 	}
 	.lab-srow {
 		display: flex;

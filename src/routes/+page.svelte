@@ -107,6 +107,7 @@
 	{/if}
 </nav>
 
+<main>
 <!-- ============================ HERO ============================ -->
 <header class="hero" id="top">
 	<div class="mullions" aria-hidden="true">
@@ -387,7 +388,7 @@
 		<div class="tiers">
 			<div class="tier" use:reveal>
 				<span class="lvl">Kostenlos</span>
-				<h4>Einstieg</h4>
+				<h3>Einstieg</h3>
 				<ul>
 					<li>Top 10 des Vereins</li>
 					<li>Spielerprofile öffentlich</li>
@@ -396,7 +397,7 @@
 			</div>
 			<div class="tier hl" use:reveal={{ delay: 0.06 }}>
 				<span class="lvl">Basic</span>
-				<h4>Vereinsranking</h4>
+				<h3>Vereinsranking</h3>
 				<ul>
 					<li>Vollständige Tabelle</li>
 					<li>Filter nach Level, Geschlecht, Zeitraum</li>
@@ -406,7 +407,7 @@
 			</div>
 			<div class="tier" use:reveal={{ delay: 0.12 }}>
 				<span class="lvl">Pro</span>
-				<h4>Volle Integration</h4>
+				<h3>Volle Integration</h3>
 				<ul>
 					<li>Matchfinder nach Level</li>
 					<li>Prämienkatalog für Tokens</li>
@@ -451,6 +452,7 @@
 		{/if}
 	</div>
 </section>
+</main>
 
 <footer>
 	<div class="wrap foot-in">
