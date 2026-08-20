@@ -19,6 +19,14 @@
 			: null
 	);
 
+	// Kommt jemand frisch vom Anmelde-Link auf /liga/[slug] (?join_league=X),
+	// heben wir die Liga-Karte kurz hervor statt den Beitritt automatisch
+	// abzuschicken — der Klick auf "Auf die Warteliste" bleibt eine
+	// bewusste Handlung.
+	const highlightLeague = $derived(
+		data.league?.slug === page.url.searchParams.get('join_league') && data.leagueRegistration === null
+	);
+
 	let emailBusy = $state(false);
 	let confirmingId = $state<string | null>(null);
 	let redeemingId = $state<string | null>(null);
@@ -269,8 +277,14 @@
 			{/if}
 
 			{#if data.league}
-				<div class="card" id="liga">
+				<div class="card" id="liga" class:highlight={highlightLeague}>
 					<h3 class="card-title">{data.league.name}</h3>
+
+					{#if highlightLeague}
+						<p class="notice" role="status">
+							Fast geschafft — trag dich jetzt auf die Warteliste ein.
+						</p>
+					{/if}
 
 					{#if form?.leagueError}
 						<p class="err" role="alert">{form.leagueError}</p>
@@ -638,6 +652,10 @@
 		border: 1px solid var(--line-light, rgba(0, 0, 0, 0.1));
 		border-radius: 18px;
 		background: rgba(255, 255, 255, 0.6);
+	}
+	.card.highlight {
+		border-color: var(--court);
+		box-shadow: 0 0 0 3px rgba(22, 163, 148, 0.16);
 	}
 
 	.stat-row {
