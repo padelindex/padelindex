@@ -1,19 +1,23 @@
-// Sitemap als Endpunkt statt statischer Datei: die Vereinsseiten kommen
-// aus der Datenbank und sollen mitwachsen, ohne dass jemand daran denkt.
+// Sitemap als Endpunkt statt statischer Datei: die Vereins- und
+// Spielerseiten kommen aus der Datenbank und sollen mitwachsen, ohne
+// dass jemand daran denkt.
 //
 // Aufgenommen wird nur, was auch indexiert werden darf — /konto,
 // /anmelden, /embed und die Beanspruchen-Seiten tragen noindex und
-// bleiben deshalb draußen.
+// bleiben deshalb draußen. /impressum und /datenschutz ebenfalls: die
+// tragen seit Block 0 selbst noindex (siehe dort), ein noindex-Ziel in
+// der Sitemap zu listen sendet Google widersprüchliche Signale.
 
 import type { RequestHandler } from './$types';
 import { supabaseAnon } from '$lib/server/supabase';
+import { MIN_MATCHES_FOR_INDEXING } from '$lib/seo';
 
 const ORIGIN = 'https://padelindex.de';
 
 const STATIC_PAGES = [
 	{ path: '/', priority: '1.0', changefreq: 'weekly' },
-	{ path: '/datenschutz', priority: '0.3', changefreq: 'yearly' },
-	{ path: '/impressum', priority: '0.3', changefreq: 'yearly' }
+	{ path: '/rating', priority: '0.8', changefreq: 'monthly' },
+	{ path: '/vereine', priority: '0.8', changefreq: 'monthly' }
 ];
 
 export const GET: RequestHandler = async ({ platform, setHeaders }) => {
@@ -23,16 +27,32 @@ export const GET: RequestHandler = async ({ platform, setHeaders }) => {
 		changefreq: p.changefreq
 	}));
 
-	// Vereinsseiten sind öffentlich und lohnen sich im Index.
 	try {
 		const sb = supabaseAnon(platform);
 		if (sb) {
-			const { data } = await sb.from('clubs').select('slug').limit(500);
-			for (const club of data ?? []) {
+			// Vereinsseiten sind öffentlich und lohnen sich im Index.
+			const { data: clubs } = await sb.from('clubs').select('slug').limit(500);
+			for (const club of clubs ?? []) {
 				urls.push({
 					loc: `${ORIGIN}/c/${club.slug}`,
 					priority: '0.8',
 					changefreq: 'daily'
+				});
+			}
+
+			// Spielerprofile erst ab genug bestätigten Matches (lib/seo.ts) —
+			// club_leaderboard ist die einzige für anon lesbare Projektion auf
+			// players, players selbst ist seit 0005 für anon gesperrt.
+			const { data: players } = await sb
+				.from('club_leaderboard')
+				.select('handle, matches')
+				.gte('matches', MIN_MATCHES_FOR_INDEXING)
+				.limit(2000);
+			for (const p of players ?? []) {
+				urls.push({
+					loc: `${ORIGIN}/p/${p.handle}`,
+					priority: '0.5',
+					changefreq: 'weekly'
 				});
 			}
 		}

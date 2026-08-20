@@ -2,23 +2,72 @@
 	import { page } from '$app/state';
 	import ClubLeaderboard from '$lib/components/ClubLeaderboard.svelte';
 	import RatingLegend from '$lib/components/RatingLegend.svelte';
+	import { jsonLd } from '$lib/jsonld';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	const clubName = $derived(data.board?.club.name ?? 'Verein');
+	const clubUrl = $derived(`https://padelindex.de/c/${page.params.slug}`);
+
+	const breadcrumbs = $derived(
+		jsonLd({
+			'@context': 'https://schema.org',
+			'@type': 'BreadcrumbList',
+			itemListElement: [
+				{ '@type': 'ListItem', position: 1, name: 'PadelIndex', item: 'https://padelindex.de/' },
+				{ '@type': 'ListItem', position: 2, name: clubName, item: clubUrl }
+			]
+		})
+	);
+
+	// Nur Seite 1: eine ItemList soll die vollständige Rangliste
+	// beschreiben, nicht nur einen Ausschnitt — bei Paginierung würde ein
+	// "Rang 26" ohne die Ränge 1–25 mehr verwirren als nützen.
+	const itemList = $derived.by(() => {
+		if (!data.board || data.board.page > 1) return null;
+		return jsonLd({
+			'@context': 'https://schema.org',
+			'@type': 'ItemList',
+			name: `${clubName} — Level-Ranking`,
+			itemListElement: data.board.players.map((p) => ({
+				'@type': 'ListItem',
+				position: p.rank,
+				name: p.name,
+				url: `https://padelindex.de/p/${p.handle}`
+			}))
+		});
+	});
 	const description = $derived(
 		`Öffentliches Level-Ranking von ${clubName} auf PadelIndex — aus bestätigten Matches, mit Sicherheitsgrad je Spieler.`
 	);
 	// Vereinsseiten sind indexierbar und werden verlinkt, deshalb eine
-	// eigene Canonical-URL statt der Startseiten-Angabe.
-	const canonical = $derived(`https://padelindex.de/c/${page.params.slug}`);
+	// eigene Canonical-URL statt der Startseiten-Angabe. Ab Seite 2 zeigt
+	// jede Seite auf sich selbst statt auf Seite 1 — die Spielerlisten
+	// unterscheiden sich wirklich, eine Weiterleitung des Canonical auf
+	// Seite 1 würde Google die hinteren Seiten faktisch verstecken.
+	const canonical = $derived.by(() => {
+		const base = `https://padelindex.de/c/${page.params.slug}`;
+		const current = data.board?.page ?? 1;
+		return current > 1 ? `${base}?page=${current}` : base;
+	});
 </script>
 
 <svelte:head>
 	<title>{clubName} — Level-Ranking | PadelIndex</title>
 	<meta name="description" content={description} />
 	<link rel="canonical" href={canonical} />
+	{#if data.board && data.board.page > 1}
+		<link
+			rel="prev"
+			href="https://padelindex.de/c/{page.params.slug}{data.board.page - 1 > 1
+				? `?page=${data.board.page - 1}`
+				: ''}"
+		/>
+	{/if}
+	{#if data.board && data.board.page < data.board.totalPages}
+		<link rel="next" href="https://padelindex.de/c/{page.params.slug}?page={data.board.page + 1}" />
+	{/if}
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
@@ -26,6 +75,10 @@
 	<meta property="og:title" content="{clubName} — Level-Ranking" />
 	<meta property="og:description" content={description} />
 	<meta name="theme-color" content="#0B1E26" />
+	{@html `<script type="application/ld+json">${breadcrumbs}</script>`}
+	{#if itemList}
+		{@html `<script type="application/ld+json">${itemList}</script>`}
+	{/if}
 </svelte:head>
 
 <nav class="nav">
