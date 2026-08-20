@@ -3,6 +3,11 @@
 	/level-schaetzen (Website-Audit Block 5: "Footer-Erweiterung",
 	Block 6: Level-Schätzer-Link ergänzt) — vorher dreifach kopierte
 	Markup mit nur fünf Links, jetzt eine Stelle.
+
+	Liga-Link zeigt bewusst direkt auf /liga/bavaro statt auf eine
+	generische /liga-Übersicht: es gibt aktuell genau eine Liga, eine
+	Index-Seite mit einem einzigen Eintrag wäre dünner Content ohne
+	echten Mehrwert.
 -->
 <footer>
 	<div class="wrap foot-in">
@@ -11,6 +16,7 @@
 			<a href="/rating">Rating</a>
 			<a href="/level-schaetzen">Level-Schätzer</a>
 			<a href="/vereine">Vereine</a>
+			<a href="/liga/bavaro">Liga</a>
 			<a href="/faq">FAQ</a>
 			<a href="/ueber">Über uns</a>
 			<a href="/anmelden">Anmelden</a>
