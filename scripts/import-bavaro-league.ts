@@ -72,7 +72,7 @@ function uuidv5(name: string, namespace = NAMESPACE): string {
 
 const q = (v: string | null) => (v === null ? 'null' : `'${v.replace(/'/g, "''")}'`);
 
-type SrcPlayer = { name: string; group: number | null };
+type SrcPlayer = { name: string; group: number | null; waitlist?: boolean };
 const data = JSON.parse(readFileSync(IN, 'utf8')) as { players: SrcPlayer[] };
 
 const byGroup = new Map<number, SrcPlayer[]>();
@@ -82,6 +82,12 @@ for (const p of data.players) {
 	list.push(p);
 	byGroup.set(p.group, list);
 }
+
+// Für die Warteliste: Zyklus-5-Rohdaten markieren einzelne Spieler explizit
+// (waitlist: true). Wer weder eine Box noch dieses Flag hat, ist in den
+// Rohdaten schlicht nicht erfasst — für den legen wir keine Registrierung
+// an, statt eine Vermutung zu erfinden.
+const waitlisted = data.players.filter((p) => p.group === null && p.waitlist === true);
 
 const groups = [...byGroup.keys()].sort((a, b) => a - b);
 for (const g of groups) {
@@ -198,6 +204,29 @@ L.push(
 L.push('on conflict (box_id, round_number) do nothing;');
 L.push('');
 
+L.push('-- ---------- Registrierungen ----------');
+L.push('-- Wer gerade in einer Box sitzt, gilt als aktiv; die explizit als');
+L.push("-- Warteliste markierten Spieler als 'waitlist'. Das ist die Grundlage");
+L.push('-- für die Ersatz-Logik (nächster von der Warteliste rückt nach).');
+L.push('insert into league_registrations (league_id, player_id, status)');
+L.push('select l.id, v.player_id, v.status');
+L.push('from leagues l');
+L.push(`join (values`);
+const registrationRows: string[] = [];
+for (const g of groups) {
+	byGroup.get(g)!.forEach((p) => {
+		registrationRows.push(`  (${q(uuidv5(`player:${p.name}`))}::uuid, 'active')`);
+	});
+}
+for (const p of waitlisted) {
+	registrationRows.push(`  (${q(uuidv5(`player:${p.name}`))}::uuid, 'waitlist')`);
+}
+L.push(registrationRows.join(',\n'));
+L.push(') as v(player_id, status) on true');
+L.push(`where l.slug = ${q(LEAGUE_SLUG)}`);
+L.push('on conflict (league_id, player_id) do nothing;');
+L.push('');
+
 L.push('commit;');
 L.push('');
 
@@ -206,4 +235,5 @@ writeFileSync(OUT, L.join('\n'), 'utf8');
 console.log(`Geschrieben: ${OUT}`);
 console.log(`Saison: "${SEASON_NAME}", Zyklus ${CYCLE_ORDINAL}, ${CYCLE_START} bis ${CYCLE_END}`);
 console.log(`${groups.length} Boxen, ${memberRows.length} Aufstellungs-Zeilen, ${groups.length * ROUNDS_PER_BOX} offene Runden.`);
+console.log(`${registrationRows.length} Registrierungen (${memberRows.length} aktiv, ${waitlisted.length} Warteliste).`);
 console.log('Vor dem Ausführen im SQL Editor: CYCLE_START/CYCLE_END im Skript prüfen, falls ihr ein festes Datum wollt.');

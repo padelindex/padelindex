@@ -20,6 +20,7 @@ import { error, redirect } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseAdmin, supabasePublic } from '$lib/server/supabase';
 import { isClubAdmin } from '$lib/server/club-admin';
+import { formatPlayerName } from '$lib/claim-match';
 import { loadLeague, type League } from '$lib/server/league';
 
 /**
@@ -331,4 +332,135 @@ export async function nextLadderPosition(admin: SupabaseClient, cycleId: string)
 		.limit(1)
 		.maybeSingle();
 	return (data?.ladder_position ?? 0) + 1;
+}
+
+// ------------------------------------------------------------
+// Warteliste & Ersatz mitten im Zyklus
+// ------------------------------------------------------------
+// league_registrations bildet die Beziehung Spieler<->Liga insgesamt ab
+// (aktiv/Warteliste/Ersatzpool/ausgetreten), unabhängig von der Frage,
+// in welcher Box jemand gerade sitzt (league_box_members). Ein Austritt
+// betrifft potenziell beides: die Registrierung wechselt auf 'left',
+// UND — falls die Person gerade eine Box besetzt — der freie Sitz wird
+// entweder leer gelassen oder sofort mit dem nächsten von der Warteliste
+// befüllt.
+
+export type WaitlistEntry = {
+	playerId: string;
+	name: string;
+	joinedAt: string;
+};
+
+/** Warteliste, älteste Anmeldung zuerst — das ist "der Nächstbeste". */
+export async function listWaitlist(admin: SupabaseClient, leagueId: string): Promise<WaitlistEntry[]> {
+	const { data, error: err } = await admin
+		.from('league_registrations')
+		.select('player_id, joined_at, players!inner(display_name, claim_status, show_full_name)')
+		.eq('league_id', leagueId)
+		.eq('status', 'waitlist')
+		.order('joined_at', { ascending: true });
+
+	if (err) throw error(500, err.message);
+
+	return (data ?? []).map((row) => {
+		const p = row.players as unknown as {
+			display_name: string;
+			claim_status: string;
+			show_full_name: boolean;
+		};
+		return {
+			playerId: row.player_id,
+			name: formatPlayerName(p.display_name, p.claim_status, p.show_full_name),
+			joinedAt: row.joined_at
+		};
+	});
+}
+
+/**
+ * Ein Spieler verlässt die Liga mitten im Zyklus. Deckt zwei Fälle ab:
+ *   - saß gerade in keiner Box (z. B. direkt von der Warteliste ausgetreten)
+ *     -> nur die Registrierung wird auf 'left' gesetzt.
+ *   - saß in einer Box -> der Sitz wird frei; optional übernimmt
+ *     replacementPlayerId ihn sofort als Ersatz (role='substitute',
+ *     replaces_player_id gesetzt, für Transparenz in der Aufstellung).
+ *
+ * Bereits gespielte Runden bleiben unangetastet — die liegen in
+ * matches/match_participants und kennen league_box_members gar nicht.
+ * Deshalb ist hier, anders als bei removeBoxMember(), eine Box MIT
+ * gemeldeten Ergebnissen ausdrücklich der Normalfall.
+ */
+export async function departLeagueMember(
+	admin: SupabaseClient,
+	params: {
+		leagueId: string;
+		departingPlayerId: string;
+		replacementPlayerId: string | null;
+	}
+): Promise<WriteResult> {
+	const { data: membership } = await admin
+		.from('league_box_members')
+		.select('box_id, seat, league_boxes!inner(cycle_id)')
+		.eq('player_id', params.departingPlayerId)
+		.maybeSingle();
+
+	const box = membership
+		? { boxId: membership.box_id, seat: membership.seat, cycleId: (membership.league_boxes as unknown as { cycle_id: string }).cycle_id }
+		: null;
+
+	if (box && params.replacementPlayerId) {
+		const assigned = await listAssignedPlayerIds(admin, box.cycleId);
+		if (assigned.has(params.replacementPlayerId)) {
+			return { ok: false, message: 'Diese Person spielt in diesem Zyklus bereits in einer anderen Box.' };
+		}
+
+		const { count: openRounds } = await admin
+			.from('league_box_matches')
+			.select('id', { count: 'exact', head: true })
+			.eq('box_id', box.boxId)
+			.eq('status', 'scheduled');
+		if (!openRounds) {
+			return {
+				ok: false,
+				message: 'Diese Box hat keine offene Runde mehr — ein Ersatz würde hier nichts mehr betreffen.'
+			};
+		}
+	}
+
+	if (box) {
+		const { error: delErr } = await admin
+			.from('league_box_members')
+			.delete()
+			.eq('box_id', box.boxId)
+			.eq('player_id', params.departingPlayerId);
+		if (delErr) return { ok: false, message: delErr.message };
+
+		if (params.replacementPlayerId) {
+			const { error: insErr } = await admin.from('league_box_members').insert({
+				box_id: box.boxId,
+				player_id: params.replacementPlayerId,
+				seat: box.seat,
+				role: 'substitute',
+				replaces_player_id: params.departingPlayerId
+			});
+			if (insErr) return { ok: false, message: insErr.message };
+		}
+	}
+
+	const { error: leftErr } = await admin
+		.from('league_registrations')
+		.update({ status: 'left', left_at: new Date().toISOString() })
+		.eq('league_id', params.leagueId)
+		.eq('player_id', params.departingPlayerId);
+	if (leftErr) return { ok: false, message: leftErr.message };
+
+	if (params.replacementPlayerId) {
+		const { error: activeErr } = await admin
+			.from('league_registrations')
+			.update({ status: 'active' })
+			.eq('league_id', params.leagueId)
+			.eq('player_id', params.replacementPlayerId);
+		if (activeErr) return { ok: false, message: activeErr.message };
+	}
+
+	return { ok: true };
 }
