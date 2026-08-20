@@ -6,9 +6,19 @@
 	//
 	// Als echtes <form> gebaut: Enter im Feld sendet ab, ohne dass wir
 	// dafür einen keydown-Handler brauchen.
+	//
+	// defaultClub: für Kontexte, in denen der Verein schon feststeht
+	// (z. B. die Liga-Seite eines Vereins) — vorausgefüllt, aber vom
+	// Feld her weiterhin ein normales Textfeld, keine feste Zuordnung.
+
+	import { untrack } from 'svelte';
+
+	let { defaultClub = '' }: { defaultClub?: string } = $props();
 
 	let email = $state('');
-	let club = $state('');
+	// untrack: bewusst nur der Startwert, kein fortlaufender Sync mit dem
+	// Prop — das Feld bleibt danach ein normales, frei editierbares Textfeld.
+	let club = $state(untrack(() => defaultClub));
 	let busy = $state(false);
 	let status = $state<'idle' | 'ok' | 'error'>('idle');
 	let message = $state('');
@@ -95,7 +105,11 @@
 	{message}
 </p>
 <p class="signup-hint">
-	Sag uns, welcher Verein — dann fragen wir ihn direkt an. Kein Spam, keine Weitergabe.
+	{#if defaultClub}
+		{defaultClub} meldet sich bei dir. Kein Spam, keine Weitergabe.
+	{:else}
+		Sag uns, welcher Verein — dann fragen wir ihn direkt an. Kein Spam, keine Weitergabe.
+	{/if}
 </p>
 
 <style>

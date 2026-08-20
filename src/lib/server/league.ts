@@ -29,6 +29,8 @@ import {
 export type League = {
 	id: string;
 	clubId: string | null;
+	/** Name des Trägervereins — für die "hier steigst du ein"-CTA auf der Ligaseite. */
+	clubName: string | null;
 	name: string;
 	slug: string;
 	format: string;
@@ -100,7 +102,7 @@ function readConfig(raw: unknown): BoxLeagueConfig {
 export async function loadLeague(sb: SupabaseClient, slug: string): Promise<League | null> {
 	const { data, error: err } = await sb
 		.from('leagues')
-		.select('id, club_id, name, slug, format, config')
+		.select('id, club_id, name, slug, format, config, clubs(name)')
 		.eq('slug', slug)
 		.maybeSingle();
 
@@ -110,6 +112,7 @@ export async function loadLeague(sb: SupabaseClient, slug: string): Promise<Leag
 	return {
 		id: data.id,
 		clubId: data.club_id,
+		clubName: (data.clubs as unknown as { name: string } | null)?.name ?? null,
 		name: data.name,
 		slug: data.slug,
 		format: data.format,
@@ -125,7 +128,7 @@ export async function loadLeague(sb: SupabaseClient, slug: string): Promise<Leag
 export async function loadLeagueForClub(sb: SupabaseClient, clubId: string): Promise<League | null> {
 	const { data, error: err } = await sb
 		.from('leagues')
-		.select('id, club_id, name, slug, format, config')
+		.select('id, club_id, name, slug, format, config, clubs(name)')
 		.eq('club_id', clubId)
 		.eq('status', 'active')
 		.limit(1)
@@ -137,6 +140,7 @@ export async function loadLeagueForClub(sb: SupabaseClient, clubId: string): Pro
 	return {
 		id: data.id,
 		clubId: data.club_id,
+		clubName: (data.clubs as unknown as { name: string } | null)?.name ?? null,
 		name: data.name,
 		slug: data.slug,
 		format: data.format,

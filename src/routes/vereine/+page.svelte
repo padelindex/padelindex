@@ -101,7 +101,8 @@
 				</div>
 			</div>
 
-			<div class="demo-block" use:reveal>
+			<!-- id="demo": Sprungziel für "Interesse anmelden" von /karte. -->
+			<div class="demo-block" id="demo" use:reveal>
 				<h2>Lust, es auszuprobieren?</h2>
 				<p class="muted">Kurz Verein und Kontakt hinterlassen, wir zeigen es euch.</p>
 				<ClubDemoForm />

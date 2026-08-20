@@ -20,7 +20,8 @@ const STATIC_PAGES = [
 	{ path: '/vereine', priority: '0.8', changefreq: 'monthly' },
 	{ path: '/faq', priority: '0.6', changefreq: 'monthly' },
 	{ path: '/ueber', priority: '0.5', changefreq: 'yearly' },
-	{ path: '/level-schaetzen', priority: '0.6', changefreq: 'monthly' }
+	{ path: '/level-schaetzen', priority: '0.6', changefreq: 'monthly' },
+	{ path: '/karte', priority: '0.7', changefreq: 'weekly' }
 ];
 
 export const GET: RequestHandler = async ({ platform, setHeaders }) => {
