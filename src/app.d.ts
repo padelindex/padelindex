@@ -29,6 +29,8 @@ declare global {
 				PLATFORM_OWNER_EMAIL?: string;
 				/** "true" schaltet die "12 Monate kostenlos"-Aktion im Vereins-Bereich frei, siehe lib/server/env.ts. */
 				PUBLIC_TRIAL_OFFER_ENABLED?: string;
+				/** Cloudflare-Web-Analytics-Site-Token, siehe lib/server/env.ts. Leer = kein Beacon-Script. */
+				PUBLIC_CF_BEACON_TOKEN?: string;
 			};
 			ctx: ExecutionContext;
 			caches: CacheStorage;

@@ -17,9 +17,11 @@
 		"import:bavaro": "node scripts/run.mjs scripts/import-bavaro.ts"
 	},
 	"dependencies": {
+		"@resvg/resvg-wasm": "^2.6.2",
 		"@supabase/ssr": "^0.12.4",
 		"@supabase/supabase-js": "^2.112.3",
-		"openskill": "^5.0.1"
+		"openskill": "^5.0.1",
+		"satori": "^0.29.1"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-cloudflare": "^7.2.9",

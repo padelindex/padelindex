@@ -18,6 +18,11 @@ PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_VSHMoU9deBOLE4UOJjGafg_0Whiip7l"
 # "false" oder Zeile entfernen, sobald echte Preise feststehen.
 PUBLIC_TRIAL_OFFER_ENABLED = "true"
 
+# Cloudflare Web Analytics (Website-Audit Block 6): im Cloudflare-Dashboard
+# unter "Web Analytics" die Domain hinzufügen, den dort erzeugten
+# Site-Token hier eintragen. Leer = kein Analytics-Script wird geladen.
+PUBLIC_CF_BEACON_TOKEN = ""
+
 # 48h-Bestätigung: später aktivieren, sobald der Match-Flow steht.
 # [triggers]
 # crons = ["*/15 * * * *"]
