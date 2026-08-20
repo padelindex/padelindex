@@ -43,6 +43,21 @@ export const GET: RequestHandler = async ({ platform, setHeaders }) => {
 				});
 			}
 
+			// Ligaseiten sind ein eigenes öffentliches Produkt (0016).
+			// Entwürfe bleiben draußen, die RLS-Policy filtert sie ohnehin.
+			const { data: leagues } = await sb
+				.from('leagues')
+				.select('slug')
+				.neq('status', 'draft')
+				.limit(200);
+			for (const league of leagues ?? []) {
+				urls.push({
+					loc: `${ORIGIN}/liga/${league.slug}`,
+					priority: '0.7',
+					changefreq: 'weekly'
+				});
+			}
+
 			// Spielerprofile erst ab genug bestätigten Matches (lib/seo.ts) —
 			// club_leaderboard ist die einzige für anon lesbare Projektion auf
 			// players, players selbst ist seit 0005 für anon gesperrt.

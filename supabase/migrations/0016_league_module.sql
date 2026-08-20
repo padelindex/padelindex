@@ -224,14 +224,25 @@ alter table league_box_members   enable row level security;
 alter table league_registrations enable row level security;
 alter table league_promotions    enable row level security;
 
+-- create policy kennt kein "if not exists" — vorher droppen, damit die
+-- Migration wie die create-table-Blöcke oben wiederholbar bleibt.
+drop policy if exists leagues_public_read on leagues;
 create policy leagues_public_read on leagues
   for select using (status <> 'draft');
+
+drop policy if exists league_seasons_public_read on league_seasons;
 create policy league_seasons_public_read on league_seasons
   for select using (true);
+
+drop policy if exists league_cycles_public_read on league_cycles;
 create policy league_cycles_public_read on league_cycles
   for select using (true);
+
+drop policy if exists league_boxes_public_read on league_boxes;
 create policy league_boxes_public_read on league_boxes
   for select using (true);
+
+drop policy if exists league_box_matches_public_read on league_box_matches;
 create policy league_box_matches_public_read on league_box_matches
   for select using (true);
 
@@ -278,7 +289,128 @@ join players p on p.id = bm.player_id;
 grant select on league_box_lineup to anon, authenticated;
 
 -- ------------------------------------------------------------
--- 9. Die Bávaro-Liga als Datenzeile
+-- 9. Ergebnis einer Box-Runde melden
+-- ------------------------------------------------------------
+-- Eigene RPC statt create_match_report(): dort wird Vereinsmitgliedschaft
+-- geprüft, hier muss es Box-Mitgliedschaft sein — wer im selben Verein
+-- ist, darf trotzdem kein Ergebnis für eine fremde Box eintragen.
+-- Das Bestehende bleibt dadurch unangetastet.
+--
+-- Die Partie entsteht als ganz normale matches-Zeile. Nur der Melder
+-- bestätigt sofort, der Rest läuft über den bestehenden 48h-Flow
+-- (confirmMatchAsPlayer -> applyRatingForMatch -> apply_match_rating).
+-- Damit gilt für Liga-Ergebnisse dieselbe Zusage wie überall sonst:
+-- ein Ergebnis zählt erst, wenn das Gegnerteam zustimmt.
+--
+-- Die Paarung der Runde bestimmt die Rotation in TypeScript
+-- (roundPairings in lib/league/box-americano.ts) — SQL bekommt sie
+-- fertig übergeben und prüft nur noch auf Plausibilität.
+create or replace function create_league_box_result(
+  p_box_match_id uuid,
+  p_reporter_id  uuid,
+  p_team1        uuid[],
+  p_team2        uuid[],
+  p_sets         jsonb  -- [{"team1_games": int, "team2_games": int}, ...]
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_box_id      uuid;
+  v_status      text;
+  v_existing    uuid;
+  v_club_id     uuid;
+  v_played_at   timestamptz;
+  v_match_id    uuid;
+  v_all         uuid[];
+  v_member_cnt  int;
+  v_set_count   int;
+  s             jsonb;
+  i             int := 0;
+begin
+  select lbm.box_id, lbm.status, lbm.match_id,
+         l.club_id, coalesce(b.scheduled_at, now())
+    into v_box_id, v_status, v_existing, v_club_id, v_played_at
+  from league_box_matches lbm
+  join league_boxes b   on b.id = lbm.box_id
+  join league_cycles cy on cy.id = b.cycle_id
+  join league_seasons se on se.id = cy.season_id
+  join leagues l        on l.id = se.league_id
+  where lbm.id = p_box_match_id
+  for update of lbm;
+
+  if not found then
+    raise exception 'Runde % nicht gefunden', p_box_match_id;
+  end if;
+
+  if v_existing is not null then
+    raise exception 'Für diese Runde ist bereits ein Ergebnis eingetragen.';
+  end if;
+
+  if v_status <> 'scheduled' then
+    raise exception 'Runde ist nicht offen (status=%).', v_status;
+  end if;
+
+  if array_length(p_team1, 1) <> 2 or array_length(p_team2, 1) <> 2 then
+    raise exception 'Beide Teams brauchen genau zwei Spieler.';
+  end if;
+
+  v_all := p_team1 || p_team2;
+  if (select count(distinct x) from unnest(v_all) x) <> 4 then
+    raise exception 'Alle vier Spieler müssen unterschiedlich sein.';
+  end if;
+
+  select count(*) into v_member_cnt
+  from league_box_members
+  where box_id = v_box_id and player_id = any(v_all);
+
+  if v_member_cnt <> 4 then
+    raise exception 'Alle vier Spieler müssen zu dieser Box gehören.';
+  end if;
+
+  if not (p_reporter_id = any(v_all)) then
+    raise exception 'Nur wer in dieser Box spielt, darf das Ergebnis melden.';
+  end if;
+
+  select count(*) into v_set_count from jsonb_array_elements(p_sets);
+  if v_set_count < 1 or v_set_count > 5 then
+    raise exception 'Zwischen einem und fünf Sätzen angeben.';
+  end if;
+
+  insert into matches (club_id, source, format, played_at, reported_by, match_type)
+  values (v_club_id, 'club_league', 'best_of_3', v_played_at, p_reporter_id, 'vereinsliga')
+  returning id into v_match_id;
+
+  insert into match_participants (match_id, player_id, team, confirmed)
+  select v_match_id, x, 1, (x = p_reporter_id) from unnest(p_team1) x
+  union all
+  select v_match_id, x, 2, (x = p_reporter_id) from unnest(p_team2) x;
+
+  for s in select * from jsonb_array_elements(p_sets)
+  loop
+    i := i + 1;
+    insert into match_sets (match_id, set_number, team1_games, team2_games)
+    values (v_match_id, i, (s->>'team1_games')::smallint, (s->>'team2_games')::smallint);
+  end loop;
+
+  update league_box_matches
+     set match_id = v_match_id,
+         status   = 'played'
+   where id = p_box_match_id;
+
+  return v_match_id;
+end;
+$$;
+
+revoke all on function create_league_box_result(uuid, uuid, uuid[], uuid[], jsonb)
+  from public, anon, authenticated;
+grant execute on function create_league_box_result(uuid, uuid, uuid[], uuid[], jsonb)
+  to service_role;
+
+-- ------------------------------------------------------------
+-- 10. Die Bávaro-Liga als Datenzeile
 -- ------------------------------------------------------------
 -- Nur die Liga-DEFINITION (Name, Format, Regelwerk) — keine Spieler,
 -- keine Ergebnisse. Die enthalten Klarnamen und bleiben in dem
@@ -310,6 +442,7 @@ on conflict (slug) do nothing;
 
 -- ------------------------------------------------------------
 -- Reversibel (manuell, falls nötig):
+-- drop function if exists create_league_box_result(uuid, uuid, uuid[], uuid[], jsonb);
 -- drop view if exists league_box_lineup;
 -- drop table if exists league_promotions;
 -- drop table if exists league_registrations;
