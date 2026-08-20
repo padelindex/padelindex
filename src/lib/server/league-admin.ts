@@ -20,6 +20,7 @@ import { error, redirect } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseAdmin, supabasePublic } from '$lib/server/supabase';
 import { isClubAdmin } from '$lib/server/club-admin';
+import { formatPlayerName } from '$lib/claim-match';
 import { loadLeague, type League } from '$lib/server/league';
 
 /**
@@ -308,19 +309,6 @@ export async function removeBoxMember(
 	return { ok: true };
 }
 
-/** Für die Zuordnungs-UI: wer ist in diesem Zyklus schon EINER Box zugeteilt? */
-export async function listAssignedPlayerIds(admin: SupabaseClient, cycleId: string): Promise<Set<string>> {
-	const { data: boxes } = await admin.from('league_boxes').select('id').eq('cycle_id', cycleId);
-	const boxIds = (boxes ?? []).map((b) => b.id);
-	if (boxIds.length === 0) return new Set();
-
-	const { data: members } = await admin
-		.from('league_box_members')
-		.select('player_id')
-		.in('box_id', boxIds);
-	return new Set((members ?? []).map((m) => m.player_id));
-}
-
 /** Nächste freie Leiterposition in einem Zyklus — reiner Vorschlag fürs Formular. */
 export async function nextLadderPosition(admin: SupabaseClient, cycleId: string): Promise<number> {
 	const { data } = await admin
@@ -332,3 +320,51 @@ export async function nextLadderPosition(admin: SupabaseClient, cycleId: string)
 		.maybeSingle();
 	return (data?.ladder_position ?? 0) + 1;
 }
+
+// ------------------------------------------------------------
+// Warteliste & Ersatz mitten im Zyklus
+// ------------------------------------------------------------
+// league_registrations bildet die Beziehung Spieler<->Liga insgesamt ab
+// (aktiv/Warteliste/Ersatzpool/ausgetreten), unabhängig von der Frage,
+// in welcher Box jemand gerade sitzt (league_box_members). Ein Austritt
+// betrifft potenziell beides: die Registrierung wechselt auf 'left',
+// UND — falls die Person gerade eine Box besetzt — der freie Sitz wird
+// entweder leer gelassen oder sofort mit dem nächsten von der Warteliste
+// befüllt.
+
+export type WaitlistEntry = {
+	playerId: string;
+	name: string;
+	joinedAt: string;
+};
+
+/** Warteliste, älteste Anmeldung zuerst — das ist "der Nächstbeste". */
+export async function listWaitlist(admin: SupabaseClient, leagueId: string): Promise<WaitlistEntry[]> {
+	const { data, error: err } = await admin
+		.from('league_registrations')
+		.select('player_id, joined_at, players!inner(display_name, claim_status, show_full_name)')
+		.eq('league_id', leagueId)
+		.eq('status', 'waitlist')
+		.order('joined_at', { ascending: true });
+
+	if (err) throw error(500, err.message);
+
+	return (data ?? []).map((row) => {
+		const p = row.players as unknown as {
+			display_name: string;
+			claim_status: string;
+			show_full_name: boolean;
+		};
+		return {
+			playerId: row.player_id,
+			name: formatPlayerName(p.display_name, p.claim_status, p.show_full_name),
+			joinedAt: row.joined_at
+		};
+	});
+}
+
+// departLeagueMember() zieht mittlerweile in league.ts um — Selbstbedienung
+// (Spieler verlässt sich selbst über /konto) braucht dieselbe Funktion,
+// und die gehört nicht in eine Datei, die "Autorisierung nur für
+// Vereins-Admins" im Namen trägt. Siehe dort für Doku und Import hier
+// über listWaitlist() hinaus, falls diese Datei sie noch braucht.

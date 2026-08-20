@@ -46,6 +46,7 @@
 
 			<p class="cycles-link" use:reveal={{ delay: 0.08 }}>
 				<a href="/liga/{data.league.slug}/verwaltung/zyklen">Zyklen und Boxen verwalten →</a>
+				· <a href="/liga/{data.league.slug}/verwaltung/spieler">Warteliste &amp; Austritt →</a>
 			</p>
 
 			{#if !data.cycle}
