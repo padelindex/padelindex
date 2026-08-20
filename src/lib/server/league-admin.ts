@@ -309,19 +309,6 @@ export async function removeBoxMember(
 	return { ok: true };
 }
 
-/** Für die Zuordnungs-UI: wer ist in diesem Zyklus schon EINER Box zugeteilt? */
-export async function listAssignedPlayerIds(admin: SupabaseClient, cycleId: string): Promise<Set<string>> {
-	const { data: boxes } = await admin.from('league_boxes').select('id').eq('cycle_id', cycleId);
-	const boxIds = (boxes ?? []).map((b) => b.id);
-	if (boxIds.length === 0) return new Set();
-
-	const { data: members } = await admin
-		.from('league_box_members')
-		.select('player_id')
-		.in('box_id', boxIds);
-	return new Set((members ?? []).map((m) => m.player_id));
-}
-
 /** Nächste freie Leiterposition in einem Zyklus — reiner Vorschlag fürs Formular. */
 export async function nextLadderPosition(admin: SupabaseClient, cycleId: string): Promise<number> {
 	const { data } = await admin
@@ -376,91 +363,8 @@ export async function listWaitlist(admin: SupabaseClient, leagueId: string): Pro
 	});
 }
 
-/**
- * Ein Spieler verlässt die Liga mitten im Zyklus. Deckt zwei Fälle ab:
- *   - saß gerade in keiner Box (z. B. direkt von der Warteliste ausgetreten)
- *     -> nur die Registrierung wird auf 'left' gesetzt.
- *   - saß in einer Box -> der Sitz wird frei; optional übernimmt
- *     replacementPlayerId ihn sofort als Ersatz (role='substitute',
- *     replaces_player_id gesetzt, für Transparenz in der Aufstellung).
- *
- * Bereits gespielte Runden bleiben unangetastet — die liegen in
- * matches/match_participants und kennen league_box_members gar nicht.
- * Deshalb ist hier, anders als bei removeBoxMember(), eine Box MIT
- * gemeldeten Ergebnissen ausdrücklich der Normalfall.
- */
-export async function departLeagueMember(
-	admin: SupabaseClient,
-	params: {
-		leagueId: string;
-		departingPlayerId: string;
-		replacementPlayerId: string | null;
-	}
-): Promise<WriteResult> {
-	const { data: membership } = await admin
-		.from('league_box_members')
-		.select('box_id, seat, league_boxes!inner(cycle_id)')
-		.eq('player_id', params.departingPlayerId)
-		.maybeSingle();
-
-	const box = membership
-		? { boxId: membership.box_id, seat: membership.seat, cycleId: (membership.league_boxes as unknown as { cycle_id: string }).cycle_id }
-		: null;
-
-	if (box && params.replacementPlayerId) {
-		const assigned = await listAssignedPlayerIds(admin, box.cycleId);
-		if (assigned.has(params.replacementPlayerId)) {
-			return { ok: false, message: 'Diese Person spielt in diesem Zyklus bereits in einer anderen Box.' };
-		}
-
-		const { count: openRounds } = await admin
-			.from('league_box_matches')
-			.select('id', { count: 'exact', head: true })
-			.eq('box_id', box.boxId)
-			.eq('status', 'scheduled');
-		if (!openRounds) {
-			return {
-				ok: false,
-				message: 'Diese Box hat keine offene Runde mehr — ein Ersatz würde hier nichts mehr betreffen.'
-			};
-		}
-	}
-
-	if (box) {
-		const { error: delErr } = await admin
-			.from('league_box_members')
-			.delete()
-			.eq('box_id', box.boxId)
-			.eq('player_id', params.departingPlayerId);
-		if (delErr) return { ok: false, message: delErr.message };
-
-		if (params.replacementPlayerId) {
-			const { error: insErr } = await admin.from('league_box_members').insert({
-				box_id: box.boxId,
-				player_id: params.replacementPlayerId,
-				seat: box.seat,
-				role: 'substitute',
-				replaces_player_id: params.departingPlayerId
-			});
-			if (insErr) return { ok: false, message: insErr.message };
-		}
-	}
-
-	const { error: leftErr } = await admin
-		.from('league_registrations')
-		.update({ status: 'left', left_at: new Date().toISOString() })
-		.eq('league_id', params.leagueId)
-		.eq('player_id', params.departingPlayerId);
-	if (leftErr) return { ok: false, message: leftErr.message };
-
-	if (params.replacementPlayerId) {
-		const { error: activeErr } = await admin
-			.from('league_registrations')
-			.update({ status: 'active' })
-			.eq('league_id', params.leagueId)
-			.eq('player_id', params.replacementPlayerId);
-		if (activeErr) return { ok: false, message: activeErr.message };
-	}
-
-	return { ok: true };
-}
+// departLeagueMember() zieht mittlerweile in league.ts um — Selbstbedienung
+// (Spieler verlässt sich selbst über /konto) braucht dieselbe Funktion,
+// und die gehört nicht in eine Datei, die "Autorisierung nur für
+// Vereins-Admins" im Namen trägt. Siehe dort für Doku und Import hier
+// über listWaitlist() hinaus, falls diese Datei sie noch braucht.

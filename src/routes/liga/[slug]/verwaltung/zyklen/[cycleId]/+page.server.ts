@@ -1,13 +1,12 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
-import { loadCurrentCycle, loadLadder } from '$lib/server/league';
+import { listAssignedPlayerIds, loadCurrentCycle, loadLadder } from '$lib/server/league';
 import { loadClubRoster } from '$lib/server/matches';
 import {
 	addBoxMember,
 	createBox,
 	deleteBox,
-	listAssignedPlayerIds,
 	nextLadderPosition,
 	removeBoxMember,
 	requireLeagueAdmin

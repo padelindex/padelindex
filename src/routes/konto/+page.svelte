@@ -268,6 +268,70 @@
 				</div>
 			{/if}
 
+			{#if data.league}
+				<div class="card" id="liga">
+					<h3 class="card-title">{data.league.name}</h3>
+
+					{#if form?.leagueError}
+						<p class="err" role="alert">{form.leagueError}</p>
+					{/if}
+					{#if form?.leagueJoined}
+						<p class="notice" role="status">
+							Auf der Warteliste eingetragen — sobald ein Platz frei wird, meldet sich dein Verein.
+						</p>
+					{/if}
+					{#if form?.leagueLeft}
+						<p class="notice" role="status">Aus der Liga ausgetreten.</p>
+					{/if}
+
+					{#if data.leagueRegistration === null}
+						<p class="muted" style="font-size: 13px">
+							Du bist noch nicht dabei. Ein Platz in einer Box wird immer von eurem Vereins-Admin
+							vergeben — die Anmeldung trägt dich erstmal auf die Warteliste ein.
+						</p>
+						<form method="POST" action="?/joinLeague" use:enhance>
+							<button class="btn btn-primary" type="submit">Auf die Warteliste</button>
+						</form>
+					{:else if data.leagueRegistration === 'active'}
+						<p class="muted" style="font-size: 13px">
+							Du spielst aktuell in einer Box. Details und Ergebnismeldung unter
+							<a href="/liga/{data.league.slug}">der Ligaseite</a>.
+						</p>
+						<form
+							method="POST"
+							action="?/leaveLeague"
+							use:enhance={({ cancel }) => {
+								if (!confirm('Wirklich aus der Liga austreten? Dein Box-Platz wird frei.')) {
+									cancel();
+								}
+							}}
+						>
+							<button class="btn btn-ghost-light" type="submit">Aus der Liga austreten</button>
+						</form>
+					{:else if data.leagueRegistration === 'substitute'}
+						<p class="muted" style="font-size: 13px">
+							Du bist als Ersatzspieler:in eingetragen und spielst aktuell in einer Box. Details
+							unter <a href="/liga/{data.league.slug}">der Ligaseite</a>.
+						</p>
+						<form method="POST" action="?/leaveLeague" use:enhance>
+							<button class="btn btn-ghost-light" type="submit">Aus der Liga austreten</button>
+						</form>
+					{:else if data.leagueRegistration === 'waitlist'}
+						<p class="muted" style="font-size: 13px">
+							Du stehst auf der Warteliste — sobald ein Platz frei wird, meldet sich dein Verein.
+						</p>
+						<form method="POST" action="?/leaveLeague" use:enhance>
+							<button class="btn btn-ghost-light" type="submit">Von der Warteliste austragen</button>
+						</form>
+					{:else if data.leagueRegistration === 'left'}
+						<p class="muted" style="font-size: 13px">Du hattest die Liga verlassen.</p>
+						<form method="POST" action="?/joinLeague" use:enhance>
+							<button class="btn btn-primary" type="submit">Wieder auf die Warteliste</button>
+						</form>
+					{/if}
+				</div>
+			{/if}
+
 			{#if data.challengeHinweis}
 				<p class="err" role="alert">
 					Match gemeldet, aber nicht mit der Challenge verknüpft: {data.challengeHinweis}

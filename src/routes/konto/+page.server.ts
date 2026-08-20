@@ -8,6 +8,7 @@ import { loadRewardCatalog, redeemReward } from '$lib/server/rewards';
 import { loadAdminClubs } from '$lib/server/club-admin';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { getNotifications, markAllRead } from '$lib/server/notification-store';
+import { departLeagueMember, joinLeagueWaitlist, loadLeagueForClub, loadOwnRegistration } from '$lib/server/league';
 
 export const load: PageServerLoad = async ({ locals, platform, url }) => {
 	// Hinweis aus dem Match-Melden-Flow, falls die Challenge-Verknüpfung nicht
@@ -25,6 +26,8 @@ export const load: PageServerLoad = async ({ locals, platform, url }) => {
 			rewards: [],
 			adminClubs: [],
 			notifications: [],
+			league: null,
+			leagueRegistration: null,
 			challengeHinweis
 		};
 	}
@@ -43,6 +46,12 @@ export const load: PageServerLoad = async ({ locals, platform, url }) => {
 	// nichts zum Einlösen.
 	const rewards = club ? await loadRewardCatalog(locals.supabase, club.id) : [];
 
+	// Liga-Mitgliedschaft ist ebenfalls vereinsgebunden. loadOwnRegistration
+	// braucht zwingend den Admin-Client (league_registrations hat keine
+	// RLS-Policy, siehe league.ts).
+	const league = club ? await loadLeagueForClub(locals.supabase, club.id) : null;
+	const leagueRegistration = league ? await loadOwnRegistration(admin, league.id, player.id) : null;
+
 	return {
 		email: locals.user?.email ?? null,
 		player,
@@ -53,6 +62,8 @@ export const load: PageServerLoad = async ({ locals, platform, url }) => {
 		rewards,
 		adminClubs,
 		notifications,
+		league,
+		leagueRegistration,
 		challengeHinweis
 	};
 };
@@ -174,5 +185,33 @@ export const actions: Actions = {
 		if (!locals.player) return { notificationError: 'Nicht angemeldet.' };
 		await markAllRead(supabaseAdmin(platform), locals.player.id);
 		return { notificationsRead: true };
+	},
+
+	joinLeague: async ({ locals, platform }) => {
+		if (!locals.player || !locals.supabase) return { leagueError: 'Nicht angemeldet.' };
+		const club = await loadPlayerClub(locals.supabase, locals.player.id);
+		const league = club ? await loadLeagueForClub(locals.supabase, club.id) : null;
+		if (!league) return { leagueError: 'Für deinen Verein gibt es aktuell keine Liga.' };
+
+		const result = await joinLeagueWaitlist(supabaseAdmin(platform), league.id, locals.player.id);
+		if (!result.ok) return { leagueError: result.message };
+		return { leagueJoined: true };
+	},
+
+	leaveLeague: async ({ locals, platform }) => {
+		if (!locals.player || !locals.supabase) return { leagueError: 'Nicht angemeldet.' };
+		const club = await loadPlayerClub(locals.supabase, locals.player.id);
+		const league = club ? await loadLeagueForClub(locals.supabase, club.id) : null;
+		if (!league) return { leagueError: 'Für deinen Verein gibt es aktuell keine Liga.' };
+
+		// Wer selbst geht, weist niemandem den eigenen Sitz zu — das bleibt
+		// dem Admin überlassen (siehe league.ts departLeagueMember).
+		const result = await departLeagueMember(supabaseAdmin(platform), {
+			leagueId: league.id,
+			departingPlayerId: locals.player.id,
+			replacementPlayerId: null
+		});
+		if (!result.ok) return { leagueError: result.message };
+		return { leagueLeft: true };
 	}
 };

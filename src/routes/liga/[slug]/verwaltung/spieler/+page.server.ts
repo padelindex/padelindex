@@ -7,8 +7,8 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
-import { loadCurrentCycle, loadLadder } from '$lib/server/league';
-import { departLeagueMember, listWaitlist, requireLeagueAdmin } from '$lib/server/league-admin';
+import { departLeagueMember, loadCurrentCycle, loadLadder } from '$lib/server/league';
+import { listWaitlist, requireLeagueAdmin } from '$lib/server/league-admin';
 
 export const load: PageServerLoad = async ({ params, url, platform, locals }) => {
 	const league = await requireLeagueAdmin(platform, params.slug, locals.player?.id, url.pathname);
