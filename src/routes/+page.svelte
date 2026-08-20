@@ -172,6 +172,29 @@
 	</div>
 </section>
 
+<!-- ============================ LIGA TEASER ============================ -->
+<!-- Bewusst als konkretes Beispiel, nicht als "PadelIndex bietet jetzt
+     Liga-Hosting als Produkt für jeden Verein" — das Box-Ligen-Format ist
+     technisch generisch gebaut, aber aktuell gibt es genau eine Liga bei
+     einem Verein. Ehrlich als Pilot framen statt Verfügbarkeit zu
+     behaupten, die es noch nicht gibt. -->
+<section class="sec" id="liga">
+	<div class="wrap">
+		<div class="sec-head">
+			<span class="eyebrow" use:reveal>Liga</span>
+			<h2 use:reveal={{ delay: 0.05 }}>Auch echte Vereinsligen laufen auf PadelIndex.</h2>
+			<p class="muted" use:reveal={{ delay: 0.1 }}>
+				Die BÁVARO PADEL LEAGUE beim STC Oberland spielt in 4er-Boxen mit rotierenden
+				Doppelpartnern, eigener Box-Tabelle und Auf-/Abstieg — als eigenständiges Ranking neben dem
+				allgemeinen PadelIndex-Level. Ergebnisse fließen zusätzlich ins Index-Rating ein.
+			</p>
+			<a class="btn btn-primary" href="/liga/bavaro" use:reveal={{ delay: 0.15 }} style="margin-top:28px; display:inline-flex">
+				Liga-Tabelle ansehen
+			</a>
+		</div>
+	</div>
+</section>
+
 <!-- ============================ CTA ============================ -->
 <section class="cta" id="anmelden">
 	<div class="mullions" aria-hidden="true">
