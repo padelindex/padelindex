@@ -8,15 +8,9 @@
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import type { ActionData, PageData } from './$types';
+	import { MAIN_NAV } from '$lib/landing/nav';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
-
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
 
 	let busy = $state(false);
 	let openRound = $state<string | null>(null);
@@ -34,7 +28,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<section class="sec sec-light" id="top">
@@ -139,7 +133,11 @@
 								</fieldset>
 							</form>
 						{:else}
-							<button class="btn btn-ghost-light" type="button" onclick={() => (openRound = round.id)}>
+							<button
+								class="btn btn-ghost-light"
+								type="button"
+								onclick={() => (openRound = round.id)}
+							>
 								Ergebnis eintragen
 							</button>
 						{/if}

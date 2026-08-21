@@ -14,13 +14,7 @@
 	import RatingJourney from '$lib/components/landing/RatingJourney.svelte';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
-
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
+	import { MAIN_NAV } from '$lib/landing/nav';
 </script>
 
 <svelte:head>
@@ -43,7 +37,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<!-- ============================ INTRO ============================ -->
@@ -54,8 +48,9 @@
 				<h1 use:reveal={{ delay: 0.05 }}>Ein Match verändert dein Level.</h1>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
 					Dreh an den Werten und drück auf Berechnen. Gerechnet wird mit demselben Code, der auch
-					produktiv die Ratings vergibt — inklusive der Doppel-Logik: Wen das System schlechter kennt,
-					dessen Wert bewegt sich stärker. Stell die Matchzahl eines Spielers auf null und sieh zu.
+					produktiv die Ratings vergibt — inklusive der Doppel-Logik: Wen das System schlechter
+					kennt, dessen Wert bewegt sich stärker. Stell die Matchzahl eines Spielers auf null und
+					sieh zu.
 				</p>
 			</div>
 
@@ -76,8 +71,8 @@
 					<span class="k">02 — Deutlichkeit</span>
 					<h2>Wie klar es war</h2>
 					<p>
-						6:0, 6:0 ist eine andere Aussage als 7:6, 5:7, 7:5. Der Satzverlauf geht in jede Rechnung
-						ein — eine knappe Niederlage gegen starke Gegner kostet dich kaum etwas.
+						6:0, 6:0 ist eine andere Aussage als 7:6, 5:7, 7:5. Der Satzverlauf geht in jede
+						Rechnung ein — eine knappe Niederlage gegen starke Gegner kostet dich kaum etwas.
 					</p>
 				</article>
 				<article class="factor" use:reveal={{ delay: 0.14 }}>
@@ -109,8 +104,8 @@
 				<h2 use:reveal={{ delay: 0.05 }}>Je mehr du spielst, desto genauer wird dein Level.</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
 					Wir speichern für dich keine einzelne Zahl, sondern eine Verteilung: eine Schätzung deines
-					Könnens plus die Unsicherheit dazu. Angezeigt wird bewusst der vorsichtige Rand — wer wenig
-					gespielt hat, wird lieber unterschätzt als überschätzt.
+					Könnens plus die Unsicherheit dazu. Angezeigt wird bewusst der vorsichtige Rand — wer
+					wenig gespielt hat, wird lieber unterschätzt als überschätzt.
 				</p>
 			</div>
 
@@ -128,7 +123,8 @@
 				<h2 use:reveal={{ delay: 0.05 }}>Eine Saison, Match für Match.</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
 					Kein gezeichneter Graph: Diese vierzehn Matches sind nacheinander durch das echte Modell
-					gelaufen — vom ersten Eintrag als unbekannter Spieler bis zum Ende der provisorischen Phase.
+					gelaufen — vom ersten Eintrag als unbekannter Spieler bis zum Ende der provisorischen
+					Phase.
 				</p>
 			</div>
 

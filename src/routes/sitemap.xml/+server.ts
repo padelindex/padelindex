@@ -11,6 +11,8 @@
 import type { RequestHandler } from './$types';
 import { supabaseAnon } from '$lib/server/supabase';
 import { MIN_MATCHES_FOR_INDEXING } from '$lib/seo';
+import { GUIDES } from '$lib/guides-data';
+import { QUIZ_DIFFICULTIES } from '$lib/quiz-data';
 
 const ORIGIN = 'https://padelindex.de';
 
@@ -21,7 +23,18 @@ const STATIC_PAGES = [
 	{ path: '/faq', priority: '0.6', changefreq: 'monthly' },
 	{ path: '/ueber', priority: '0.5', changefreq: 'yearly' },
 	{ path: '/level-schaetzen', priority: '0.6', changefreq: 'monthly' },
-	{ path: '/karte', priority: '0.7', changefreq: 'weekly' }
+	{ path: '/karte', priority: '0.7', changefreq: 'weekly' },
+	{ path: '/ratgeber', priority: '0.8', changefreq: 'weekly' },
+	{ path: '/quiz', priority: '0.6', changefreq: 'monthly' },
+	// Statische Evergreen-Inhalte, lokal in guides-data.ts/quiz-data.ts
+	// gepflegt — kein DB-Zugriff nötig, deshalb direkt hier statt im
+	// try/catch unten.
+	...GUIDES.map((g) => ({ path: `/ratgeber/${g.slug}`, priority: '0.7', changefreq: 'monthly' })),
+	...QUIZ_DIFFICULTIES.map((d) => ({
+		path: `/quiz/${d.slug}`,
+		priority: '0.6',
+		changefreq: 'monthly'
+	}))
 ];
 
 export const GET: RequestHandler = async ({ platform, setHeaders }) => {

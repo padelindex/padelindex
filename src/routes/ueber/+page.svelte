@@ -2,13 +2,7 @@
 	import { reveal } from '$lib/landing/reveal';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
-
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
+	import { MAIN_NAV } from '$lib/landing/nav';
 </script>
 
 <svelte:head>
@@ -31,7 +25,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<section class="sec" id="top" style="background:var(--night-2)">
@@ -44,9 +38,9 @@
 			</p>
 			<p class="muted" use:reveal={{ delay: 0.14 }}>
 				Unser Ziel ist einfach: ein Level, das aus echten, bestätigten Matches entsteht — nicht aus
-				einer Selbsteinschätzung oder einer Zahl, die sich nie bewegt. Von deinem eigenen Rating über
-				die Rangliste deines Vereins bis zur Frage, wie du gegen ein bestimmtes Team wirklich stehst
-				— PadelIndex soll die Anlaufstelle für dein Level im deutschen Padel werden.
+				einer Selbsteinschätzung oder einer Zahl, die sich nie bewegt. Von deinem eigenen Rating
+				über die Rangliste deines Vereins bis zur Frage, wie du gegen ein bestimmtes Team wirklich
+				stehst — PadelIndex soll die Anlaufstelle für dein Level im deutschen Padel werden.
 			</p>
 		</div>
 	</section>
@@ -80,9 +74,13 @@
 			<p class="muted" use:reveal={{ delay: 0.05 }}>
 				Wir möchten kein kompliziertes Rating-System schaffen, sondern eines, dem man vertraut.
 			</p>
-			<p class="claim-line" use:reveal={{ delay: 0.08 }}>Spielen. Bestätigen. Wissen, wo du stehst.</p>
+			<p class="claim-line" use:reveal={{ delay: 0.08 }}>
+				Spielen. Bestätigen. Wissen, wo du stehst.
+			</p>
 			<ul class="values" use:reveal={{ delay: 0.12 }}>
-				<li><b>Nachvollziehbarkeit</b> — jede Änderung deines Levels ist erklärt, keine Blackbox.</li>
+				<li>
+					<b>Nachvollziehbarkeit</b> — jede Änderung deines Levels ist erklärt, keine Blackbox.
+				</li>
 				<li><b>Bestätigung</b> — ein Ergebnis zählt erst, wenn das Gegnerteam zustimmt.</li>
 				<li><b>Transparenz</b> — derselbe Code im Rating-Simulator wie im echten Betrieb.</li>
 				<li><b>Community</b> — ein Rating lebt von Spielern und Vereinen, die mitmachen.</li>
@@ -108,7 +106,9 @@
 				oder eine Idee für die Plattform hast, freuen wir uns über dein Feedback an
 				<a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a>.
 			</p>
-			<p class="claim-line" use:reveal={{ delay: 0.18 }}>Padel wächst. Wir machen dein Level sichtbar.</p>
+			<p class="claim-line" use:reveal={{ delay: 0.18 }}>
+				Padel wächst. Wir machen dein Level sichtbar.
+			</p>
 		</div>
 	</section>
 </main>

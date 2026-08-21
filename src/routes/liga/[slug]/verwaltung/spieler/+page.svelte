@@ -10,20 +10,18 @@
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import type { ActionData, PageData } from './$types';
+	import { MAIN_NAV } from '$lib/landing/nav';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
-
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
 
 	let busy = $state(false);
 	let openFor = $state<string | null>(null);
 
-	const dateFmt = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+	const dateFmt = new Intl.DateTimeFormat('de-DE', {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric'
+	});
 	function fmtDate(iso: string): string {
 		return dateFmt.format(new Date(iso));
 	}
@@ -35,7 +33,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<section class="sec sec-light" id="top">
@@ -52,7 +50,9 @@
 			{/if}
 			{#if form?.success}
 				<p class="ok" role="status">
-					{form.replaced ? 'Austritt gespeichert, Ersatz eingesetzt.' : 'Austritt gespeichert, Sitz ist frei.'}
+					{form.replaced
+						? 'Austritt gespeichert, Ersatz eingesetzt.'
+						: 'Austritt gespeichert, Sitz ist frei.'}
 				</p>
 			{/if}
 
@@ -111,7 +111,8 @@
 												<select id="replacement-{p.playerId}" name="replacementPlayerId">
 													<option value="">Kein Ersatz — Sitz bleibt frei</option>
 													{#each data.waitlist as w (w.playerId)}
-														<option value={w.playerId}>{w.name} (seit {fmtDate(w.joinedAt)})</option>
+														<option value={w.playerId}>{w.name} (seit {fmtDate(w.joinedAt)})</option
+														>
 													{/each}
 												</select>
 												<div class="depart-actions">

@@ -14,6 +14,8 @@
 		{ href: '#problem', label: 'Warum' },
 		{ href: '/rating', label: 'Rating' },
 		{ href: '#tokens', label: 'Tokens' },
+		{ href: '/ratgeber', label: 'Ratgeber' },
+		{ href: '/quiz', label: 'Quiz' },
 		{ href: '/vereine', label: 'Für Vereine' }
 	];
 </script>
@@ -191,6 +193,24 @@
 			<a class="btn btn-primary" href="/liga/bavaro" use:reveal={{ delay: 0.15 }} style="margin-top:28px; display:inline-flex">
 				Liga-Tabelle ansehen
 			</a>
+		</div>
+	</div>
+</section>
+
+<!-- ============================ RATGEBER & QUIZ ============================ -->
+<section class="sec sec-light" id="ratgeber">
+	<div class="wrap">
+		<div class="sec-head">
+			<span class="eyebrow" use:reveal>Ratgeber & Quiz</span>
+			<h2 use:reveal={{ delay: 0.05 }}>Regeln, Ausrüstung, Technik und Taktik einfach erklärt.</h2>
+			<p class="muted" use:reveal={{ delay: 0.1 }}>
+				Der PadelIndex-Ratgeber erklärt alles vom ersten Aufschlag bis zur Doppel-Taktik — und im
+				Quiz mit drei Schwierigkeitsgraden testest du gleich, wie sicher du dich fühlst.
+			</p>
+			<div class="hero-cta" use:reveal={{ delay: 0.15 }} style="margin-top:28px">
+				<a class="btn btn-primary" href="/ratgeber">Ratgeber entdecken</a>
+				<a class="btn btn-ghost-light" href="/quiz">Padel-Quiz starten</a>
+			</div>
 		</div>
 	</div>
 </section>

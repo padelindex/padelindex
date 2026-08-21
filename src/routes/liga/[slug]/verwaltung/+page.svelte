@@ -9,15 +9,9 @@
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import type { ActionData, PageData } from './$types';
+	import { MAIN_NAV } from '$lib/landing/nav';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
-
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
 
 	let busy = $state(false);
 
@@ -36,7 +30,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<section class="sec sec-light" id="top">
@@ -55,9 +49,8 @@
 				</p>
 			{:else}
 				<p class="muted intro" use:reveal={{ delay: 0.1 }}>
-					{data.cycle.name ?? `Zyklus ${data.cycle.ordinal}`} · {data.ladder.length} Boxen.
-					Der Auf-/Abstieg unten ist ein Vorschlag aus den Tabellen — er wird erst
-					festgeschrieben, wenn du ihn bestätigst.
+					{data.cycle.name ?? `Zyklus ${data.cycle.ordinal}`} · {data.ladder.length} Boxen. Der Auf-/Abstieg
+					unten ist ein Vorschlag aus den Tabellen — er wird erst festgeschrieben, wenn du ihn bestätigst.
 				</p>
 
 				{#if form?.message}
@@ -122,9 +115,8 @@
 							<p class="ok">Für diesen Zyklus ist der Auf-/Abstieg bereits festgeschrieben.</p>
 						{:else if warnings.length > 0}
 							<p class="warn">
-								{warnings.length} Einträge brauchen erst eine Entscheidung (unvollständige Box oder
-								Punktgleichheit an der Grenze). Solange sie offen sind, lässt sich nichts
-								festschreiben.
+								{warnings.length} Einträge brauchen erst eine Entscheidung (unvollständige Box oder Punktgleichheit
+								an der Grenze). Solange sie offen sind, lässt sich nichts festschreiben.
 							</p>
 						{:else}
 							<form
@@ -143,8 +135,8 @@
 								</button>
 							</form>
 							<p class="muted small">
-								Schreibt den Beschluss fest. Die Boxen des nächsten Zyklus legst du danach selbst
-								an — das passiert bewusst nicht automatisch.
+								Schreibt den Beschluss fest. Die Boxen des nächsten Zyklus legst du danach selbst an
+								— das passiert bewusst nicht automatisch.
 							</p>
 						{/if}
 					</div>

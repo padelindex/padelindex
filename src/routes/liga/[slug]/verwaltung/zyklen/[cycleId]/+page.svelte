@@ -8,15 +8,9 @@
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import type { ActionData, PageData } from './$types';
+	import { MAIN_NAV } from '$lib/landing/nav';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
-
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
 
 	let busy = $state<string | null>(null);
 	let addMemberBoxId = $state<string | null>(null);
@@ -33,7 +27,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<section class="sec sec-light" id="top">
@@ -180,7 +174,11 @@
 												<option value="regular">Stammspieler</option>
 												<option value="substitute">Ersatz</option>
 											</select>
-											<button class="btn btn-ghost-light" type="submit" disabled={busy === 'addMember'}>
+											<button
+												class="btn btn-ghost-light"
+												type="submit"
+												disabled={busy === 'addMember'}
+											>
 												Hinzufügen
 											</button>
 											<button

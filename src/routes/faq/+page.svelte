@@ -3,13 +3,7 @@
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import { jsonLd } from '$lib/jsonld';
-
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
+	import { MAIN_NAV } from '$lib/landing/nav';
 
 	// Antworten als reiner Text (ohne Markup) für das FAQPage-JSON-LD -
 	// die sichtbaren Blöcke unten dürfen Links enthalten, das Schema
@@ -101,7 +95,7 @@
 	{@html `<script type="application/ld+json">${faqSchema}</script>`}
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<section class="sec sec-light" id="top">

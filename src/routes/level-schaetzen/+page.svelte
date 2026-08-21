@@ -19,6 +19,7 @@
 	import { reveal } from '$lib/landing/reveal';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
+	import { MAIN_NAV } from '$lib/landing/nav';
 	import {
 		LEVEL_QUESTIONS,
 		estimateLevel,
@@ -26,13 +27,6 @@
 		levelBand,
 		parseLevelParam
 	} from '$lib/level-estimator';
-
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
 
 	let sharedLevel = $derived(parseLevelParam(page.url.searchParams.get('level')));
 	let ownResult = $state<number | null>(null);
@@ -60,7 +54,11 @@
 		incomplete = false;
 		const level = estimateLevel(answers);
 		ownResult = level;
-		goto(`?level=${formatLevelParam(level)}`, { noScroll: true, keepFocus: true, replaceState: false });
+		goto(`?level=${formatLevelParam(level)}`, {
+			noScroll: true,
+			keepFocus: true,
+			replaceState: false
+		});
 	}
 
 	function restart() {
@@ -120,7 +118,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<section class="sec sec-light" id="top">
@@ -142,11 +140,19 @@
 					<h2>{band.label}</h2>
 					<p class="muted">{band.description}</p>
 					<p class="disclaimer">
-						Eigene Einschätzung, kein bestätigtes Rating. Dein echtes Level entsteht aus
-						bestätigten Matches auf PadelIndex.
+						Eigene Einschätzung, kein bestätigtes Rating. Dein echtes Level entsteht aus bestätigten
+						Matches auf PadelIndex.
 					</p>
 
-					<img class="og-preview" src={ogImagePath} alt="Vorschau des teilbaren Ergebnisbilds: {band.label}, Level {result.toFixed(1)} von 7" width="600" height="315" />
+					<img
+						class="og-preview"
+						src={ogImagePath}
+						alt="Vorschau des teilbaren Ergebnisbilds: {band.label}, Level {result.toFixed(
+							1
+						)} von 7"
+						width="600"
+						height="315"
+					/>
 
 					<div class="result-actions">
 						<a class="btn btn-primary" href="/#anmelden">Platz auf der Warteliste sichern</a>
@@ -223,7 +229,9 @@
 		border: 1px solid var(--line-light);
 		cursor: pointer;
 		font-size: 15px;
-		transition: border-color 0.15s, background 0.15s;
+		transition:
+			border-color 0.15s,
+			background 0.15s;
 	}
 	.option:has(input:checked) {
 		border-color: var(--court-deep, #0f6e5c);
