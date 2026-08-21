@@ -26,11 +26,9 @@
 	"footer_impressum": "Legal notice",
 	"footer_kontakt": "Contact",
 	"footer_sprache": "Language",
-
 	"home_meta_title": "PadelIndex — Your level. Proven, not claimed.",
 	"home_meta_description": "PadelIndex is the independent rating for amateur padel players. A Bayesian rating built for doubles, confirmed by your opponents, valid across every club. Try the match simulator to see how your rating moves.",
 	"home_og_description": "A padel doubles rating from confirmed matches: opponent strength, score margin and confidence — not self-assessment.",
-
 	"home_hero_eyebrow": "The rating for amateur padel players",
 	"home_hero_h1_line1": "Your level.",
 	"home_hero_h1_emphasis": "Proven,",
@@ -39,11 +37,9 @@
 	"home_hero_cta_primary": "Find my level",
 	"home_hero_cta_secondary": "Try it out first",
 	"home_hero_note": "Pilot club: STC Oberland",
-
 	"home_problem_eyebrow": "The problem",
 	"home_problem_h2": "Almost nobody really knows their level.",
 	"home_problem_p": "Levels get guessed, ticked on a form, or handed out differently by every club. The moment you play somewhere else, the number means nothing. But the most common objection to a rating system checks out on paper — here it is.",
-
 	"home_gripe1_tag": "No movement",
 	"home_gripe1_q": "\"I've clearly gotten better — the number just won't move.\"",
 	"home_gripe1_a": "With PadelIndex your rating moves after every confirmed match, and you see exactly how much of that came from opponent strength, score margin, and your recent run.",
@@ -53,34 +49,28 @@
 	"home_gripe3_tag": "Black box",
 	"home_gripe3_q": "\"Won 6:1, 6:2 and the rating didn't move at all. I don't get it.\"",
 	"home_gripe3_a": "That's why we show the math: after every match, you see exactly what changed and why — even when the number doesn't feel right.",
-
 	"home_rating_eyebrow": "How it's calculated",
 	"home_rating_h2": "One match changes your level.",
 	"home_rating_p": "No questionnaire, no guessed value: PadelIndex calculates from opponent strength, score margin and confirmation by the opposing team — with the exact same code that runs the live ratings. Try the rating simulator yourself.",
 	"home_rating_cta": "See the math & simulator",
-
 	"home_tokens_eyebrow": "Index tokens",
 	"home_tokens_h2": "Playing pays off. Literally.",
 	"home_tokens_p": "You earn tokens for every confirmed match. Redeem them at your club — for coaching sessions, equipment, or entry fees. Like frequent-flyer miles, just for padel.",
-
 	"home_vereine_eyebrow": "For clubs",
 	"home_vereine_h2": "The rating runs on your own site.",
 	"home_vereine_p_pre": "From here on it's not about your own level anymore, it's about your club — if you're only here as a player right now,",
 	"home_vereine_link": "the waitlist spot",
 	"home_vereine_p_post": "above is already everything you need. For clubs: one line of code, and the ranking runs on your website, in your colors, with zero plugin chaos.",
 	"home_vereine_cta": "See the club plan",
-
 	"home_liga_eyebrow": "League",
 	"home_liga_h2": "Real club leagues run on PadelIndex too.",
 	"home_liga_p": "The BÁVARO PADEL LEAGUE at STC Oberland plays in 4-player boxes with rotating doubles partners, its own box standings and promotion/relegation — a standalone ranking alongside the general PadelIndex level. Results also feed into the Index rating.",
 	"home_liga_cta": "View the league table",
-
 	"home_ratgeber_eyebrow": "Guides & quiz",
 	"home_ratgeber_h2": "Rules, equipment, technique and tactics, explained simply.",
 	"home_ratgeber_p": "The PadelIndex guides cover everything from your first serve to doubles tactics — and the quiz, with three difficulty levels, lets you test how confident you really are.",
 	"home_ratgeber_cta_primary": "Explore the guides",
 	"home_ratgeber_cta_secondary": "Start the padel quiz",
-
 	"home_cta_eyebrow": "Pilot phase",
 	"home_cta_h2_line1": "Your first rating appears",
 	"home_cta_h2_line2": "with your first match.",
@@ -88,7 +78,6 @@
 	"home_cta_alt_question": "Already playing at {clubName}?",
 	"home_cta_alt_claim": "Claim your profile",
 	"home_cta_alt_ranking": "View the ranking",
-
 	"hseq_kicker": "A match that counts",
 	"hseq_you": "You",
 	"hseq_partner": "Partner",
@@ -104,7 +93,6 @@
 	"hseq_stage_rated": "Rating updated",
 	"hseq_note": "Calculated with the model that runs in production — opponent strength, score margin, and how well the system already knows you.",
 	"hseq_replay": "Replay",
-
 	"rating_meta_title": "How the PadelIndex rating is calculated — a level from confirmed matches",
 	"rating_meta_description": "No questionnaire, no self-assessment: PadelIndex calculates your padel level from opponent strength, score margin and confidence — with the exact same model that rates every match in production. Try the rating simulator.",
 	"rating_og_title": "How the PadelIndex rating is calculated",
@@ -157,7 +145,6 @@
 	"rating_cmp_row7_th": "Valid where?",
 	"rating_cmp_row7_yes": "Across clubs, platform-independent",
 	"rating_cmp_row7_no": "Its own scale per club or per app",
-
 	"lab_opponent_1": "Opponent 1",
 	"lab_opponent_2": "Opponent 2",
 	"lab_level_aria": "{name}: level",
@@ -193,7 +180,6 @@
 	"lab_factor_margin_tip": "How clear-cut was the result across all sets?",
 	"lab_factor_confidence": "How well we know you",
 	"lab_factor_confidence_tip": "Based on your match count. The better we know you, the steadier your rating.",
-
 	"cc_stage_unknown": "We don't know you yet",
 	"cc_stage_narrowing": "It's narrowing down",
 	"cc_stage_settled": "Your range is set",
@@ -208,7 +194,6 @@
 	"cc_note_pre": "In this example, ability stays",
 	"cc_note_bold": "unchanged",
 	"cc_note_post": "The value still goes up — because uncertainty shrinks and the cautious edge moves closer to the middle.",
-
 	"rj_svg_aria": "Rating history over {count} matches, from {from} to {to}.",
 	"rj_here": "you are here",
 	"rj_hit_aria": "Match {index}: {result} {score}, rating {rating}",
@@ -221,7 +206,6 @@
 	"rj_provisional_note": "Still in the provisional phase — up to twelve matches, the rating deliberately moves more.",
 	"rj_hint": "Tap a point or move through them with the arrow keys.",
 	"rj_match_number": "Match {index}",
-
 	"vereine_meta_title": "PadelIndex for clubs — a ranking on your own website",
 	"vereine_meta_description": "Your padel club's level ranking on your own website, in your colors, with zero plugin chaos. Players enter their own results, the opposing team confirms. Free to start, a demo any time.",
 	"vereine_og_title": "PadelIndex for clubs",
@@ -249,7 +233,6 @@
 	"vereine_demo_p": "Leave your club and contact details, and we'll show you around.",
 	"vereine_claim_cta_pre": "Playing as a player and not on PadelIndex yet?",
 	"vereine_claim_cta_link": "Claim your waitlist spot",
-
 	"cs_matches_count": "{count} matches",
 	"cs_trend_new": "new",
 	"cs_on_your_site": "On your site",
@@ -261,7 +244,6 @@
 	"cs_level_ranking": "Level ranking",
 	"cs_live_pilot": "Live from the pilot phase",
 	"cs_example_list": "Example list",
-
 	"demo_error_missing": "Please enter a club name and contact person.",
 	"demo_error_email": "Please enter a valid email address.",
 	"demo_error_generic": "Couldn't send it. Please try again later.",
@@ -278,7 +260,6 @@
 	"demo_sending": "Sending …",
 	"demo_sent": "Sent",
 	"demo_submit": "Request a demo",
-
 	"karte_meta_title": "Padel courts in Germany — map | PadelIndex",
 	"karte_meta_description": "A map of padel courts in Germany. Marked in green are the clubs using PadelIndex for their ranking.",
 	"karte_og_title": "Padel courts in Germany",
@@ -305,7 +286,6 @@
 	"karte_ranking": "Ranking",
 	"karte_owner_cta_p": "Run this club? Become part of PadelIndex.",
 	"karte_owner_cta_link": "Register your interest",
-
 	"faq_meta_title": "Frequently asked questions about PadelIndex — FAQ",
 	"faq_meta_description": "Answers about PadelIndex: how the level is calculated, how clubs can join, what it costs, and who's behind it.",
 	"faq_og_title": "Frequently asked questions about PadelIndex",
@@ -340,9 +320,7 @@
 	"faq_a12": "The simplest way: play, report your matches, give us feedback. The more confirmed results come together, the more accurate the rating gets for everyone.",
 	"faq_q13": "How can I get in touch?",
 	"faq_a13": "By email at kontakt@padelindex.de — we appreciate any feedback that helps make PadelIndex better.",
-
 	"org_description": "Independent level ranking for amateur padel players, calculated from confirmed matches instead of self-assessment.",
-
 	"ueber_meta_title": "About PadelIndex — who's behind it",
 	"ueber_meta_description": "PadelIndex is a project by Alec Hahn (Sportcenter Hahn GmbH) — a rating for amateur padel players from confirmed matches, no questionnaire and no club directory.",
 	"ueber_og_title": "About PadelIndex",
@@ -373,7 +351,6 @@
 	"ueber_gemeinsam_p2": "We're starting with a pilot club in the Oberland region (STC Oberland) and want to grow from there — club by club, match by match.",
 	"ueber_gemeinsam_p3_pre": "If you represent a club that wants to join, spot an error in your profile, or have an idea for the platform, we'd love to hear from you at",
 	"ueber_claim_line2": "Padel is growing. We make your level visible.",
-
 	"legal_eyebrow": "Legal",
 	"ds_meta_title": "Privacy — PadelIndex",
 	"ds_h2": "Privacy Policy",
@@ -413,7 +390,6 @@
 	"ds_p10_2": "You also have the right to lodge a complaint with a data protection supervisory authority. The authority responsible for us is the Bavarian State Office for Data Protection Supervision (BayLDA).",
 	"ds_h3_11": "11. Security",
 	"ds_p11": "Transmission between your browser and our servers is TLS-encrypted throughout (https). Access to account data and non-public profile data is restricted via access rules (Row Level Security) at the database level.",
-
 	"imp_meta_title": "Legal notice — PadelIndex",
 	"imp_h2": "Legal notice",
 	"imp_h3_1": "Information pursuant to Sec. 5 DDG (German Digital Services Act)",
@@ -431,7 +407,6 @@
 	"imp_p_links": "Our offering contains links to external third-party websites over whose content we have no influence. We therefore cannot accept any liability for this third-party content. The respective provider or operator of the linked pages is always responsible for their content. We will remove such links immediately upon becoming aware of any legal infringements.",
 	"imp_h3_copyright": "Copyright",
 	"imp_p_copyright": "The content and works created by the site operators on these pages are subject to German copyright law. Third-party contributions are marked as such. Reproduction, editing, distribution, and any kind of exploitation beyond the limits of copyright law require the written consent of the respective author or creator.",
-
 	"cl_ranking": "Ranking",
 	"cl_unavailable": "Supabase isn't connected yet. The ranking will appear once the database is up.",
 	"cl_not_found": "Club not found.",
@@ -443,13 +418,11 @@
 	"cl_league_import_title": "No matches reported via PadelIndex yet — these values come from imported league results.",
 	"cl_league_import_label": "Imported from league results",
 	"cl_updated_label": "As of {date}",
-
 	"rl_summary": "What do level and confidence mean?",
 	"rl_level_label": "Level",
 	"rl_level_text": "is a number from 0 to 7, calculated from confirmed matches. The higher it is, the stronger the estimated playing level.",
 	"rl_confidence_label": "Confidence",
 	"rl_confidence_text": "shows how reliable the value is. With few matches it's low and the level can still jump a lot — with more confirmed results it rises.",
-
 	"club_title": "{clubName} — level ranking | PadelIndex",
 	"club_og_title": "{clubName} — level ranking",
 	"club_meta_description": "Public level ranking of {clubName} on PadelIndex — from confirmed matches, with a confidence level per player.",
@@ -463,5 +436,47 @@
 	"club_claim_cta_pre": "Are you in this league table?",
 	"club_claim_cta_link": "Claim your profile",
 	"club_join_cta_pre": "Your club isn't on board yet?",
-	"club_join_cta_link": "Register your club"
+	"club_join_cta_link": "Register your club",
+	"player_title": "{name} — PadelIndex",
+	"player_meta_description": "Player profile of {name} on PadelIndex — rating, form curve and match history from confirmed results.",
+	"player_nav_ranking_cta": "View club ranking",
+	"player_eyebrow_claimed": "Player profile",
+	"player_eyebrow_unclaimed": "Unclaimed",
+	"player_hand_rechts": "Right-handed",
+	"player_hand_links": "Left-handed",
+	"player_side_rechts": "Right side",
+	"player_side_links": "Left side",
+	"player_gender_maennlich": "Male",
+	"player_gender_weiblich": "Female",
+	"player_gender_divers": "Non-binary",
+	"player_self_assessed": "Self-rated {level}",
+	"player_request_match": "Send match request",
+	"player_challenge": "Challenge",
+	"player_anon_cta_pre": "Not on PadelIndex yet?",
+	"player_no_matches_yet": "No confirmed matches yet — the form curve fills in with the first result.",
+	"player_form_curve_title": "Form curve",
+	"player_form_period_aria": "Time window",
+	"player_win_rate_label": "Win rate ({count} matches)",
+	"player_game_diff_label": "Game difference",
+	"player_rating_history_label": "Rating history",
+	"player_rating_history_caption": "Rating after each match, chronologically",
+	"player_older_newer": "Older → newer",
+	"player_date_col": "Date",
+	"player_rating_after_col": "Rating after",
+	"player_trend_rising": "risen",
+	"player_trend_falling": "fallen",
+	"player_trend_flat": "stayed level",
+	"player_trend_sr": "Rating history over {count} matches, {direction} from {first} to {last}. Details in the table below.",
+	"player_preferred_partners_title": "Preferred partners",
+	"player_tournament_results_title": "Tournament results",
+	"player_match_history_title": "Match history",
+	"player_win": "Win",
+	"player_loss": "Loss",
+	"player_with_partner": "with {partner} ·",
+	"player_delist_link": "I don't want to be listed here",
+	"mt_freizeit": "Casual",
+	"mt_gps": "GPS (German federation league)",
+	"mt_turnier": "Tournament",
+	"mt_vereinsliga": "Club league",
+	"mt_padelindex_challenge": "PadelIndex Challenge"
 }

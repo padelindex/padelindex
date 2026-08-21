@@ -1,10 +1,14 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import type { PageData } from './$types';
-	import { MATCH_TYPE_LABELS } from '$lib/match-report';
+	import { matchTypeLabels } from '$lib/match-report';
 	import RatingLegend from '$lib/components/RatingLegend.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import { isProfileIndexable } from '$lib/seo';
 	import { jsonLd } from '$lib/jsonld';
+	import { dateLocaleFor } from '$lib/i18n/date';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 
 	let { data }: { data: PageData } = $props();
 
@@ -12,7 +16,9 @@
 	const canonical = $derived(`https://padelindex.de/p/${page.params.handle}`);
 
 	const breadcrumbs = $derived.by(() => {
-		const items = [{ '@type': 'ListItem', position: 1, name: 'PadelIndex', item: 'https://padelindex.de/' }];
+		const items = [
+			{ '@type': 'ListItem', position: 1, name: 'PadelIndex', item: 'https://padelindex.de/' }
+		];
 		if (data.club) {
 			items.push({
 				'@type': 'ListItem',
@@ -27,7 +33,11 @@
 			name: data.profile.name,
 			item: canonical
 		});
-		return jsonLd({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items });
+		return jsonLd({
+			'@context': 'https://schema.org',
+			'@type': 'BreadcrumbList',
+			itemListElement: items
+		});
 	});
 
 	const RING = 2 * Math.PI * 22;
@@ -36,16 +46,22 @@
 		return `${(RING * c).toFixed(2)} ${RING.toFixed(2)}`;
 	};
 
-	const handLabel: Record<string, string> = { rechts: 'Rechtshänder', links: 'Linkshänder' };
-	const sideLabel: Record<string, string> = { rechts: 'Rechte Seite', links: 'Linke Seite' };
-	const genderLabel: Record<string, string> = {
-		maennlich: 'Männlich',
-		weiblich: 'Weiblich',
-		divers: 'Divers'
-	};
+	const handLabel = $derived({
+		rechts: m.player_hand_rechts(),
+		links: m.player_hand_links()
+	});
+	const sideLabel = $derived({
+		rechts: m.player_side_rechts(),
+		links: m.player_side_links()
+	});
+	const genderLabel = $derived({
+		maennlich: m.player_gender_maennlich(),
+		weiblich: m.player_gender_weiblich(),
+		divers: m.player_gender_divers()
+	});
 
 	function formatDate(iso: string) {
-		return new Date(iso).toLocaleDateString('de-DE', {
+		return new Date(iso).toLocaleDateString(dateLocaleFor(getLocale()), {
 			day: '2-digit',
 			month: '2-digit',
 			year: 'numeric'
@@ -61,7 +77,7 @@
 	// Rating-Verlauf als kleine Linie: chronologisch, aus der bereits
 	// geladenen (neueste-zuerst) Historie.
 	const chronological = $derived([...data.history].reverse());
-	const series = $derived(chronological.map((m) => m.ratingAfter));
+	const series = $derived(chronological.map((entry) => entry.ratingAfter));
 	const W = 480;
 	const H = 90;
 	const PAD = 6;
@@ -75,24 +91,33 @@
 		const hi = seriesRange.hi + 0.1;
 		const x = (i: number) => PAD + ((W - 2 * PAD) * i) / (series.length - 1);
 		const y = (v: number) => H - PAD - ((H - 2 * PAD) * (v - lo)) / Math.max(0.01, hi - lo);
-		return series.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+		return series
+			.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`)
+			.join(' ');
 	});
 	const seriesTrendLabel = $derived.by(() => {
 		if (series.length < 2) return '';
 		const first = series[0];
 		const last = series[series.length - 1];
 		const diff = last - first;
-		const richtung = diff > 0.005 ? 'gestiegen' : diff < -0.005 ? 'gefallen' : 'gleich geblieben';
-		return `Rating-Verlauf über ${series.length} Matches, von ${first.toFixed(2)} auf ${last.toFixed(2)} ${richtung}. Details in der Tabelle darunter.`;
+		const direction =
+			diff > 0.005
+				? m.player_trend_rising()
+				: diff < -0.005
+					? m.player_trend_falling()
+					: m.player_trend_flat();
+		return m.player_trend_sr({
+			count: series.length,
+			first: first.toFixed(2),
+			last: last.toFixed(2),
+			direction
+		});
 	});
 </script>
 
 <svelte:head>
-	<title>{data.profile.name} — PadelIndex</title>
-	<meta
-		name="description"
-		content="Spielerprofil von {data.profile.name} auf PadelIndex — Rating, Formkurve und Matchhistorie aus bestätigten Ergebnissen."
-	/>
+	<title>{m.player_title({ name: data.profile.name })}</title>
+	<meta name="description" content={m.player_meta_description({ name: data.profile.name })} />
 	{#if indexable}
 		<link rel="canonical" href={canonical} />
 	{:else}
@@ -101,17 +126,20 @@
 		     und den Vereinsseiten folgen kann, die hierher verlinken. -->
 		<meta name="robots" content="noindex, follow" />
 	{/if}
+	<HreflangLinks path={page.url.pathname} />
 	{@html `<script type="application/ld+json">${breadcrumbs}</script>`}
 </svelte:head>
 
 <nav class="nav">
 	<div class="wrap nav-in">
-		<a class="brand" href="/" aria-label="PadelIndex Startseite">
+		<a class="brand" href={localizeHref('/')} aria-label={m.nav_brand_aria()}>
 			<img src="/logo.svg" width="30" height="30" alt="" />
 			<span>Padel<b>Index</b></span>
 		</a>
 		{#if data.club}
-			<a class="btn btn-primary" href="/c/{data.club.slug}">Zum Vereinsranking</a>
+			<a class="btn btn-primary" href={localizeHref(`/c/${data.club.slug}`)}
+				>{m.player_nav_ranking_cta()}</a
+			>
 		{/if}
 	</div>
 </nav>
@@ -129,14 +157,14 @@
 			</div>
 			<div>
 				<span class="eyebrow">
-					{data.profile.claimed ? 'Spielerprofil' : 'Unbeansprucht'}
+					{data.profile.claimed ? m.player_eyebrow_claimed() : m.player_eyebrow_unclaimed()}
 					{#if data.club}· {data.club.name}{/if}
 				</span>
 				<h2>{data.profile.name}</h2>
 				<p class="muted">
-					{data.profile.matchesPlayed} Matches
-					{#if data.profile.provisional}· provisorisch{/if}
-					· Sicherheit {Math.round(data.profile.confidence * 100)} %
+					{m.cs_matches_count({ count: data.profile.matchesPlayed })}
+					{#if data.profile.provisional}· {m.lab_provisional()}{/if}
+					· {m.cl_confidence_title({ percent: Math.round(data.profile.confidence * 100) })}
 				</p>
 			</div>
 		</div>
@@ -148,11 +176,16 @@
 		{#if data.profile.city || data.profile.playingHand || data.profile.preferredSide || data.profile.gender || data.profile.selfAssessedLevel !== null}
 			<div class="chips">
 				{#if data.profile.city}<span class="chip">{data.profile.city}</span>{/if}
-				{#if data.profile.playingHand}<span class="chip">{handLabel[data.profile.playingHand]}</span>{/if}
-				{#if data.profile.preferredSide}<span class="chip">{sideLabel[data.profile.preferredSide]}</span>{/if}
+				{#if data.profile.playingHand}<span class="chip">{handLabel[data.profile.playingHand]}</span
+					>{/if}
+				{#if data.profile.preferredSide}<span class="chip"
+						>{sideLabel[data.profile.preferredSide]}</span
+					>{/if}
 				{#if data.profile.gender}<span class="chip">{genderLabel[data.profile.gender]}</span>{/if}
 				{#if data.profile.selfAssessedLevel !== null}
-					<span class="chip">Selbsteinschätzung {data.profile.selfAssessedLevel.toFixed(1)}</span>
+					<span class="chip"
+						>{m.player_self_assessed({ level: data.profile.selfAssessedLevel.toFixed(1) })}</span
+					>
 				{/if}
 			</div>
 		{/if}
@@ -167,29 +200,29 @@
 
 		{#if data.viewer && !data.viewer.isOwnProfile}
 			<div class="viewer-actions">
-				<a class="btn btn-primary" href="/spieler-finden">Spielanfrage senden</a>
+				<a class="btn btn-primary" href="/spieler-finden">{m.player_request_match()}</a>
 				{#if data.viewer.challengeable}
-					<a class="btn btn-ghost-light" href="/challenges">Herausfordern</a>
+					<a class="btn btn-ghost-light" href="/challenges">{m.player_challenge()}</a>
 				{/if}
 			</div>
 		{:else if !data.viewer}
 			<p class="anon-cta">
-				Selbst noch nicht bei PadelIndex?
-				<a href="/#anmelden">Platz sichern</a>
+				{m.player_anon_cta_pre()}
+				<a href={localizeHref('/#anmelden')}>{m.nav_cta()}</a>
 			</p>
 		{/if}
 
 		{#if data.history.length === 0}
 			<div class="card">
 				<p class="muted" style="margin: 0; font-size: 14px">
-					Noch keine bestätigten Matches — die Formkurve füllt sich mit dem ersten Ergebnis.
+					{m.player_no_matches_yet()}
 				</p>
 			</div>
 		{:else}
 			<div class="card">
 				<div class="card-head">
-					<h3 class="card-title" style="margin: 0">Formkurve</h3>
-					<div class="win-toggle" role="group" aria-label="Zeitraum">
+					<h3 class="card-title" style="margin: 0">{m.player_form_curve_title()}</h3>
+					<div class="win-toggle" role="group" aria-label={m.player_form_period_aria()}>
 						{#each WINDOWS as n (n)}
 							<button type="button" class:on={windowSize === n} onclick={() => (windowSize = n)}>
 								{n}
@@ -200,19 +233,19 @@
 				<div class="form-stats">
 					<div>
 						<span class="form-v num">{Math.round(curve.winRate * 100)}%</span>
-						<span class="form-l">Siegquote ({curve.matchesCounted} Matches)</span>
+						<span class="form-l">{m.player_win_rate_label({ count: curve.matchesCounted })}</span>
 					</div>
 					<div>
 						<span class="form-v num" class:up={curve.gameDiff > 0} class:down={curve.gameDiff < 0}>
 							{curve.gameDiff > 0 ? '+' : ''}{curve.gameDiff}
 						</span>
-						<span class="form-l">Games-Differenz</span>
+						<span class="form-l">{m.player_game_diff_label()}</span>
 					</div>
 				</div>
 
 				{#if seriesPath}
 					<div class="rseries">
-						<span class="form-l">Rating-Verlauf</span>
+						<span class="form-l">{m.player_rating_history_label()}</span>
 						<div class="rseries-chart">
 							<div class="rseries-axis" aria-hidden="true">
 								<span>{(seriesRange.hi + 0.1).toFixed(2)}</span>
@@ -227,21 +260,21 @@
 								<path class="rseries-line" d={seriesPath}></path>
 							</svg>
 						</div>
-						<span class="rseries-caption" aria-hidden="true">Älter → neuer</span>
+						<span class="rseries-caption" aria-hidden="true">{m.player_older_newer()}</span>
 
 						<table class="sr-only">
-							<caption>Rating nach jedem Match, chronologisch</caption>
+							<caption>{m.player_rating_history_caption()}</caption>
 							<thead>
 								<tr>
-									<th scope="col">Datum</th>
-									<th scope="col">Rating danach</th>
+									<th scope="col">{m.player_date_col()}</th>
+									<th scope="col">{m.player_rating_after_col()}</th>
 								</tr>
 							</thead>
 							<tbody>
-								{#each chronological as m (m.matchId)}
+								{#each chronological as row (row.matchId)}
 									<tr>
-										<td>{formatDate(m.playedAt)}</td>
-										<td>{m.ratingAfter.toFixed(2)}</td>
+										<td>{formatDate(row.playedAt)}</td>
+										<td>{row.ratingAfter.toFixed(2)}</td>
 									</tr>
 								{/each}
 							</tbody>
@@ -252,11 +285,11 @@
 
 			{#if data.preferredPartners.length > 0}
 				<div class="card">
-					<h3 class="card-title">Bevorzugte Partner</h3>
+					<h3 class="card-title">{m.player_preferred_partners_title()}</h3>
 					<ul class="partners">
 						{#each data.preferredPartners as p (p.id)}
 							<li>
-								<a href="/p/{p.handle}" class="pname">{p.name}</a>
+								<a href={localizeHref(`/p/${p.handle}`)} class="pname">{p.name}</a>
 								<span class="pcount num">{p.count}×</span>
 							</li>
 						{/each}
@@ -266,18 +299,22 @@
 
 			{#if data.tournamentMatches.length > 0}
 				<div class="card">
-					<h3 class="card-title">Turnierergebnisse</h3>
+					<h3 class="card-title">{m.player_tournament_results_title()}</h3>
 					<ol class="hist">
-						{#each data.tournamentMatches as m (m.matchId)}
+						{#each data.tournamentMatches as match (match.matchId)}
 							<li class="hist-row">
-								<span class="hist-badge" class:win={m.won}>{m.won ? 'Sieg' : 'Niederlage'}</span>
+								<span class="hist-badge" class:win={match.won}
+									>{match.won ? m.player_win() : m.player_loss()}</span
+								>
 								<span class="hist-main">
 									<span class="hist-rating">
-										{#if m.partner}mit {m.partner.name} · {/if}
-										{m.sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ')}
+										{#if match.partner}{m.player_with_partner({
+												partner: match.partner.name
+											})}{' '}{/if}
+										{match.sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ')}
 									</span>
 								</span>
-								<span class="hist-date">{formatDate(m.playedAt)}</span>
+								<span class="hist-date">{formatDate(match.playedAt)}</span>
 							</li>
 						{/each}
 					</ol>
@@ -285,24 +322,30 @@
 			{/if}
 
 			<div class="card">
-				<h3 class="card-title">Matchhistorie</h3>
+				<h3 class="card-title">{m.player_match_history_title()}</h3>
 				<ol class="hist">
-					{#each data.history as m (m.matchId)}
+					{#each data.history as match (match.matchId)}
 						<li class="hist-row">
-							<span class="hist-badge" class:win={m.won}>{m.won ? 'Sieg' : 'Niederlage'}</span>
+							<span class="hist-badge" class:win={match.won}
+								>{match.won ? m.player_win() : m.player_loss()}</span
+							>
 							<span class="hist-main">
 								<span class="hist-rating">
-									{#if m.partner}mit {m.partner.name} · {/if}
-									{m.sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ')}
-									{#if m.matchType !== 'freizeit'}
-										<span class="type-tag">{MATCH_TYPE_LABELS[m.matchType]}</span>
+									{#if match.partner}{m.player_with_partner({
+											partner: match.partner.name
+										})}{' '}{/if}
+									{match.sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ')}
+									{#if match.matchType !== 'freizeit'}
+										<span class="type-tag">{matchTypeLabels()[match.matchType]}</span>
 									{/if}
 								</span>
 								<span class="hist-detail">
-									{m.ratingAfter.toFixed(2)} ({m.ratingDelta >= 0 ? '+' : ''}{m.ratingDelta.toFixed(2)})
+									{match.ratingAfter.toFixed(2)} ({match.ratingDelta >= 0
+										? '+'
+										: ''}{match.ratingDelta.toFixed(2)})
 								</span>
 							</span>
-							<span class="hist-date">{formatDate(m.playedAt)}</span>
+							<span class="hist-date">{formatDate(match.playedAt)}</span>
 						</li>
 					{/each}
 				</ol>
@@ -310,7 +353,7 @@
 		{/if}
 
 		<p class="delist-link">
-			<a href="/profil-entfernen?handle={data.profile.handle}">Ich möchte hier nicht gelistet sein</a>
+			<a href="/profil-entfernen?handle={data.profile.handle}">{m.player_delist_link()}</a>
 		</p>
 	</div>
 </section>
