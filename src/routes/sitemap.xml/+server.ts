@@ -13,22 +13,25 @@ import { supabaseAnon } from '$lib/server/supabase';
 import { MIN_MATCHES_FOR_INDEXING } from '$lib/seo';
 import { GUIDES_DE as GUIDES } from '$lib/content/guides/de';
 import { QUIZ_DIFFICULTIES_DE as QUIZ_DIFFICULTIES } from '$lib/content/quiz/de';
+import { locales, localizeUrl } from '$lib/paraglide/runtime';
+import { hreflangLinksFor } from '$lib/i18n/hreflang';
 
 const ORIGIN = 'https://padelindex.de';
 
-const STATIC_PAGES = [
+// In den i18n-Scope (/en, /es) fallende Seiten — bekommen drei
+// <url>-Einträge (de/en/es) mit vollständigem hreflang-Alternate-Block.
+const LOCALIZED_STATIC_PAGES = [
 	{ path: '/', priority: '1.0', changefreq: 'weekly' },
 	{ path: '/rating', priority: '0.8', changefreq: 'monthly' },
 	{ path: '/vereine', priority: '0.8', changefreq: 'monthly' },
 	{ path: '/faq', priority: '0.6', changefreq: 'monthly' },
 	{ path: '/ueber', priority: '0.5', changefreq: 'yearly' },
-	{ path: '/level-schaetzen', priority: '0.6', changefreq: 'monthly' },
 	{ path: '/karte', priority: '0.7', changefreq: 'weekly' },
 	{ path: '/ratgeber', priority: '0.8', changefreq: 'weekly' },
 	{ path: '/quiz', priority: '0.6', changefreq: 'monthly' },
-	// Statische Evergreen-Inhalte, lokal in guides-data.ts/quiz-data.ts
-	// gepflegt — kein DB-Zugriff nötig, deshalb direkt hier statt im
-	// try/catch unten.
+	// Statische Evergreen-Inhalte, lokal in content/guides/quiz gepflegt
+	// — kein DB-Zugriff nötig, deshalb direkt hier statt im try/catch
+	// unten. Slugs sind über alle drei Sprachen identisch.
 	...GUIDES.map((g) => ({ path: `/ratgeber/${g.slug}`, priority: '0.7', changefreq: 'monthly' })),
 	...QUIZ_DIFFICULTIES.map((d) => ({
 		path: `/quiz/${d.slug}`,
@@ -37,12 +40,35 @@ const STATIC_PAGES = [
 	}))
 ];
 
-export const GET: RequestHandler = async ({ platform, setHeaders }) => {
-	const urls = STATIC_PAGES.map((p) => ({
-		loc: ORIGIN + p.path,
-		priority: p.priority,
-		changefreq: p.changefreq
+// Außerhalb des i18n-Scope (internes Werkzeug ohne SEO-Wert) — bleibt
+// deutsch-only, ein einzelner <url>-Eintrag ohne hreflang-Alternates.
+const UNLOCALIZED_STATIC_PAGES = [
+	{ path: '/level-schaetzen', priority: '0.6', changefreq: 'monthly' }
+];
+
+type SitemapUrl = { loc: string; priority: string; changefreq: string; alternates?: string };
+
+function localizedEntries(path: string, priority: string, changefreq: string): SitemapUrl[] {
+	const alternates = hreflangLinksFor(path)
+		.map((a) => `\t\t<xhtml:link rel="alternate" hreflang="${a.hreflang}" href="${a.href}"/>`)
+		.join('\n');
+	return locales.map((locale) => ({
+		loc: localizeUrl(new URL(path, ORIGIN), { locale }).href,
+		priority,
+		changefreq,
+		alternates
 	}));
+}
+
+export const GET: RequestHandler = async ({ platform, setHeaders }) => {
+	const urls: SitemapUrl[] = [
+		...LOCALIZED_STATIC_PAGES.flatMap((p) => localizedEntries(p.path, p.priority, p.changefreq)),
+		...UNLOCALIZED_STATIC_PAGES.map((p) => ({
+			loc: ORIGIN + p.path,
+			priority: p.priority,
+			changefreq: p.changefreq
+		}))
+	];
 
 	try {
 		const sb = supabaseAnon(platform);
@@ -50,11 +76,7 @@ export const GET: RequestHandler = async ({ platform, setHeaders }) => {
 			// Vereinsseiten sind öffentlich und lohnen sich im Index.
 			const { data: clubs } = await sb.from('clubs').select('slug').limit(500);
 			for (const club of clubs ?? []) {
-				urls.push({
-					loc: `${ORIGIN}/c/${club.slug}`,
-					priority: '0.8',
-					changefreq: 'daily'
-				});
+				urls.push(...localizedEntries(`/c/${club.slug}`, '0.8', 'daily'));
 			}
 
 			// Ligaseiten sind ein eigenes öffentliches Produkt (0016).
@@ -65,11 +87,7 @@ export const GET: RequestHandler = async ({ platform, setHeaders }) => {
 				.neq('status', 'draft')
 				.limit(200);
 			for (const league of leagues ?? []) {
-				urls.push({
-					loc: `${ORIGIN}/liga/${league.slug}`,
-					priority: '0.7',
-					changefreq: 'weekly'
-				});
+				urls.push(...localizedEntries(`/liga/${league.slug}`, '0.7', 'weekly'));
 			}
 
 			// Spielerprofile erst ab genug bestätigten Matches (lib/seo.ts) —
@@ -81,11 +99,7 @@ export const GET: RequestHandler = async ({ platform, setHeaders }) => {
 				.gte('matches', MIN_MATCHES_FOR_INDEXING)
 				.limit(2000);
 			for (const p of players ?? []) {
-				urls.push({
-					loc: `${ORIGIN}/p/${p.handle}`,
-					priority: '0.5',
-					changefreq: 'weekly'
-				});
+				urls.push(...localizedEntries(`/p/${p.handle}`, '0.5', 'weekly'));
 			}
 		}
 	} catch {
@@ -93,11 +107,11 @@ export const GET: RequestHandler = async ({ platform, setHeaders }) => {
 	}
 
 	const body = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${urls
 	.map(
 		(u) =>
-			`\t<url>\n\t\t<loc>${u.loc}</loc>\n\t\t<changefreq>${u.changefreq}</changefreq>\n\t\t<priority>${u.priority}</priority>\n\t</url>`
+			`\t<url>\n\t\t<loc>${u.loc}</loc>\n${u.alternates ? u.alternates + '\n' : ''}\t\t<changefreq>${u.changefreq}</changefreq>\n\t\t<priority>${u.priority}</priority>\n\t</url>`
 	)
 	.join('\n')}
 </urlset>
