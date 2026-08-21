@@ -11,6 +11,7 @@
 	import { whenVisible } from '$lib/landing/reveal';
 	import AnimatedNumber from './AnimatedNumber.svelte';
 	import { SEASON, SEASON_WINS, SEASON_MATCHES } from '$lib/landing/season';
+	import { m } from '$lib/paraglide/messages.js';
 
 	type Mod = typeof import('$lib/landing/rating-demo');
 	let seasonTotal = $state(0);
@@ -23,24 +24,19 @@
 	}
 
 	const EARN = [
-		{ label: 'Match gespielt', why: 'jedes bestätigte Ergebnis', amt: '+10' },
-		{ label: 'Match gewonnen', why: 'zusätzlich zum Grundwert', amt: '+15' },
-		{ label: 'Vereinsliga oder Turnier', why: 'offiziell erfasste Partie', amt: '+10' },
-		{ label: '10., 25., 50. Match …', why: 'Meilenstein', amt: '+100' },
-		{ label: 'Fünf Siege in Folge', why: 'Serie', amt: '+50' }
+		{ label: m.tf_earn1_label(), why: m.tf_earn1_why(), amt: '+10' },
+		{ label: m.tf_earn2_label(), why: m.tf_earn2_why(), amt: '+15' },
+		{ label: m.tf_earn3_label(), why: m.tf_earn3_why(), amt: '+10' },
+		{ label: m.tf_earn4_label(), why: m.tf_earn4_why(), amt: '+100' },
+		{ label: m.tf_earn5_label(), why: m.tf_earn5_why(), amt: '+50' }
 	];
 
-	const NEVER = [
-		'Kein Handel zwischen Spielern',
-		'Keine Auszahlung, kein Kurs',
-		'Niederlagen kosten nie Tokens',
-		'Erst nach Bestätigung gutgeschrieben'
-	];
+	const NEVER = [m.tf_never1(), m.tf_never2(), m.tf_never3(), m.tf_never4()];
 
 	const STEPS = [
-		{ n: '01', t: 'Spielen', d: 'Ergebnis eintragen, Gegnerteam bestätigt.' },
-		{ n: '02', t: 'Sammeln', d: 'Tokens werden automatisch gutgeschrieben.' },
-		{ n: '03', t: 'Einlösen', d: 'Beim eigenen Verein — Training, Bälle, Startgeld.' }
+		{ n: '01', t: m.tf_step1_title(), d: m.tf_step1_desc() },
+		{ n: '02', t: m.tf_step2_title(), d: m.tf_step2_desc() },
+		{ n: '03', t: m.tf_step3_title(), d: m.tf_step3_desc() }
 	];
 </script>
 
@@ -65,7 +61,7 @@
 		<!-- Was es gibt -->
 		<div class="tf-earn">
 			<div class="tf-erow tf-ehead">
-				<span>Gutschrift</span><span>Tokens</span>
+				<span>{m.tf_gutschrift_header()}</span><span>{m.tf_tokens_header()}</span>
 			</div>
 			{#each EARN as e (e.label)}
 				<div class="tf-erow">
@@ -78,8 +74,10 @@
 			{/each}
 			<div class="tf-total">
 				<div>
-					<div class="tf-el">Eine Saison: {SEASON_MATCHES} Matches, {SEASON_WINS} Siege</div>
-					<div class="tf-ew">gerechnet mit den Regeln oben</div>
+					<div class="tf-el">
+						{m.tf_season_total_label({ matches: SEASON_MATCHES, wins: SEASON_WINS })}
+					</div>
+					<div class="tf-ew">{m.tf_season_total_sub()}</div>
 				</div>
 				<div class="tf-tval num">
 					<AnimatedNumber value={seasonTotal} decimals={0} duration={1100} />
@@ -89,7 +87,7 @@
 
 		<!-- Was es nicht ist -->
 		<div class="tf-side">
-			<span class="tf-slabel">Was Tokens nicht sind</span>
+			<span class="tf-slabel">{m.tf_never_label()}</span>
 			<ul class="tf-never">
 				{#each NEVER as n (n)}
 					<li>
@@ -101,8 +99,7 @@
 				{/each}
 			</ul>
 			<p class="tf-note">
-				Ein Guthaben bei deinem Verein — vergleichbar mit Bonusmeilen. Der Verein legt fest, was es
-				dafür gibt; PadelIndex zählt nur mit.
+				{m.tf_note()}
 			</p>
 		</div>
 	</div>

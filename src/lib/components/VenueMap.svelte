@@ -25,16 +25,16 @@
 	import { onMount } from 'svelte';
 	import type { Map as LeafletMap, CircleMarker } from 'leaflet';
 	import type { Venue } from '$lib/server/venues';
+	import { m } from '$lib/paraglide/messages.js';
+	import { localizeHref } from '$lib/paraglide/runtime';
 	// Leaflets eigenes CSS. Statischer Import (anders als das JS): Vite
 	// zieht daraus eine normale Stylesheet-Datei, das läuft durch SSR
 	// hindurch. Ohne dieses CSS sitzen die Kacheln versetzt und die
 	// Zoom-Bedienelemente sind unsichtbar.
 	import 'leaflet/dist/leaflet.css';
 
-	let {
-		venues,
-		selectedId = $bindable(null)
-	}: { venues: Venue[]; selectedId?: string | null } = $props();
+	let { venues, selectedId = $bindable(null) }: { venues: Venue[]; selectedId?: string | null } =
+		$props();
 
 	let container: HTMLDivElement;
 	let map: LeafletMap | null = null;
@@ -82,7 +82,7 @@
 				// Tastaturbedienung: Leaflet macht den Container fokussierbar,
 				// aber ohne Beschriftung weiß ein Screenreader nicht, was das ist.
 				container.setAttribute('role', 'application');
-				container.setAttribute('aria-label', 'Karte der Padel-Anlagen in Deutschland');
+				container.setAttribute('aria-label', m.venuemap_aria_label());
 
 				ready = true;
 			} catch {
@@ -158,24 +158,24 @@
 
 		if (v.website) {
 			lines.push(
-				`<a class="vp-link" href="${esc(v.website)}" target="_blank" rel="noopener noreferrer">Website</a>`
+				`<a class="vp-link" href="${esc(v.website)}" target="_blank" rel="noopener noreferrer">${esc(m.venuemap_website())}</a>`
 			);
 		}
 
 		if (v.isPartner) {
-			lines.push('<span class="vp-status vp-partner">PadelIndex Partner</span>');
+			lines.push(`<span class="vp-status vp-partner">${esc(m.venuemap_partner_badge())}</span>`);
 			if (v.clubSlug) {
-				lines.push(`<a class="vp-link" href="/c/${esc(v.clubSlug)}">Rangliste ansehen</a>`);
+				lines.push(
+					`<a class="vp-link" href="${esc(localizeHref(`/c/${v.clubSlug}`))}">${esc(m.venuemap_ranking_link())}</a>`
+				);
 			}
 		} else {
-			lines.push('<span class="vp-status vp-open">Noch kein PadelIndex Partner</span>');
+			lines.push(`<span class="vp-status vp-open">${esc(m.venuemap_not_partner_badge())}</span>`);
+			lines.push(`<span class="vp-cta">${esc(m.venuemap_cta_text())}</span>`);
 			lines.push(
-				'<span class="vp-cta">Betreibst du diesen Club? Werde Teil von PadelIndex.</span>'
-			);
-			lines.push(
-				`<a class="vp-btn" href="/vereine#demo">Interesse anmelden</a>` +
+				`<a class="vp-btn" href="${esc(localizeHref('/vereine#demo'))}">${esc(m.venuemap_interest_link())}</a>` +
 					`<a class="vp-link" href="mailto:kontakt@padelindex.de?subject=${encodeURIComponent(
-						`PadelIndex für ${v.name}`
+						m.venuemap_email_subject({ name: v.name })
 					)}">kontakt@padelindex.de</a>`
 			);
 		}
@@ -189,7 +189,7 @@
 
 	{#if failed}
 		<p class="mapfail">
-			Die Karte konnte nicht geladen werden. Alle Anlagen stehen unten in der Liste.
+			{m.venuemap_load_failed()}
 		</p>
 	{/if}
 </div>
