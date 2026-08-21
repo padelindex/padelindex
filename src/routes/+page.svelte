@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Copyright (c) 2025–2026 Alec Hahn / Sportcenter Hahn GmbH
+	 * All rights reserved.
+	 * Proprietary and confidential.
+	 * See LICENSE for details.
+	 */
+
 	import { page } from '$app/state';
 	import { reveal } from '$lib/landing/reveal';
 	import HeroSequence from '$lib/components/landing/HeroSequence.svelte';
