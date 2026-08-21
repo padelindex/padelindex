@@ -1,0 +1,50 @@
+PROPRIETARY SOFTWARE LICENSE AGREEMENT
+PadelIndex
+
+Copyright (c) 2025–2026 Alec Hahn / Sportcenter Hahn GmbH
+Alle Rechte vorbehalten.
+
+1. Begriffsbestimmungen
+„Software“ bezeichnet den gesamten Quellcode, die Binärdateien, Dokumentation, Designs, Algorithmen, Ranking-Modelle, Embed-Widgets und alle zugehörigen Materialien von PadelIndex (einschließlich padelindex.de und zugehöriger Repositories).
+„Lizenzgeber“ ist Alec Hahn / Sportcenter Hahn GmbH.
+„Lizenznehmer“ ist jede natürliche oder juristische Person, die die Software erhält, herunterlädt, nutzt oder darauf zugreift.
+
+2. Eigentum und Urheberrecht
+Die Software ist und bleibt ausschließliches Eigentum des Lizenzgebers. Alle Rechte, Titel und Ansprüche an der Software (einschließlich aller Verbesserungen, Ableitungen und Updates) liegen ausschließlich beim Lizenzgeber.
+Die Veröffentlichung auf GitHub oder anderen Plattformen ändert nichts an diesem Eigentumsrecht.
+
+3. Lizenzgewährung
+Der Lizenzgeber gewährt dem Lizenznehmer ein beschränktes, nicht-exklusives, nicht übertragbares, widerrufliches Recht, die Software ausschließlich wie folgt zu nutzen:
+- Persönliche, nicht-kommerzielle Einsichtnahme und Evaluation.
+- Nutzung des öffentlichen Embed-Widgets auf Vereinswebsites, sofern dies ausdrücklich vom Lizenzgeber freigegeben wurde und die Nutzungsbedingungen der Website eingehalten werden.
+
+Jede andere Nutzung ist ausdrücklich untersagt, insbesondere:
+- Kommerzielle Nutzung
+- Vervielfältigung, Verbreitung, öffentliche Zugänglichmachung
+- Modifikation, Reverse Engineering, Dekompilierung, Disassemblierung
+- Erstellung abgeleiteter Werke
+- Einbindung in andere Produkte oder Dienstleistungen
+- Weitergabe an Dritte (auch nicht als Fork)
+
+4. Einschränkungen
+Der Lizenznehmer darf die Software nicht:
+- verkaufen, vermieten, verleihen oder unterlizenzieren,
+- den Quellcode oder Teile davon in Open-Source-Projekte oder kommerzielle Produkte übernehmen,
+- Marken, Logos oder Bezeichnungen von PadelIndex ohne schriftliche Genehmigung verwenden,
+- die Software in einer Weise nutzen, die gegen geltendes Recht (insbesondere deutsches Urheberrecht und DSGVO) verstößt.
+
+5. Keine Garantie / Haftungsausschluss
+DIE SOFTWARE WIRD „WIE BESEHEN“ ZUR VERFÜGUNG GESTELLT, OHNE JEGLICHE AUSDRÜCKLICHE ODER STILLSCHWEIGENDE GEWÄHRLEISTUNG, EINSCHLIESSLICH, ABER NICHT BESCHRÄNKT AUF DIE GEWÄHRLEISTUNG DER MARKTGÄNGIGKEIT, DER EIGNUNG FÜR EINEN BESTIMMTEN ZWECK ODER DER NICHTVERLETZUNG VON RECHTEN DRITTER.
+DER LIZENZGEBER HAFTET IN KEINEM FALL FÜR DIREKTE, INDIREKTE, ZUFÄLLIGE, BESONDERE ODER FOLGESCHÄDEN, DIE AUS DER NUTZUNG ODER DER UNMÖGLICHKEIT DER NUTZUNG DER SOFTWARE ENTSTEHEN, SELBST WENN AUF DIE MÖGLICHKEIT SOLCHER SCHÄDEN HINGEWIESEN WURDE.
+
+6. Kündigung
+Diese Lizenz erlischt automatisch und ohne Vorankündigung bei Verstoß gegen eine der Bestimmungen. Bei Kündigung muss der Lizenznehmer sämtliche Kopien der Software unverzüglich löschen und die Nutzung einstellen.
+Der Lizenzgeber kann die Lizenz jederzeit aus wichtigem Grund widerrufen.
+
+7. Anwendbares Recht und Gerichtsstand
+Es gilt ausschließlich das Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts.
+Ausschließlicher Gerichtsstand ist der Sitz der Sportcenter Hahn GmbH, soweit gesetzlich zulässig.
+
+8. Sonstiges
+Sollten einzelne Bestimmungen unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.
+Änderungen oder Ergänzungen bedürfen der Schriftform.

@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2025–2026 Alec Hahn / Sportcenter Hahn GmbH
+ * All rights reserved.
+ * Proprietary and confidential.
+ * See LICENSE for details.
+ */
+
 import { sveltekit } from '@sveltejs/kit/vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { defineConfig } from 'vitest/config';

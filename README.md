@@ -1,5 +1,7 @@
 # PadelIndex
 
+> **Proprietary software.** This repository is **not** open source. All rights reserved — see [LICENSE](LICENSE).
+
 Unabhängige Rangliste für Padel-Amateure. SvelteKit auf Cloudflare Pages, Daten in Supabase.
 
 Die Landing-Page, das Vereins-Widget und der Rating-Kern liegen in diesem Repo. Phase 1: Site, Waitlist, öffentliches Club-Leaderboard. Noch kein Login und kein Match-Melden.
@@ -71,22 +73,22 @@ Siehe [`.env.example`](.env.example). Datei nicht committen.
 
 ## Repo-Struktur
 
-| Pfad | Inhalt |
-|---|---|
-| `src/routes/+page.svelte` | Landing |
-| `src/routes/c/[slug]` | Öffentliche Vereinsseite |
-| `src/routes/embed/[slug]` | iframe-Fallback fürs Widget |
-| `src/routes/api/waitlist` | Waitlist → Postgres |
-| `src/routes/api/v1/clubs/[slug]/leaderboard` | Widget-API (CORS, Cache 5 min) |
-| `static/embed.js` | Custom Element für Vereinswebsites |
-| `src/routes/c/[slug]/beanspruchen` | Profil beanspruchen (Name → Magic Link) |
-| `src/routes/api/claim` | Claim-Lookup + Claim-Start |
-| `src/lib/claim-match.ts` | Namensabgleich fürs Beanspruchen |
-| `src/lib/server/rating/` | OpenSkill-Kern, Confirm-Worker, Claims |
-| `src/lib/server/rating/league-seed.ts` | Startwert aus einer bestehenden Ligatabelle |
-| `scripts/import-bavaro.ts` | Ligadaten → Seed-SQL |
-| `supabase/migrations/` | Schema + RPCs |
-| `docs/` | Widget-Konzept, Verification-Pipeline |
+| Pfad                                         | Inhalt                                      |
+| -------------------------------------------- | ------------------------------------------- |
+| `src/routes/+page.svelte`                    | Landing                                     |
+| `src/routes/c/[slug]`                        | Öffentliche Vereinsseite                    |
+| `src/routes/embed/[slug]`                    | iframe-Fallback fürs Widget                 |
+| `src/routes/api/waitlist`                    | Waitlist → Postgres                         |
+| `src/routes/api/v1/clubs/[slug]/leaderboard` | Widget-API (CORS, Cache 5 min)              |
+| `static/embed.js`                            | Custom Element für Vereinswebsites          |
+| `src/routes/c/[slug]/beanspruchen`           | Profil beanspruchen (Name → Magic Link)     |
+| `src/routes/api/claim`                       | Claim-Lookup + Claim-Start                  |
+| `src/lib/claim-match.ts`                     | Namensabgleich fürs Beanspruchen            |
+| `src/lib/server/rating/`                     | OpenSkill-Kern, Confirm-Worker, Claims      |
+| `src/lib/server/rating/league-seed.ts`       | Startwert aus einer bestehenden Ligatabelle |
+| `scripts/import-bavaro.ts`                   | Ligadaten → Seed-SQL                        |
+| `supabase/migrations/`                       | Schema + RPCs                               |
+| `docs/`                                      | Widget-Konzept, Verification-Pipeline       |
 
 ## Echte Ligadaten importieren
 
@@ -140,8 +142,15 @@ Sobald die Domain steht:
 
 ```html
 <script src="https://padelindex.de/embed.js" async></script>
-<padelindex-leaderboard club="stc-oberland" limit="10" accent="#0F6E5C">
-</padelindex-leaderboard>
+<padelindex-leaderboard club="stc-oberland" limit="10" accent="#0F6E5C"> </padelindex-leaderboard>
 ```
 
 Lokal: `api="http://localhost:5173/api/v1"` am Custom Element setzen.
+
+## License
+
+This software is **proprietary**.
+See the [LICENSE](LICENSE) file for full details.
+
+Copyright © 2025–2026 Alec Hahn / Sportcenter Hahn GmbH
+All rights reserved. Unauthorized use, copying, modification, distribution or commercial exploitation is strictly prohibited.

@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2025–2026 Alec Hahn / Sportcenter Hahn GmbH
+ * All rights reserved.
+ * Proprietary and confidential.
+ * See LICENSE for details.
+ */
+
 // ============================================================
 // PadelIndex — Session pro Request
 // ============================================================
