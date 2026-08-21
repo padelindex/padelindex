@@ -2,15 +2,27 @@
 	// Gemeinsame Nav für die Landingpage und die neuen eigenständigen Routen
 	// /rating und /vereine (Website-Audit Block 4) — vorher dreimal
 	// dieselbe Nav-Markup, jetzt eine Stelle für Logo/Burger-Verhalten.
+	//
+	// HeaderTicker sitzt hier statt in jeder Route einzeln: eine
+	// Einbaustelle erreicht automatisch alle 18 Seiten, die LandingNav
+	// schon verwenden. Die Nav selbst muss dafür ihren sticky-Versatz
+	// kennen — 34px (Tickerhöhe) statt 0, sobald der Ticker Inhalte zeigt,
+	// sonst bliebe bei ausgeblendetem Ticker eine leere Lücke stehen.
+
+	import HeaderTicker from '$lib/components/HeaderTicker.svelte';
 
 	let { links, brandHref = '/' }: { links: { href: string; label: string }[]; brandHref?: string } =
 		$props();
 
 	let menuOpen = $state(false);
 	const close = () => (menuOpen = false);
+
+	let tickerVisible = $state(false);
 </script>
 
-<nav class="nav">
+<HeaderTicker onVisibleChange={(visible) => (tickerVisible = visible)} />
+
+<nav class="nav" style="top: {tickerVisible ? '34px' : '0'}">
 	<div class="wrap nav-in">
 		<a class="brand" href={brandHref} aria-label="PadelIndex Startseite">
 			<svg viewBox="0 0 40 40" aria-hidden="true">

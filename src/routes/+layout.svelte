@@ -16,6 +16,12 @@
 </script>
 
 <svelte:head>
+	<link
+		rel="alternate"
+		type="application/rss+xml"
+		title="PadelIndex — Live-Ticker"
+		href="/feed.xml"
+	/>
 	{@html `<script type="application/ld+json">${jsonLd(organization)}</script>`}
 	{#if data.cfBeaconToken}
 		<!-- Cloudflare Web Analytics: cookiefrei, kein eigenes Deployment
