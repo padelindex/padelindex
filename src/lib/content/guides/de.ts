@@ -10,9 +10,9 @@
 // wo etwas variiert (Preise, Ausstattung, Vereinsregeln), steht das
 // hier auch so da, statt eine falsche Genauigkeit vorzutäuschen.
 
-import type { GuideArticle } from './guides';
+import type { GuideArticle } from '../../guides';
 
-export const GUIDES: GuideArticle[] = [
+export const GUIDES_DE: GuideArticle[] = [
 	// ------------------------------------------------------------
 	// REGELN & WISSEN
 	// ------------------------------------------------------------

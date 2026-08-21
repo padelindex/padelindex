@@ -6,23 +6,45 @@
 // Muster wie venues.ts/rating-core.ts: Datenlogik ohne DOM-/DB-Zugriff
 // ist trivial zu testen und unabhängig von der Anzeige.
 
+import { m } from './paraglide/messages.js';
+import { type Locale } from './paraglide/runtime';
+import { GUIDES_DE } from './content/guides/de';
+import { GUIDES_EN } from './content/guides/en';
+import { GUIDES_ES } from './content/guides/es';
+
 export type GuideCategory = 'regeln' | 'ausruestung' | 'technik-taktik' | 'einstieg' | 'kosten';
 
-export const CATEGORY_LABELS: Record<GuideCategory, string> = {
-	regeln: 'Regeln & Wissen',
-	ausruestung: 'Ausrüstung',
-	'technik-taktik': 'Technik & Taktik',
-	einstieg: 'Einstieg & Training',
-	kosten: 'Kosten'
-};
+export function categoryLabels(): Record<GuideCategory, string> {
+	return {
+		regeln: m.guide_cat_regeln(),
+		ausruestung: m.guide_cat_ausruestung(),
+		'technik-taktik': m.guide_cat_technik_taktik(),
+		einstieg: m.guide_cat_einstieg(),
+		kosten: m.guide_cat_kosten()
+	};
+}
 
-export const CATEGORY_DESCRIPTIONS: Record<GuideCategory, string> = {
-	regeln: 'Grundlagen, Begriffe und der Vergleich zu anderen Rückschlagsportarten.',
-	ausruestung: 'Schläger, Schuhe und was du zum Start wirklich brauchst.',
-	'technik-taktik': 'Schläge, Spielsysteme und Doppel-Strategie fürs bessere Spiel.',
-	einstieg: 'Dein erster Schritt in den Sport und wie du dich danach verbesserst.',
-	kosten: 'Was Padel unterm Strich kostet — und wo du sparen kannst.'
-};
+export function categoryDescriptions(): Record<GuideCategory, string> {
+	return {
+		regeln: m.guide_cat_regeln_desc(),
+		ausruestung: m.guide_cat_ausruestung_desc(),
+		'technik-taktik': m.guide_cat_technik_taktik_desc(),
+		einstieg: m.guide_cat_einstieg_desc(),
+		kosten: m.guide_cat_kosten_desc()
+	};
+}
+
+/** Zentrale Content-Quelle je Sprache — identische Slugs/Struktur, nur Text unterschiedlich. */
+export function guidesFor(locale: Locale): GuideArticle[] {
+	switch (locale) {
+		case 'en':
+			return GUIDES_EN;
+		case 'es':
+			return GUIDES_ES;
+		default:
+			return GUIDES_DE;
+	}
+}
 
 export type GuideBoxKind = 'info' | 'checklist' | 'tips' | 'mistakes';
 
@@ -61,11 +83,13 @@ export type GuideArticle = {
 	relatedSlugs: string[];
 };
 
-export const DIFFICULTY_LABELS: Record<GuideArticle['difficulty'], string> = {
-	einsteiger: 'Einsteiger',
-	fortgeschritten: 'Fortgeschritten',
-	alle: 'Für alle Level'
-};
+export function difficultyLabels(): Record<GuideArticle['difficulty'], string> {
+	return {
+		einsteiger: m.guide_diff_einsteiger(),
+		fortgeschritten: m.guide_diff_fortgeschritten(),
+		alle: m.guide_diff_alle()
+	};
+}
 
 export function findGuide(guides: GuideArticle[], slug: string): GuideArticle | undefined {
 	return guides.find((g) => g.slug === slug);

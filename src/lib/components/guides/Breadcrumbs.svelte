@@ -2,11 +2,13 @@
 	// Sichtbare Breadcrumb-Navigation. Das zugehörige BreadcrumbList-JSON-LD
 	// bauen die Seiten selbst inline (gleiches Muster wie /c/[slug] und
 	// /p/[handle]) — hier geht es nur um die sichtbare Spur.
+	import { m } from '$lib/paraglide/messages.js';
+
 	type Crumb = { label: string; href?: string };
 	let { items }: { items: Crumb[] } = $props();
 </script>
 
-<nav aria-label="Breadcrumb" class="crumbs">
+<nav aria-label={m.breadcrumb_nav_aria()} class="crumbs">
 	<ol>
 		{#each items as item, i (item.label)}
 			<li>

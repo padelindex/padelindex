@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+
 	type Entry = { id: string; heading: string };
 	let { entries }: { entries: Entry[] } = $props();
 </script>
 
-<nav class="toc" aria-label="Inhaltsverzeichnis">
-	<p class="toc-title">Inhalt</p>
+<nav class="toc" aria-label={m.guide_toc_aria()}>
+	<p class="toc-title">{m.guide_toc_title()}</p>
 	<ol>
 		{#each entries as entry (entry.id)}
 			<li><a href="#{entry.id}">{entry.heading}</a></li>

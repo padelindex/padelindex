@@ -6,21 +6,28 @@
 	import GuideCard from '$lib/components/guides/GuideCard.svelte';
 	import GuideCTA from '$lib/components/guides/GuideCTA.svelte';
 	import FAQAccordion from '$lib/components/guides/FAQAccordion.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
+	import { page } from '$app/state';
 	import { mainNav } from '$lib/landing/nav';
 	import { jsonLd } from '$lib/jsonld';
 	import {
-		CATEGORY_LABELS,
+		categoryLabels,
 		type GuideCategory,
 		guidesByCategory,
 		popularGuides,
 		beginnerGuides,
 		searchGuides
 	} from '$lib/guides';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	const CATEGORIES = Object.keys(CATEGORY_LABELS) as GuideCategory[];
+	const CATEGORIES = $derived(Object.keys(categoryLabels()) as GuideCategory[]);
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
 
 	let query = $state('');
 	const filtered = $derived(searchGuides(data.guides, query));
@@ -28,67 +35,53 @@
 	const popular = $derived(popularGuides(data.guides));
 	const beginner = $derived(beginnerGuides(data.guides));
 
-	const faq = [
-		{
-			question: 'Ist der PadelIndex-Ratgeber kostenlos?',
-			answer: 'Ja, alle Ratgeberartikel sind frei zugänglich und kostenlos.'
-		},
-		{
-			question: 'Für wen ist der Ratgeber gedacht?',
-			answer:
-				'Für alle: komplette Anfänger, Freizeitspieler, Fortgeschrittene und alle, die sich für Padel interessieren — von den Grundregeln bis zu Taktik-Details.'
-		},
-		{
-			question: 'Wie aktuell sind die Inhalte?',
-			answer:
-				'Wir pflegen die Artikel laufend und ergänzen sie um neue Themen. Jeder Artikel zeigt oben, wann er zuletzt aktualisiert wurde.'
-		},
-		{
-			question: 'Wie finde ich passende Mitspieler oder einen Verein?',
-			answer:
-				'Auf der Karte findest du Padel-Anlagen in Deutschland, und mit dem PadelIndex-Level-Test bekommst du eine erste Einschätzung deines Spielniveaus.'
-		}
-	];
+	const faq = $derived([
+		{ question: m.ratgeber_faq_q1(), answer: m.ratgeber_faq_a1() },
+		{ question: m.ratgeber_faq_q2(), answer: m.ratgeber_faq_a2() },
+		{ question: m.ratgeber_faq_q3(), answer: m.ratgeber_faq_a3() },
+		{ question: m.ratgeber_faq_q4(), answer: m.ratgeber_faq_a4() }
+	]);
 
-	const faqSchema = jsonLd({
-		'@context': 'https://schema.org',
-		'@type': 'FAQPage',
-		mainEntity: faq.map((item) => ({
-			'@type': 'Question',
-			name: item.question,
-			acceptedAnswer: { '@type': 'Answer', text: item.answer }
-		}))
-	});
+	const faqSchema = $derived(
+		jsonLd({
+			'@context': 'https://schema.org',
+			'@type': 'FAQPage',
+			mainEntity: faq.map((item) => ({
+				'@type': 'Question',
+				name: item.question,
+				acceptedAnswer: { '@type': 'Answer', text: item.answer }
+			}))
+		})
+	);
 
-	const breadcrumbSchema = jsonLd({
-		'@context': 'https://schema.org',
-		'@type': 'BreadcrumbList',
-		itemListElement: [
-			{ '@type': 'ListItem', position: 1, name: 'PadelIndex', item: 'https://padelindex.de/' },
-			{ '@type': 'ListItem', position: 2, name: 'Ratgeber', item: 'https://padelindex.de/ratgeber' }
-		]
-	});
+	const breadcrumbSchema = $derived(
+		jsonLd({
+			'@context': 'https://schema.org',
+			'@type': 'BreadcrumbList',
+			itemListElement: [
+				{ '@type': 'ListItem', position: 1, name: 'PadelIndex', item: 'https://padelindex.de/' },
+				{
+					'@type': 'ListItem',
+					position: 2,
+					name: m.guide_breadcrumb_ratgeber(),
+					item: 'https://padelindex.de/ratgeber'
+				}
+			]
+		})
+	);
 </script>
 
 <svelte:head>
-	<title>Padel Ratgeber: Regeln, Ausrüstung, Technik und Taktik einfach erklärt — PadelIndex</title>
-	<meta
-		name="description"
-		content="Der PadelIndex-Ratgeber: Regeln, Ausrüstung, Technik und Taktik verständlich erklärt — für Anfänger, Freizeitspieler und Fortgeschrittene."
-	/>
-	<link rel="canonical" href="https://padelindex.de/ratgeber" />
+	<title>{m.ratgeber_meta_title()}</title>
+	<meta name="description" content={m.ratgeber_meta_description()} />
+	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://padelindex.de/ratgeber" />
+	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
-	<meta
-		property="og:title"
-		content="Padel Ratgeber: Regeln, Ausrüstung, Technik und Taktik einfach erklärt"
-	/>
-	<meta
-		property="og:description"
-		content="Alles, was du wissen musst, um mit Padel zu starten, besser zu werden und dein Spiel cleverer zu machen."
-	/>
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.ratgeber_og_title()} />
+	<meta property="og:description" content={m.ratgeber_og_description()} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 	{@html `<script type="application/ld+json">${faqSchema}</script>`}
@@ -101,21 +94,21 @@
 	<section class="sec sec-light">
 		<div class="wrap">
 			<GuideHero
-				eyebrow="PadelIndex Ratgeber"
-				headline="Padel Ratgeber: Regeln, Ausrüstung, Technik und Taktik einfach erklärt"
-				subheadline="Alles, was du wissen musst, um mit Padel zu starten, besser zu werden und dein Spiel cleverer zu machen."
-				primaryHref="/quiz"
-				primaryLabel="Padel-Wissen testen"
+				eyebrow={m.ratgeber_hero_eyebrow()}
+				headline={m.ratgeber_og_title()}
+				subheadline={m.ratgeber_og_description()}
+				primaryHref={localizeHref('/quiz')}
+				primaryLabel={m.ratgeber_hero_primary_label()}
 				secondaryHref="#kategorien"
-				secondaryLabel="Ratgeber entdecken"
+				secondaryLabel={m.ratgeber_hero_secondary_label()}
 			/>
 
 			<div class="search-row">
-				<label for="guide-search" class="sr-only">Ratgeber durchsuchen</label>
+				<label for="guide-search" class="sr-only">{m.ratgeber_search_label()}</label>
 				<input
 					id="guide-search"
 					type="search"
-					placeholder="Suche z. B. „Schläger“ oder „Aufschlag“ …"
+					placeholder={m.ratgeber_search_placeholder()}
 					bind:value={query}
 				/>
 			</div>
@@ -131,9 +124,9 @@
 	{#if query.trim()}
 		<section class="sec sec-light">
 			<div class="wrap">
-				<h2>Suchergebnisse für „{query}“</h2>
+				<h2>{m.ratgeber_search_results({ query })}</h2>
 				{#if filtered.length === 0}
-					<p class="muted">Keine Artikel gefunden. Versuch einen anderen Suchbegriff.</p>
+					<p class="muted">{m.ratgeber_search_empty()}</p>
 				{:else}
 					<div class="grid">
 						{#each filtered as guide (guide.slug)}
@@ -147,7 +140,7 @@
 		{#each CATEGORIES as category (category)}
 			<section class="sec sec-light" id="kategorie-{category}">
 				<div class="wrap">
-					<h2>{CATEGORY_LABELS[category]}</h2>
+					<h2>{categoryLabels()[category]}</h2>
 					<div class="grid">
 						{#each guidesByCategory(data.guides, category) as guide (guide.slug)}
 							<GuideCard {guide} />
@@ -159,7 +152,7 @@
 
 		<section class="sec sec-light">
 			<div class="wrap">
-				<h2>Beliebte Ratgeber</h2>
+				<h2>{m.ratgeber_popular_heading()}</h2>
 				<div class="grid">
 					{#each popular as guide (guide.slug)}
 						<GuideCard {guide} />
@@ -170,7 +163,7 @@
 
 		<section class="sec sec-light">
 			<div class="wrap">
-				<h2>Für Anfänger empfohlen</h2>
+				<h2>{m.ratgeber_beginner_heading()}</h2>
 				<div class="grid">
 					{#each beginner as guide (guide.slug)}
 						<GuideCard {guide} />
@@ -183,19 +176,19 @@
 	<section class="sec sec-light">
 		<div class="wrap" style="max-width: 720px">
 			<GuideCTA
-				heading="Weißt du, wie stark du wirklich spielst?"
-				text="Der PadelIndex-Level-Test gibt dir in wenigen Fragen eine erste Einschätzung deines Spielniveaus."
+				heading={m.ratgeber_cta_heading()}
+				text={m.ratgeber_cta_text()}
 				primaryHref="/level-schaetzen"
-				primaryLabel="Level jetzt schätzen"
-				secondaryHref="/karte"
-				secondaryLabel="Padelclub finden"
+				primaryLabel={m.ratgeber_cta_primary_label()}
+				secondaryHref={localizeHref('/karte')}
+				secondaryLabel={m.ratgeber_cta_secondary_label()}
 			/>
 		</div>
 	</section>
 
 	<section class="sec sec-light">
 		<div class="wrap" style="max-width: 720px">
-			<h2>Häufige Fragen</h2>
+			<h2>{m.guide_faq_heading()}</h2>
 			<FAQAccordion items={faq} />
 		</div>
 	</section>

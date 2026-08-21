@@ -11,7 +11,7 @@
 import type { RequestHandler } from './$types';
 import { supabaseAnon } from '$lib/server/supabase';
 import { MIN_MATCHES_FOR_INDEXING } from '$lib/seo';
-import { GUIDES } from '$lib/guides-data';
+import { GUIDES_DE as GUIDES } from '$lib/content/guides/de';
 import { QUIZ_DIFFICULTIES } from '$lib/quiz-data';
 
 const ORIGIN = 'https://padelindex.de';

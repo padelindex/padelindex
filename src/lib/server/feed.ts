@@ -18,7 +18,7 @@
 
 import { supabaseAdmin, supabaseAnon } from './supabase';
 import { formatPlayerName } from '$lib/claim-match';
-import { GUIDES } from '$lib/guides-data';
+import { GUIDES_DE as GUIDES } from '$lib/content/guides/de';
 import { MIN_MATCHES_FOR_INDEXING } from '$lib/seo';
 import { capFeed, hashString, pseudoRecentDate, type FeedItem } from '$lib/feed';
 

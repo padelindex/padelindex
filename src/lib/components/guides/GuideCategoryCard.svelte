@@ -1,14 +1,15 @@
 <script lang="ts">
 	import type { GuideCategory } from '$lib/guides';
-	import { CATEGORY_LABELS, CATEGORY_DESCRIPTIONS } from '$lib/guides';
+	import { categoryLabels, categoryDescriptions } from '$lib/guides';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { category, count }: { category: GuideCategory; count: number } = $props();
 </script>
 
 <a class="cat-card" href="#kategorie-{category}">
-	<h3>{CATEGORY_LABELS[category]}</h3>
-	<p>{CATEGORY_DESCRIPTIONS[category]}</p>
-	<span class="count">{count} Artikel</span>
+	<h3>{categoryLabels()[category]}</h3>
+	<p>{categoryDescriptions()[category]}</p>
+	<span class="count">{m.ratgeber_category_count({ count })}</span>
 </a>
 
 <style>

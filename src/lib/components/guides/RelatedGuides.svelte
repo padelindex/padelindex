@@ -1,13 +1,15 @@
 <script lang="ts">
 	import type { GuideArticle } from '$lib/guides';
 	import GuideCard from './GuideCard.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
-	let { guides, heading = 'Weiterlesen' }: { guides: GuideArticle[]; heading?: string } = $props();
+	let { guides, heading }: { guides: GuideArticle[]; heading?: string } = $props();
+	const resolvedHeading = $derived(heading ?? m.related_guides_heading());
 </script>
 
 {#if guides.length > 0}
 	<section class="related" aria-labelledby="related-heading">
-		<h2 id="related-heading">{heading}</h2>
+		<h2 id="related-heading">{resolvedHeading}</h2>
 		<div class="grid">
 			{#each guides as guide (guide.slug)}
 				<GuideCard {guide} />

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { QUIZ_QUESTIONS, QUIZ_DIFFICULTIES, questionsFor } from './quiz-data';
-import { GUIDES } from './guides-data';
+import { GUIDES_DE as GUIDES } from './content/guides/de';
 
 describe('quiz-data Integrität', () => {
 	it('hat für jede Frage eine eindeutige ID', () => {
