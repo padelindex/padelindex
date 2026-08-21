@@ -36,7 +36,13 @@ export const load: PageServerLoad = async ({ params, locals, url, platform }) =>
 		getOpenChallengesForMatch(admin, locals.player.id)
 	]);
 
-	return { club, roster, me: locals.player.id, openChallenges };
+	// Verlinkt z. B. von einem vollgelaufenen Padel-Roulette-Slot aus, damit
+	// das Datum nicht nochmal von Hand eingetragen werden muss.
+	const datumRaw = url.searchParams.get('datum');
+	const today = new Date().toISOString().slice(0, 10);
+	const prefillDate = datumRaw && datumRaw <= today ? datumRaw : today;
+
+	return { club, roster, me: locals.player.id, openChallenges, prefillDate };
 };
 
 export const actions: Actions = {

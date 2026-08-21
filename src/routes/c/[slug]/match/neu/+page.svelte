@@ -64,7 +64,7 @@
 				}}
 			>
 				<label for="playedAt">Datum</label>
-				<input id="playedAt" type="date" name="playedAt" value={today} max={today} required />
+				<input id="playedAt" type="date" name="playedAt" value={data.prefillDate} max={today} required />
 
 				<label for="matchType">Match-Typ</label>
 				<select id="matchType" name="matchType" required bind:value={matchType}>

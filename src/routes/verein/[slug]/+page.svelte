@@ -18,6 +18,20 @@
 	let addMode = $state<'search' | 'unclaimed'>('search');
 	let memberBusyId = $state<string | null>(null);
 	let matchBusyId = $state<string | null>(null);
+
+	let rouletteCreating = $state(false);
+	let rouletteBusyId = $state<string | null>(null);
+	const today = new Date().toISOString().slice(0, 10);
+
+	function formatSlotDate(iso: string): string {
+		return new Date(iso).toLocaleString('de-DE', {
+			weekday: 'short',
+			day: 'numeric',
+			month: 'short',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
 </script>
 
 <svelte:head>
@@ -342,9 +356,100 @@
 			</div>
 		{/if}
 
-		{#if form?.rewardError}
-			<p class="err">{form.rewardError}</p>
+		{#if form?.rouletteError}
+			<p class="err">{form.rouletteError}</p>
 		{/if}
+
+		<div class="card">
+			<div class="card-head">
+				<h3 class="card-title" style="margin:0">Padel Roulette</h3>
+				<a class="btn btn-ghost-light" href="/c/{data.club.slug}/roulette">Spieleransicht</a>
+			</div>
+			<p class="muted" style="font-size: 13px; margin: 0 0 14px">
+				Termin anlegen, Mitglieder sagen zu — bei vier Zusagen findet das Match statt.
+			</p>
+
+			{#if data.rouletteSlots.length > 0}
+				<ul class="pending-list">
+					{#each data.rouletteSlots as s (s.id)}
+						<li class="pending-row">
+							<span class="pending-teams">
+								{formatSlotDate(s.startsAt)}
+								{#if s.court}· {s.court}{/if}
+								<span class="muted">
+									· {s.cancelled ? 'abgesagt' : `${s.signups.length}/4 zugesagt`}
+								</span>
+							</span>
+							{#if !s.cancelled}
+								<form
+									method="POST"
+									action="?/cancelRouletteSlot"
+									use:enhance={() => {
+										rouletteBusyId = s.id;
+										return async ({ update }) => {
+											await update();
+											rouletteBusyId = null;
+										};
+									}}
+								>
+									<input type="hidden" name="slotId" value={s.id} />
+									<button class="btn btn-ghost-light" type="submit" disabled={rouletteBusyId === s.id}>
+										Absagen
+									</button>
+								</form>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
+
+			<button
+				class="btn btn-ghost-light"
+				type="button"
+				style="margin-top: 14px"
+				onclick={() => (rouletteCreating = !rouletteCreating)}
+			>
+				{rouletteCreating ? 'Abbrechen' : '+ Termin anlegen'}
+			</button>
+
+			{#if rouletteCreating}
+				<form
+					method="POST"
+					action="?/createRouletteSlot"
+					use:enhance={() => {
+						rouletteBusyId = 'new';
+						return async ({ update }) => {
+							await update();
+							rouletteBusyId = null;
+							rouletteCreating = false;
+						};
+					}}
+					style="margin-top: 14px"
+				>
+					<input type="date" name="startsAtDate" min={today} required />
+					<input type="time" name="startsAtTime" value="18:00" required />
+					<input
+						type="number"
+						name="durationMin"
+						min="30"
+						max="240"
+						step="15"
+						value="90"
+						placeholder="Dauer (Minuten)"
+					/>
+					<input type="text" name="court" maxlength="40" placeholder="Court (optional)" />
+					<input type="text" name="info" maxlength="160" placeholder="Info (optional)" />
+					<button
+						class="btn btn-primary"
+						type="submit"
+						style="margin-top: 14px"
+						disabled={rouletteBusyId === 'new'}
+					>
+						{rouletteBusyId === 'new' ? 'Wird angelegt…' : 'Termin anlegen'}
+					</button>
+				</form>
+			{/if}
+		</div>
 
 		<div class="card">
 			<div class="card-head">
