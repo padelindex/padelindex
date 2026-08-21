@@ -3,18 +3,20 @@
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import type { PageData } from './$types';
+	import { MAIN_NAV } from '$lib/landing/nav';
 
 	let { data }: { data: PageData } = $props();
 
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
-
-	const dateFmt = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-	const statusLabel: Record<string, string> = { planned: 'geplant', running: 'läuft', completed: 'abgeschlossen' };
+	const dateFmt = new Intl.DateTimeFormat('de-DE', {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric'
+	});
+	const statusLabel: Record<string, string> = {
+		planned: 'geplant',
+		running: 'läuft',
+		completed: 'abgeschlossen'
+	};
 </script>
 
 <svelte:head>
@@ -23,7 +25,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<section class="sec sec-light" id="top">
@@ -69,7 +71,8 @@
 									</td>
 									<td class="c-num num">{c.boxCount}</td>
 									<td>
-										<a href="/liga/{data.league.slug}/verwaltung/zyklen/{c.id}">Boxen verwalten →</a>
+										<a href="/liga/{data.league.slug}/verwaltung/zyklen/{c.id}">Boxen verwalten →</a
+										>
 									</td>
 								</tr>
 							{/each}

@@ -16,15 +16,9 @@
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import SignupForm from '$lib/components/landing/SignupForm.svelte';
 	import type { PageData } from './$types';
+	import { MAIN_NAV } from '$lib/landing/nav';
 
 	let { data }: { data: PageData } = $props();
-
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
 
 	function nameOf(box: PageData['ladder'][number], seat: number): string {
 		return box.lineup.find((p) => p.seat === seat)?.name ?? '—';
@@ -35,7 +29,11 @@
 		return round.sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ');
 	}
 
-	const dateFmt = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+	const dateFmt = new Intl.DateTimeFormat('de-DE', {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric'
+	});
 	function fmtDate(iso: string | null): string {
 		return iso ? dateFmt.format(new Date(iso)) : '';
 	}
@@ -45,7 +43,8 @@
 	<title>{data.league.name} — Tabellen und Ergebnisse | PadelIndex</title>
 	<meta
 		name="description"
-		content="Boxen, Tabellen und Ergebnisse der {data.league.name} auf PadelIndex. Jede Box wird für sich gewertet: Matchpunkte, Sätze, Spiele."
+		content="Boxen, Tabellen und Ergebnisse der {data.league
+			.name} auf PadelIndex. Jede Box wird für sich gewertet: Matchpunkte, Sätze, Spiele."
 	/>
 	<link rel="canonical" href="https://padelindex.de/liga/{data.league.slug}" />
 	<meta property="og:type" content="website" />
@@ -57,7 +56,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<section class="sec sec-light" id="top">
@@ -77,8 +76,8 @@
 				<p class="muted note" use:reveal={{ delay: 0.14 }}>
 					Jede Box wird für sich gewertet — Tabellen verschiedener Boxen sind nicht vergleichbar.
 					Sortiert nach Matchpunkten, dann Sätzen, dann Spielen. Das ist die Liga-Wertung und
-					<strong>nicht</strong> dasselbe wie dein <a href="/rating">PadelIndex-Level</a>; Ergebnisse
-					fließen dort zusätzlich ein.
+					<strong>nicht</strong> dasselbe wie dein <a href="/rating">PadelIndex-Level</a>;
+					Ergebnisse fließen dort zusätzlich ein.
 				</p>
 			</div>
 
@@ -141,7 +140,10 @@
 							</table>
 
 							<details class="rounds">
-								<summary>Runden ({box.rounds.filter((r) => r.matchId).length}/{box.rounds.length})</summary>
+								<summary
+									>Runden ({box.rounds.filter((r) => r.matchId).length}/{box.rounds
+										.length})</summary
+								>
 								<ul>
 									{#each box.rounds as round (round.id)}
 										<li>
@@ -182,9 +184,9 @@
 				{:else}
 					<h2>Neu hier? Mitspielen.</h2>
 					<p class="muted">
-						Trag dich mit deiner E-Mail ein — {data.league.clubName ?? 'euer Verein'} meldet sich
-						bei dir, sobald ein Platz frei wird. Ein Box-Platz ist immer eine Zuteilung durch den
-						Vereins-Admin, kein automatischer Login.
+						Trag dich mit deiner E-Mail ein — {data.league.clubName ?? 'euer Verein'} meldet sich bei
+						dir, sobald ein Platz frei wird. Ein Box-Platz ist immer eine Zuteilung durch den Vereins-Admin,
+						kein automatischer Login.
 					</p>
 					<SignupForm defaultClub={data.league.clubName ?? ''} />
 				{/if}

@@ -22,15 +22,9 @@
 	import VenueMap from '$lib/components/VenueMap.svelte';
 	import { FILTER_LABELS, filterVenues, type VenueFilter } from '$lib/venues';
 	import type { PageData } from './$types';
+	import { MAIN_NAV } from '$lib/landing/nav';
 
 	let { data }: { data: PageData } = $props();
-
-	const NAV = [
-		{ href: '/#problem', label: 'Warum' },
-		{ href: '/rating', label: 'Rating' },
-		{ href: '/#tokens', label: 'Tokens' },
-		{ href: '/vereine', label: 'Für Vereine' }
-	];
 
 	let filter = $state<VenueFilter>('all');
 	let query = $state('');
@@ -61,7 +55,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={NAV} />
+<LandingNav links={MAIN_NAV} />
 
 <main>
 	<section class="sec sec-light" id="top">
@@ -76,8 +70,8 @@
 					{:else}
 						{data.venues.length}
 						{data.venues.length === 1 ? 'erfasste Anlage' : 'erfasste Anlagen'}, davon
-						{data.partnerCount} mit PadelIndex. Das Verzeichnis wächst nach und nach und erhebt
-						keinen Anspruch auf Vollständigkeit — fehlt deine Anlage,
+						{data.partnerCount} mit PadelIndex. Das Verzeichnis wächst nach und nach und erhebt keinen
+						Anspruch auf Vollständigkeit — fehlt deine Anlage,
 						<a href="mailto:kontakt@padelindex.de?subject=Anlage%20fehlt%20auf%20der%20Karte">
 							schreib uns
 						</a>.
@@ -274,7 +268,10 @@
 		font-size: 13.5px;
 		font-weight: 600;
 		cursor: pointer;
-		transition: border-color 0.15s, color 0.15s, background 0.15s;
+		transition:
+			border-color 0.15s,
+			color 0.15s,
+			background 0.15s;
 	}
 	.chip:hover {
 		border-color: var(--court);
