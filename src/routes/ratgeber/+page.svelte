@@ -6,7 +6,7 @@
 	import GuideCard from '$lib/components/guides/GuideCard.svelte';
 	import GuideCTA from '$lib/components/guides/GuideCTA.svelte';
 	import FAQAccordion from '$lib/components/guides/FAQAccordion.svelte';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
 	import { jsonLd } from '$lib/jsonld';
 	import {
 		CATEGORY_LABELS,
@@ -95,7 +95,7 @@
 	{@html `<script type="application/ld+json">${breadcrumbSchema}</script>`}
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light">

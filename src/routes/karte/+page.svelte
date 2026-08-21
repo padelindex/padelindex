@@ -22,7 +22,7 @@
 	import VenueMap from '$lib/components/VenueMap.svelte';
 	import { FILTER_LABELS, filterVenues, type VenueFilter } from '$lib/venues';
 	import type { PageData } from './$types';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
 
 	let { data }: { data: PageData } = $props();
 
@@ -55,7 +55,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light" id="top">

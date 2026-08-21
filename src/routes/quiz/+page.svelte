@@ -2,7 +2,7 @@
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import DifficultyCard from '$lib/components/quiz/DifficultyCard.svelte';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
 	import { jsonLd } from '$lib/jsonld';
 	import { QUIZ_DIFFICULTIES, questionsFor } from '$lib/quiz-data';
 
@@ -37,7 +37,7 @@
 	{@html `<script type="application/ld+json">${breadcrumbSchema}</script>`}
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light">

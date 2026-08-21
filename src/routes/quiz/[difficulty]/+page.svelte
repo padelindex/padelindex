@@ -5,7 +5,7 @@
 	import QuizProgressBar from '$lib/components/quiz/QuizProgressBar.svelte';
 	import QuizQuestionCard from '$lib/components/quiz/QuizQuestionCard.svelte';
 	import QuizResultScreen from '$lib/components/quiz/QuizResultScreen.svelte';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
 	import { jsonLd } from '$lib/jsonld';
 	import { percentageFor, resultTierFor, shareText, type QuizOptionId } from '$lib/quiz';
 	import { QUIZ_RESULT_TIERS } from '$lib/quiz-data';
@@ -87,7 +87,7 @@
 	{@html `<script type="application/ld+json">${breadcrumbSchema}</script>`}
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light">

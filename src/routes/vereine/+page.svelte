@@ -12,7 +12,7 @@
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import type { PageData } from './$types';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
 
 	let { data }: { data: PageData } = $props();
 </script>
@@ -37,7 +37,7 @@
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<!-- ============================ VEREINE ============================ -->

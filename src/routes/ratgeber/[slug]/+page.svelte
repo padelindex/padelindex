@@ -7,7 +7,7 @@
 	import RelatedGuides from '$lib/components/guides/RelatedGuides.svelte';
 	import GuideCTA from '$lib/components/guides/GuideCTA.svelte';
 	import FAQAccordion from '$lib/components/guides/FAQAccordion.svelte';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
 	import { jsonLd } from '$lib/jsonld';
 	import { CATEGORY_LABELS, DIFFICULTY_LABELS } from '$lib/guides';
 	import type { PageData } from './$types';
@@ -85,7 +85,7 @@
 	{/if}
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light">

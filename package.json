@@ -33,6 +33,7 @@
 	},
 	"devDependencies": {
 		"@capacitor/cli": "^8.5.0",
+		"@inlang/paraglide-js": "^2.24.1",
 		"@sveltejs/adapter-cloudflare": "^7.2.9",
 		"@sveltejs/kit": "^2.70.2",
 		"@sveltejs/vite-plugin-svelte": "^7.3.0",
