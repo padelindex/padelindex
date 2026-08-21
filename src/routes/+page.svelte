@@ -14,8 +14,6 @@
 		{ href: '#problem', label: 'Warum' },
 		{ href: '/rating', label: 'Rating' },
 		{ href: '#tokens', label: 'Tokens' },
-		{ href: '/ratgeber', label: 'Ratgeber' },
-		{ href: '/quiz', label: 'Quiz' },
 		{ href: '/vereine', label: 'Für Vereine' }
 	];
 </script>

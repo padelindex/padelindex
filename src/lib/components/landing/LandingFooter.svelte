@@ -18,6 +18,7 @@
 			<a href="/vereine">Vereine</a>
 			<a href="/karte">Karte</a>
 			<a href="/liga/bavaro">Liga</a>
+			<a href="/ratgeber">Ratgeber</a>
 			<a href="/ratgeber/padel-regeln">Padel Regeln</a>
 			<a href="/ratgeber/padel-ausruestung">Padel Ausrüstung</a>
 			<a href="/quiz">Padel Quiz</a>
