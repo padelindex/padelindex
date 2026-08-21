@@ -56,6 +56,13 @@ async function renderPng(svg: string, size: number): Promise<Uint8Array> {
 	return resvg.render().asPng();
 }
 
+// Splash-Screen für die Capacitor-Apps: Marke klein und mittig auf
+// Vollflächen-Hintergrund, so wie es @capacitor/assets für Android/iOS
+// erwartet (ein 2732x2732-Quellbild, das pro Gerät zugeschnitten wird).
+function splashSvg(size: number, markScale: number): string {
+	return iconSvg(size, markScale);
+}
+
 async function main() {
 	await initResvg();
 	const outDir = resolve(ROOT, 'static/icons');
@@ -64,19 +71,40 @@ async function main() {
 	// `fill` = Anteil der Icon-Kantenlänge, den die Marke einnimmt.
 	// Normale Icons: 78 % (kleiner Rand). Maskable: 62 % (größere
 	// Sicherheitszone für runde/quadratische Launcher-Masken auf Android).
-	const targets: Array<{ file: string; size: number; fill: number }> = [
-		{ file: 'icon-192.png', size: 192, fill: 0.78 },
-		{ file: 'icon-512.png', size: 512, fill: 0.78 },
-		{ file: 'maskable-512.png', size: 512, fill: 0.62 },
-		{ file: 'apple-touch-icon.png', size: 180, fill: 0.78 }
+	const targets: Array<{ file: string; size: number; fill: number; dir: string }> = [
+		{ file: 'icon-192.png', size: 192, fill: 0.78, dir: outDir },
+		{ file: 'icon-512.png', size: 512, fill: 0.78, dir: outDir },
+		{ file: 'maskable-512.png', size: 512, fill: 0.62, dir: outDir },
+		{ file: 'apple-touch-icon.png', size: 180, fill: 0.78, dir: outDir }
 	];
 
 	for (const t of targets) {
 		const svg = iconSvg(t.size, (t.fill * t.size) / 40);
 		const png = await renderPng(svg, t.size);
-		await writeFile(resolve(outDir, t.file), png);
+		await writeFile(resolve(t.dir, t.file), png);
 		console.log(`geschrieben: static/icons/${t.file} (${t.size}x${t.size})`);
 	}
+
+	// Quellbilder für `npx capacitor-assets generate` (Android/iOS-Icons
+	// und Splash-Screens in allen Gerätegrößen) — siehe assets/README.
+	const capAssetsDir = resolve(ROOT, 'assets');
+	await mkdir(capAssetsDir, { recursive: true });
+
+	const icon1024 = iconSvg(1024, (0.78 * 1024) / 40);
+	await writeFile(resolve(capAssetsDir, 'icon.png'), await renderPng(icon1024, 1024));
+	console.log('geschrieben: assets/icon.png (1024x1024)');
+
+	// Splash: Marke klein (18 %), damit auf jedem Gerätezuschnitt genug
+	// Rand bleibt. Es gibt kein separates Hell/Dunkel-Theme in der Marke
+	// (der Hintergrund ist ohnehin dunkel) — splash-dark.png bewusst
+	// identisch zu splash.png, sonst leitet capacitor-assets ohne
+	// mitgeliefertes Dark-Bild selbst eines her (verschachtelte Box,
+	// falsches Ergebnis, siehe Commit-Historie).
+	const splash = splashSvg(2732, (0.18 * 2732) / 40);
+	const splashPng = await renderPng(splash, 2732);
+	await writeFile(resolve(capAssetsDir, 'splash.png'), splashPng);
+	await writeFile(resolve(capAssetsDir, 'splash-dark.png'), splashPng);
+	console.log('geschrieben: assets/splash.png + splash-dark.png (2732x2732)');
 }
 
 main().catch((err) => {
