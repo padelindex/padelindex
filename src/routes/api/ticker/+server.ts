@@ -9,9 +9,16 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { buildFeed } from '$lib/server/feed';
+import { locales, baseLocale, type Locale } from '$lib/paraglide/runtime';
 
-export const GET: RequestHandler = async ({ platform, setHeaders }) => {
-	const items = await buildFeed(platform);
+function isLocale(value: string | null): value is Locale {
+	return (locales as readonly string[]).includes(value ?? '');
+}
+
+export const GET: RequestHandler = async ({ platform, setHeaders, url }) => {
+	const requested = url.searchParams.get('locale');
+	const locale = isLocale(requested) ? requested : baseLocale;
+	const items = await buildFeed(platform, locale);
 
 	setHeaders({
 		'cache-control': 'public, max-age=300, s-maxage=300'
