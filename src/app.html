@@ -7,6 +7,18 @@
 			rel="icon"
 			href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='13' fill='none' stroke='%2316A394' stroke-width='3' stroke-dasharray='63.7 81.68' stroke-linecap='round' transform='rotate(-90 20 20)'/%3E%3Cg fill='%2316A394'%3E%3Crect x='12.6' y='21.5' width='3' height='6' rx='1.5'/%3E%3Crect x='18.5' y='17.5' width='3' height='10' rx='1.5'/%3E%3Crect x='24.4' y='13.5' width='3' height='14' rx='1.5'/%3E%3C/g%3E%3Ccircle cx='7.2' cy='17.6' r='2.9' fill='%2316A394'/%3E%3C/svg%3E"
 		/>
+
+		<!-- PWA: Installierbarkeit auf Android/Chrome über das Manifest,
+		     iOS/Safari ignoriert das Manifest weitgehend und braucht die
+		     apple-* Tags separat (Home-Bildschirm-Icon, Statusleiste,
+		     Standalone-Modus ohne Safari-Chrome). -->
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<meta name="theme-color" content="#0B1E26" />
+		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="PadelIndex" />
+
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
 		<link
