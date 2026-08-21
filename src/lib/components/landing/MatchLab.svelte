@@ -18,6 +18,7 @@
 
 	import { whenVisible } from '$lib/landing/reveal';
 	import type { DemoOutcome, DemoPlayer, SetScore } from '$lib/landing/rating-demo';
+	import { m } from '$lib/paraglide/messages.js';
 	import AnimatedNumber from './AnimatedNumber.svelte';
 
 	type Mod = typeof import('$lib/landing/rating-demo');
@@ -35,12 +36,12 @@
 
 	// --- Eingaben ---
 	let team1 = $state<DemoPlayer[]>([
-		{ id: 'you', name: 'Du', display: 4.2, matches: 14 },
-		{ id: 'partner', name: 'Partner', display: 4.1, matches: 26 }
+		{ id: 'you', name: m.hseq_you(), display: 4.2, matches: 14 },
+		{ id: 'partner', name: m.hseq_partner(), display: 4.1, matches: 26 }
 	]);
 	let team2 = $state<DemoPlayer[]>([
-		{ id: 'opp1', name: 'Gegner 1', display: 4.7, matches: 22 },
-		{ id: 'opp2', name: 'Gegner 2', display: 4.6, matches: 18 }
+		{ id: 'opp1', name: m.lab_opponent_1(), display: 4.7, matches: 22 },
+		{ id: 'opp2', name: m.lab_opponent_2(), display: 4.6, matches: 18 }
 	]);
 	let sets = $state<{ a: number; b: number }[]>([
 		{ a: 6, b: 4 },
@@ -92,9 +93,28 @@
 	// tippen" die eigentliche Hürde, nicht die Eingabe selbst. Steppers
 	// bleiben für Feinjustierung erhalten, Presets sind nur ein Sprungbrett.
 	const PRESETS: { label: string; sets: { a: number; b: number }[] }[] = [
-		{ label: 'Klar gewonnen', sets: [{ a: 6, b: 2 }, { a: 6, b: 3 }] },
-		{ label: 'Knapp gewonnen', sets: [{ a: 7, b: 6 }, { a: 4, b: 6 }, { a: 7, b: 5 }] },
-		{ label: 'Klar verloren', sets: [{ a: 2, b: 6 }, { a: 3, b: 6 }] }
+		{
+			label: m.lab_preset_won_clear(),
+			sets: [
+				{ a: 6, b: 2 },
+				{ a: 6, b: 3 }
+			]
+		},
+		{
+			label: m.lab_preset_won_close(),
+			sets: [
+				{ a: 7, b: 6 },
+				{ a: 4, b: 6 },
+				{ a: 7, b: 5 }
+			]
+		},
+		{
+			label: m.lab_preset_lost_clear(),
+			sets: [
+				{ a: 2, b: 6 },
+				{ a: 3, b: 6 }
+			]
+		}
 	];
 
 	function applyPreset(preset: { a: number; b: number }[]) {
@@ -127,7 +147,7 @@
 		<!-- ---------- Eingabe ---------- -->
 		<div class="lab-in">
 			<div class="lab-teams">
-				{#each [{ t: team1, key: 't1', label: 'Dein Team' }, { t: team2, key: 't2', label: 'Gegnerteam' }] as group (group.key)}
+				{#each [{ t: team1, key: 't1', label: m.hseq_your_team() }, { t: team2, key: 't2', label: m.hseq_opposing_team() }] as group (group.key)}
 					<!-- Bewusst div + role="group" statt fieldset/legend: eine
 					     Legende laesst sich nicht ueber die fieldset-Oberkante
 					     legen, ohne sie zu floaten — und ein 100% breiter Float
@@ -155,11 +175,11 @@
 									step="0.1"
 									bind:value={p.display}
 									oninput={touched}
-									aria-label="{p.name}: Level"
+									aria-label={m.lab_level_aria({ name: p.name })}
 								/>
 								<div class="lab-prow lab-sub">
 									<label class="lab-mlabel" for="m-{p.id}">
-										{p.matches} Matches gespielt
+										{m.lab_matches_played_label({ count: p.matches })}
 									</label>
 									<span class="lab-conf" aria-hidden="true">
 										<i style="width:{confidenceOf(p) * 100}%"></i>
@@ -174,7 +194,7 @@
 									step="1"
 									bind:value={p.matches}
 									oninput={touched}
-									aria-label="{p.name}: Anzahl gespielter Matches"
+									aria-label={m.lab_matches_count_aria({ name: p.name })}
 								/>
 							</div>
 						{/each}
@@ -184,7 +204,7 @@
 
 			<!-- Ergebnis -->
 			<div class="lab-score">
-				<div class="lab-presets" role="group" aria-label="Ergebnis-Vorlagen">
+				<div class="lab-presets" role="group" aria-label={m.lab_presets_aria()}>
 					{#each PRESETS as preset (preset.label)}
 						<button type="button" class="lab-preset-btn" onclick={() => applyPreset(preset.sets)}>
 							{preset.label}
@@ -193,20 +213,22 @@
 				</div>
 
 				<div class="lab-srow">
-					<span class="lab-slabel">Ergebnis</span>
+					<span class="lab-slabel">{m.lab_result_label()}</span>
 					<div class="lab-sbtns">
 						<button
 							type="button"
 							onclick={removeSet}
 							disabled={sets.length <= 1}
-							aria-label="Satz entfernen">−</button
+							aria-label={m.lab_remove_set_aria()}>−</button
 						>
-						<span class="num">{sets.length} {sets.length === 1 ? 'Satz' : 'Sätze'}</span>
+						<span class="num"
+							>{sets.length} {sets.length === 1 ? m.lab_set_singular() : m.lab_set_plural()}</span
+						>
 						<button
 							type="button"
 							onclick={addSet}
 							disabled={sets.length >= 3}
-							aria-label="Satz hinzufügen">+</button
+							aria-label={m.lab_add_set_aria()}>+</button
 						>
 					</div>
 				</div>
@@ -218,13 +240,13 @@
 							<button
 								type="button"
 								onclick={() => setGames(i, 'a', -1)}
-								aria-label="Satz {i + 1}, dein Team: ein Spiel weniger">−</button
+								aria-label={m.lab_set_a_minus_aria({ index: i + 1 })}>−</button
 							>
 							<span class="num" aria-live="off">{s.a}</span>
 							<button
 								type="button"
 								onclick={() => setGames(i, 'a', 1)}
-								aria-label="Satz {i + 1}, dein Team: ein Spiel mehr">+</button
+								aria-label={m.lab_set_a_plus_aria({ index: i + 1 })}>+</button
 							>
 						</div>
 						<span class="lab-colon" aria-hidden="true">:</span>
@@ -232,13 +254,13 @@
 							<button
 								type="button"
 								onclick={() => setGames(i, 'b', -1)}
-								aria-label="Satz {i + 1}, Gegnerteam: ein Spiel weniger">−</button
+								aria-label={m.lab_set_b_minus_aria({ index: i + 1 })}>−</button
 							>
 							<span class="num">{s.b}</span>
 							<button
 								type="button"
 								onclick={() => setGames(i, 'b', 1)}
-								aria-label="Satz {i + 1}, Gegnerteam: ein Spiel mehr">+</button
+								aria-label={m.lab_set_b_plus_aria({ index: i + 1 })}>+</button
 							>
 						</div>
 					</div>
@@ -246,7 +268,7 @@
 			</div>
 
 			<button class="btn btn-primary lab-go" type="button" onclick={calculate} disabled={!mod}>
-				{#if !mod}Modell wird geladen …{:else}Berechnen{/if}
+				{#if !mod}{m.lab_loading()}{:else}{m.lab_calculate()}{/if}
 			</button>
 		</div>
 
@@ -255,29 +277,28 @@
 			{#if !computed}
 				<div class="lab-idle">
 					<div class="lab-pre">
-						<span class="lab-plabel">Siegchance deines Teams</span>
+						<span class="lab-plabel">{m.lab_win_prob_label()}</span>
 						<span class="lab-pval num">{Math.round(winProb * 100)}%</span>
 						<div class="lab-pbar" aria-hidden="true">
 							<i style="width:{winProb * 100}%"></i>
 						</div>
 						<p class="lab-phint">
 							{#if winProb < 0.42}
-								Ihr geht als Außenseiter rein — ein Sieg wiegt entsprechend schwer.
+								{m.lab_hint_underdog()}
 							{:else if winProb > 0.58}
-								Ihr seid favorisiert — ein Sieg bringt wenig, eine Niederlage kostet.
+								{m.lab_hint_favorite()}
 							{:else}
-								Ausgeglichene Partie — das Ergebnis entscheidet.
+								{m.lab_hint_even()}
 							{/if}
 						</p>
 					</div>
 					<p class="lab-wait">
-						Stell die Werte ein und drück <b>Berechnen</b>. Gerechnet wird mit dem echten
-						PadelIndex-Modell.
+						{m.lab_wait_pre()} <b>{m.lab_calculate()}</b>. {m.lab_wait_post()}
 					</p>
 				</div>
 			{:else if result}
 				<div class="lab-res">
-					<span class="lab-rlabel">Neue Werte</span>
+					<span class="lab-rlabel">{m.lab_new_values()}</span>
 					{#each result as r (r.id)}
 						<div class="lab-r" class:up={r.delta > 0} class:down={r.delta < 0}>
 							<div class="lab-rtop">
@@ -296,15 +317,15 @@
 									<AnimatedNumber value={r.after} decimals={2} duration={800} />
 								</span>
 								{#if r.provisional}
-									<span class="lab-prov">provisorisch</span>
+									<span class="lab-prov">{m.lab_provisional()}</span>
 								{/if}
 							</div>
 						</div>
 					{/each}
 
 					<div class="lab-factors">
-						<span class="lab-rlabel">Woraus sich das ergibt</span>
-						{#each [{ k: 'Gegnerstärke', v: 1 - winProb, t: 'Wie stark war die Gegenseite im Verhältnis zu euch?' }, { k: 'Deutlichkeit', v: dominance, t: 'Wie klar war das Ergebnis über alle Sätze?' }, { k: 'Wie gut wir dich kennen', v: confidenceOf(team1[0]), t: 'Aus deiner Matchzahl. Je besser wir dich kennen, desto ruhiger dein Wert.' }] as f (f.k)}
+						<span class="lab-rlabel">{m.lab_factors_label()}</span>
+						{#each [{ k: m.lab_factor_opponent_strength(), v: 1 - winProb, t: m.lab_factor_opponent_strength_tip() }, { k: m.lab_factor_margin(), v: dominance, t: m.lab_factor_margin_tip() }, { k: m.lab_factor_confidence(), v: confidenceOf(team1[0]), t: m.lab_factor_confidence_tip() }] as f (f.k)}
 							<div class="lab-f">
 								<div class="lab-frow">
 									<span>{f.k}</span>

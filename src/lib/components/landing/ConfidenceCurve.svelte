@@ -18,6 +18,7 @@
 
 	import { whenVisible } from '$lib/landing/reveal';
 	import { tween, prefersReducedMotion } from '$lib/landing/motion';
+	import { m } from '$lib/paraglide/messages.js';
 	import AnimatedNumber from './AnimatedNumber.svelte';
 
 	type Mod = typeof import('$lib/landing/rating-demo');
@@ -77,10 +78,10 @@
 
 	const stage = $derived(
 		matches < 4
-			? 'Wir kennen dich noch nicht'
+			? m.cc_stage_unknown()
 			: matches < 14
-				? 'Es wird enger'
-				: 'Dein Bereich steht'
+				? m.cc_stage_narrowing()
+				: m.cc_stage_settled()
 	);
 </script>
 
@@ -89,9 +90,7 @@
 		<svg
 			viewBox="0 0 600 176"
 			role="img"
-			aria-label="Verteilungskurve: bei {matches} Matches liegt der angezeigte Wert bei {shown.toFixed(
-				2
-			)} mit einer Spanne von plus/minus {span.toFixed(2)}."
+			aria-label={m.cc_svg_aria({ matches, shown: shown.toFixed(2), span: span.toFixed(2) })}
 		>
 			<defs>
 				<linearGradient id="ccGrad" x1="0" y1="0" x2="0" y2="1">
@@ -109,11 +108,13 @@
 			{#if mod}
 				<!-- geschätztes Können: die Mitte der Verteilung -->
 				<line class="cc-centre" x1={centreX} y1={TOP + 6} x2={centreX} y2={BASE} />
-				<text class="cc-tag cc-tag-centre" x={centreX + 7} y={TOP + 12}>geschätztes Können</text>
+				<text class="cc-tag cc-tag-centre" x={centreX + 7} y={TOP + 12}
+					>{m.cc_estimated_ability()}</text
+				>
 				<!-- angezeigter Wert: der vorsichtige Rand -->
 				<line class="cc-shown" x1={shownX} y1={TOP - 8} x2={shownX} y2={BASE} />
 				<text class="cc-tag cc-tag-shown" x={shownX + 7} y={TOP - 2}>
-					angezeigt · {shown.toFixed(2)}
+					{m.cc_shown_label()} · {shown.toFixed(2)}
 				</text>
 			{/if}
 		</svg>
@@ -125,21 +126,21 @@
 		<div class="cc-big">
 			<AnimatedNumber value={shown} decimals={2} duration={260} />
 		</div>
-		<span class="cc-biglabel">angezeigter Wert</span>
+		<span class="cc-biglabel">{m.cc_shown_value_label()}</span>
 
 		<dl class="cc-read">
 			<div>
-				<dt>Matches</dt>
+				<dt>{m.cc_matches_label()}</dt>
 				<dd class="num">{matches}</dd>
 			</div>
 			<div>
-				<dt>Spanne</dt>
+				<dt>{m.cc_span_label()}</dt>
 				<dd class="num">±{span.toFixed(2)}</dd>
 			</div>
 		</dl>
 
 		<label class="cc-slider">
-			<span>Matches nachziehen</span>
+			<span>{m.cc_slider_label()}</span>
 			<input
 				type="range"
 				min="0"
@@ -147,13 +148,12 @@
 				step="1"
 				bind:value={matches}
 				oninput={() => (played = true)}
-				aria-label="Anzahl gespielter Matches"
+				aria-label={m.cc_matches_count_aria()}
 			/>
 		</label>
 
 		<p class="cc-note">
-			Das Können bleibt in diesem Beispiel <b>unverändert</b>. Der Wert steigt trotzdem — weil die
-			Unsicherheit schrumpft und der vorsichtige Rand näher an die Mitte rückt.
+			{m.cc_note_pre()} <b>{m.cc_note_bold()}</b>. {m.cc_note_post()}
 		</p>
 	</div>
 </div>
