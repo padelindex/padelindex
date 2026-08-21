@@ -8,49 +8,49 @@
 	// Der komplette Inhalt ist hierher VERSCHOBEN, nicht kopiert: auf der
 	// Startseite steht dafür nur noch ein kurzer Teaser mit Link hierher.
 
+	import { page } from '$app/state';
 	import { reveal } from '$lib/landing/reveal';
 	import MatchLab from '$lib/components/landing/MatchLab.svelte';
 	import ConfidenceCurve from '$lib/components/landing/ConfidenceCurve.svelte';
 	import RatingJourney from '$lib/components/landing/RatingJourney.svelte';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
+	import { mainNav } from '$lib/landing/nav';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
 </script>
 
 <svelte:head>
-	<title>Wie das PadelIndex-Rating rechnet — Level aus bestätigten Matches</title>
-	<meta
-		name="description"
-		content="Kein Fragebogen, keine Selbsteinschätzung: PadelIndex berechnet dein Padel-Level aus Gegnerstärke, Satzverlauf und Sicherheit — mit demselben Modell, das produktiv jedes Match bewertet. Probier den Rating-Simulator aus."
-	/>
-	<link rel="canonical" href="https://padelindex.de/rating" />
+	<title>{m.rating_meta_title()}</title>
+	<meta name="description" content={m.rating_meta_description()} />
+	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://padelindex.de/rating" />
+	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
-	<meta property="og:title" content="Wie das PadelIndex-Rating rechnet" />
-	<meta
-		property="og:description"
-		content="Level aus bestätigten Matches statt Selbsteinschätzung: Gegnerstärke, Satzverlauf und Sicherheit, nachvollziehbar erklärt."
-	/>
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.rating_og_title()} />
+	<meta property="og:description" content={m.rating_og_description()} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<!-- ============================ INTRO ============================ -->
 	<section class="sec" id="top" style="background:var(--night-2)">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Rating</span>
-				<h1 use:reveal={{ delay: 0.05 }}>Ein Match verändert dein Level.</h1>
+				<span class="eyebrow" use:reveal>{m.rating_eyebrow()}</span>
+				<h1 use:reveal={{ delay: 0.05 }}>{m.rating_h1()}</h1>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
-					Dreh an den Werten und drück auf Berechnen. Gerechnet wird mit demselben Code, der auch
-					produktiv die Ratings vergibt — inklusive der Doppel-Logik: Wen das System schlechter
-					kennt, dessen Wert bewegt sich stärker. Stell die Matchzahl eines Spielers auf null und
-					sieh zu.
+					{m.rating_intro_p()}
 				</p>
 			</div>
 
@@ -60,38 +60,35 @@
 
 			<div class="factors">
 				<article class="factor" use:reveal>
-					<span class="k">01 — Erwartung</span>
-					<h2>Wen du geschlagen hast</h2>
+					<span class="k">{m.rating_factor1_k()}</span>
+					<h2>{m.rating_factor1_h2()}</h2>
 					<p>
-						Ein Sieg gegen ein stärkeres Duo sagt mehr aus als einer gegen ein schwächeres.
-						Überraschungen enthalten die meiste Information, also wiegen sie am schwersten.
+						{m.rating_factor1_p()}
 					</p>
 				</article>
 				<article class="factor" use:reveal={{ delay: 0.07 }}>
-					<span class="k">02 — Deutlichkeit</span>
-					<h2>Wie klar es war</h2>
+					<span class="k">{m.rating_factor2_k()}</span>
+					<h2>{m.rating_factor2_h2()}</h2>
 					<p>
-						6:0, 6:0 ist eine andere Aussage als 7:6, 5:7, 7:5. Der Satzverlauf geht in jede
-						Rechnung ein — eine knappe Niederlage gegen starke Gegner kostet dich kaum etwas.
+						{m.rating_factor2_p()}
 					</p>
 				</article>
 				<article class="factor" use:reveal={{ delay: 0.14 }}>
-					<span class="k">03 — Sicherheit</span>
-					<h2>Wie gut wir dich kennen</h2>
+					<span class="k">{m.rating_factor3_k()}</span>
+					<h2>{m.rating_factor3_h2()}</h2>
 					<p>
-						Am Anfang schwankt dein Wert stark, das ist Absicht: nach etwa zehn bis fünfzehn Matches
-						steht dein Bereich. Danach wird nur noch feinjustiert.
+						{m.rating_factor3_p()}
 					</p>
 				</article>
 			</div>
 
 			<p class="rechnen-cta" use:reveal={{ delay: 0.18 }}>
-				Das war nur die Simulation — für dein echtes Level braucht es ein echtes Match.
-				<a href="/#anmelden">Platz sichern →</a>
+				{m.rating_cta1_pre()}
+				<a href={localizeHref('/#anmelden')}>{m.rating_cta1_link()}</a>
 			</p>
 			<p class="rechnen-cta" use:reveal={{ delay: 0.22 }}>
-				Noch keine Ahnung, wo du ungefähr stehst?
-				<a href="/level-schaetzen">Level grob schätzen →</a>
+				{m.rating_cta2_pre()}
+				<a href={localizeHref('/level-schaetzen')}>{m.rating_cta2_link()}</a>
 			</p>
 		</div>
 	</section>
@@ -100,12 +97,10 @@
 	<section class="sec sec-light" id="sicherheit">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Sicherheit</span>
-				<h2 use:reveal={{ delay: 0.05 }}>Je mehr du spielst, desto genauer wird dein Level.</h2>
+				<span class="eyebrow" use:reveal>{m.rating_sicherheit_eyebrow()}</span>
+				<h2 use:reveal={{ delay: 0.05 }}>{m.rating_sicherheit_h2()}</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
-					Wir speichern für dich keine einzelne Zahl, sondern eine Verteilung: eine Schätzung deines
-					Könnens plus die Unsicherheit dazu. Angezeigt wird bewusst der vorsichtige Rand — wer
-					wenig gespielt hat, wird lieber unterschätzt als überschätzt.
+					{m.rating_sicherheit_p()}
 				</p>
 			</div>
 
@@ -119,12 +114,10 @@
 	<section class="sec" id="verlauf">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Verlauf</span>
-				<h2 use:reveal={{ delay: 0.05 }}>Eine Saison, Match für Match.</h2>
+				<span class="eyebrow" use:reveal>{m.rating_verlauf_eyebrow()}</span>
+				<h2 use:reveal={{ delay: 0.05 }}>{m.rating_verlauf_h2()}</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
-					Kein gezeichneter Graph: Diese vierzehn Matches sind nacheinander durch das echte Modell
-					gelaufen — vom ersten Eintrag als unbekannter Spieler bis zum Ende der provisorischen
-					Phase.
+					{m.rating_verlauf_p()}
 				</p>
 			</div>
 
@@ -138,53 +131,53 @@
 	<section class="sec sec-light-alt" id="vergleich">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Im Vergleich</span>
-				<h2 use:reveal={{ delay: 0.05 }}>Was daran anders ist.</h2>
+				<span class="eyebrow" use:reveal>{m.rating_vergleich_eyebrow()}</span>
+				<h2 use:reveal={{ delay: 0.05 }}>{m.rating_vergleich_h2()}</h2>
 			</div>
 
 			<table class="cmp" use:reveal>
 				<thead>
 					<tr>
-						<th>Merkmal</th>
+						<th>{m.rating_cmp_th_merkmal()}</th>
 						<th>PadelIndex</th>
-						<th>Selbsteinschätzung &amp; einfaches Elo</th>
+						<th>{m.rating_cmp_th_other()}</th>
 					</tr>
 				</thead>
 				<tbody>
 					<tr>
-						<th>Startwert</th>
-						<td data-l="PadelIndex" class="yes">Vorsichtig gesetzt, kalibriert sich schnell</td>
-						<td data-l="Üblich" class="no">Fragebogen, oft danebenliegend</td>
+						<th>{m.rating_cmp_row1_th()}</th>
+						<td data-l="PadelIndex" class="yes">{m.rating_cmp_row1_yes()}</td>
+						<td data-l={m.rating_cmp_ueblich()} class="no">{m.rating_cmp_row1_no()}</td>
 					</tr>
 					<tr>
-						<th>Doppel</th>
-						<td data-l="PadelIndex" class="yes">Einzelwert innerhalb des Teams</td>
-						<td data-l="Üblich" class="no">Paar wird als eine Einheit behandelt</td>
+						<th>{m.rating_cmp_row2_th()}</th>
+						<td data-l="PadelIndex" class="yes">{m.rating_cmp_row2_yes()}</td>
+						<td data-l={m.rating_cmp_ueblich()} class="no">{m.rating_cmp_row2_no()}</td>
 					</tr>
 					<tr>
-						<th>Satzverlauf</th>
-						<td data-l="PadelIndex" class="yes">Fließt in jede Rechnung ein</td>
-						<td data-l="Üblich" class="no">Ignoriert — 6:0 zählt wie 7:6</td>
+						<th>{m.rating_cmp_row3_th()}</th>
+						<td data-l="PadelIndex" class="yes">{m.rating_cmp_row3_yes()}</td>
+						<td data-l={m.rating_cmp_ueblich()} class="no">{m.rating_cmp_row3_no()}</td>
 					</tr>
 					<tr>
-						<th>Bestätigung</th>
-						<td data-l="PadelIndex" class="yes">Gegnerteam bestätigt, 48 Stunden Frist</td>
-						<td data-l="Üblich" class="no">Häufig gar keine</td>
+						<th>{m.rating_cmp_row4_th()}</th>
+						<td data-l="PadelIndex" class="yes">{m.rating_cmp_row4_yes()}</td>
+						<td data-l={m.rating_cmp_ueblich()} class="no">{m.rating_cmp_row4_no()}</td>
 					</tr>
 					<tr>
-						<th>Nach einer Pause</th>
-						<td data-l="PadelIndex" class="yes">Unsicherheit wächst, du kalibrierst neu</td>
-						<td data-l="Üblich" class="no">Wert bleibt einfach stehen</td>
+						<th>{m.rating_cmp_row5_th()}</th>
+						<td data-l="PadelIndex" class="yes">{m.rating_cmp_row5_yes()}</td>
+						<td data-l={m.rating_cmp_ueblich()} class="no">{m.rating_cmp_row5_no()}</td>
 					</tr>
 					<tr>
-						<th>Nachvollziehbar</th>
-						<td data-l="PadelIndex" class="yes">Jede Änderung aufgeschlüsselt</td>
-						<td data-l="Üblich" class="no">Keine Erklärung</td>
+						<th>{m.rating_cmp_row6_th()}</th>
+						<td data-l="PadelIndex" class="yes">{m.rating_cmp_row6_yes()}</td>
+						<td data-l={m.rating_cmp_ueblich()} class="no">{m.rating_cmp_row6_no()}</td>
 					</tr>
 					<tr>
-						<th>Gilt wo?</th>
-						<td data-l="PadelIndex" class="yes">Vereinsübergreifend, plattformunabhängig</td>
-						<td data-l="Üblich" class="no">Pro Verein oder pro App eigene Skala</td>
+						<th>{m.rating_cmp_row7_th()}</th>
+						<td data-l="PadelIndex" class="yes">{m.rating_cmp_row7_yes()}</td>
+						<td data-l={m.rating_cmp_ueblich()} class="no">{m.rating_cmp_row7_no()}</td>
 					</tr>
 				</tbody>
 			</table>

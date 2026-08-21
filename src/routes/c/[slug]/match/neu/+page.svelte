@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { MATCH_TYPES, MATCH_TYPE_LABELS } from '$lib/match-report';
+	import { MATCH_TYPES, matchTypeLabels } from '$lib/match-report';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -64,12 +64,19 @@
 				}}
 			>
 				<label for="playedAt">Datum</label>
-				<input id="playedAt" type="date" name="playedAt" value={data.prefillDate} max={today} required />
+				<input
+					id="playedAt"
+					type="date"
+					name="playedAt"
+					value={data.prefillDate}
+					max={today}
+					required
+				/>
 
 				<label for="matchType">Match-Typ</label>
 				<select id="matchType" name="matchType" required bind:value={matchType}>
 					{#each MATCH_TYPES as t (t)}
-						<option value={t}>{MATCH_TYPE_LABELS[t]}</option>
+						<option value={t}>{matchTypeLabels()[t]}</option>
 					{/each}
 				</select>
 
@@ -83,8 +90,8 @@
 					</select>
 					{#if challengeId}
 						<p class="note">
-							Die Challenge wird abgeschlossen, sobald ein Gegner das Ergebnis bestätigt — erst
-							dann wird ihr Challenge-Platz wieder frei.
+							Die Challenge wird abgeschlossen, sobald ein Gegner das Ergebnis bestätigt — erst dann
+							wird ihr Challenge-Platz wieder frei.
 						</p>
 					{/if}
 				{/if}

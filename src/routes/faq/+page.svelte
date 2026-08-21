@@ -1,110 +1,76 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { reveal } from '$lib/landing/reveal';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import { jsonLd } from '$lib/jsonld';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
 
 	// Antworten als reiner Text (ohne Markup) für das FAQPage-JSON-LD -
 	// die sichtbaren Blöcke unten dürfen Links enthalten, das Schema
 	// braucht Klartext.
-	const faq: { q: string; a: string }[] = [
-		{
-			q: 'Was ist PadelIndex?',
-			a: 'PadelIndex ist eine unabhängige Rating-Plattform für Padel-Amateure in Deutschland. Dein Level entsteht aus bestätigten Matches — aus Gegnerstärke, Satzverlauf und wie sicher wir dein Level schon kennen —, nicht aus einem Fragebogen.'
-		},
-		{
-			q: 'Für wen ist PadelIndex?',
-			a: 'Für alle, die wissen wollen, wie stark sie wirklich spielen. Egal ob du gerade erst anfängst, regelmäßig in deinem Verein spielst oder einen Verein leitest und eine Rangliste auf eurer Website willst.'
-		},
-		{
-			q: 'Wie wird mein Level berechnet?',
-			a: 'Aus jedem bestätigten Match: wen du geschlagen hast, wie klar es war, und wie viele Matches wir schon von dir kennen. Der Rating-Simulator unter /rating rechnet mit demselben Code, der auch produktiv läuft.'
-		},
-		{
-			q: 'Kann mein Verein bei PadelIndex mitmachen?',
-			a: 'Ja. Wir erfassen Vereine nach und nach — aktuell ist der STC Oberland unser Pilotverein. Wenn dein Verein dabei sein möchte, kannst du unter /vereine eine Demo anfragen.'
-		},
-		{
-			q: 'Wie melde ich falsche Informationen?',
-			a: 'Wenn ein Ergebnis falsch zugeordnet ist oder ein Profil nicht dir gehört, schreib uns an kontakt@padelindex.de. Für dein eigenes Profil gibt es außerdem einen Link „Ich möchte hier nicht gelistet sein“ direkt auf der Profilseite, der ohne Login funktioniert.'
-		},
-		{
-			q: 'Ist PadelIndex kostenlos?',
-			a: 'Für Spieler ja, immer. Für Vereine gibt es eine kostenlose Stufe sowie zwei bezahlte Pakete mit mehr Funktionen — Details unter /vereine.'
-		},
-		{
-			q: 'Wer steckt hinter PadelIndex?',
-			a: 'PadelIndex wird von Alec Hahn entwickelt, Teil des Familienunternehmens Sportcenter Hahn GmbH, das seit vielen Jahren im Bereich Sportanlagen und Sportbetrieb tätig ist. Mehr dazu unter /ueber.'
-		},
-		{
-			q: 'Ist PadelIndex mit einem Padelverband verbunden?',
-			a: 'Nein. PadelIndex ist eine unabhängige Plattform, nicht an einen Verband oder eine Liga gebunden.'
-		},
-		{
-			q: 'Kann ich meinen Verein selbst verwalten?',
-			a: 'Ja — als Vereins-Admin kannst du schon heute Mitglieder verwalten, Profil-Beanspruchungen freigeben und einen Prämienkatalog einrichten, direkt im eigenen Vereinsbereich.'
-		},
-		{
-			q: 'Warum gibt es PadelIndex?',
-			a: 'Level werden meistens geschätzt oder in einem Fragebogen angeklickt — und gelten dann nur in einem Verein oder einer App. PadelIndex rechnet stattdessen aus echten, bestätigten Ergebnissen, vereinsübergreifend.'
-		},
-		{
-			q: 'Wie aktuell sind die Daten?',
-			a: 'Dein Level aktualisiert sich mit jedem bestätigten Match. Wo eine Rangliste noch auf importierten Liga-Ergebnissen beruht, zeigen wir das offen mit einem Hinweis an, statt ein Datum vorzutäuschen, das Aktualität suggeriert.'
-		},
-		{
-			q: 'Wie kann ich PadelIndex unterstützen?',
-			a: 'Am einfachsten: spiel, melde deine Matches, gib uns Feedback. Je mehr bestätigte Ergebnisse zusammenkommen, desto genauer wird das Rating für alle.'
-		},
-		{
-			q: 'Wie kann ich Kontakt aufnehmen?',
-			a: 'Per E-Mail an kontakt@padelindex.de — wir freuen uns über jedes Feedback, das dabei hilft, PadelIndex besser zu machen.'
-		}
-	];
+	const faq = $derived([
+		{ q: m.faq_q1(), a: m.faq_a1() },
+		{ q: m.faq_q2(), a: m.faq_a2() },
+		{ q: m.faq_q3(), a: m.faq_a3() },
+		{ q: m.faq_q4(), a: m.faq_a4() },
+		{ q: m.faq_q5(), a: m.faq_a5() },
+		{ q: m.faq_q6(), a: m.faq_a6() },
+		{ q: m.faq_q7(), a: m.faq_a7() },
+		{ q: m.faq_q8(), a: m.faq_a8() },
+		{ q: m.faq_q9(), a: m.faq_a9() },
+		{ q: m.faq_q10(), a: m.faq_a10() },
+		{ q: m.faq_q11(), a: m.faq_a11() },
+		{ q: m.faq_q12(), a: m.faq_a12() },
+		{ q: m.faq_q13(), a: m.faq_a13() }
+	]);
 
-	const faqSchema = jsonLd({
-		'@context': 'https://schema.org',
-		'@type': 'FAQPage',
-		mainEntity: faq.map((item) => ({
-			'@type': 'Question',
-			name: item.q,
-			acceptedAnswer: { '@type': 'Answer', text: item.a }
-		}))
-	});
+	const faqSchema = $derived(
+		jsonLd({
+			'@context': 'https://schema.org',
+			'@type': 'FAQPage',
+			mainEntity: faq.map((item) => ({
+				'@type': 'Question',
+				name: item.q,
+				acceptedAnswer: { '@type': 'Answer', text: item.a }
+			}))
+		})
+	);
+
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
 </script>
 
 <svelte:head>
-	<title>Häufige Fragen zu PadelIndex — FAQ</title>
-	<meta
-		name="description"
-		content="Antworten zu PadelIndex: wie das Level berechnet wird, wie Vereine mitmachen können, was es kostet und wer dahintersteht."
-	/>
-	<link rel="canonical" href="https://padelindex.de/faq" />
+	<title>{m.faq_meta_title()}</title>
+	<meta name="description" content={m.faq_meta_description()} />
+	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://padelindex.de/faq" />
+	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
-	<meta property="og:title" content="Häufige Fragen zu PadelIndex" />
-	<meta
-		property="og:description"
-		content="Wie das Level berechnet wird, wie Vereine mitmachen können, was es kostet und wer dahintersteht."
-	/>
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.faq_og_title()} />
+	<meta property="og:description" content={m.faq_og_description()} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 	{@html `<script type="application/ld+json">${faqSchema}</script>`}
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light" id="top">
 		<div class="wrap" style="max-width: 68ch">
-			<span class="eyebrow" use:reveal>FAQ</span>
-			<h1 use:reveal={{ delay: 0.05 }}>Häufige Fragen</h1>
+			<span class="eyebrow" use:reveal>{m.faq_eyebrow()}</span>
+			<h1 use:reveal={{ delay: 0.05 }}>{m.faq_h1()}</h1>
 			<p class="muted faq-intro" use:reveal={{ delay: 0.1 }}>
-				Antworten zu Level, Vereinen und allem drumherum. Fehlt etwas?
-				<a href="mailto:kontakt@padelindex.de">Schreib uns</a>.
+				{m.faq_intro_pre()}
+				<a href="mailto:kontakt@padelindex.de">{m.faq_intro_link()}</a>.
 			</p>
 
 			<div class="faq-list">

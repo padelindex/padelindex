@@ -8,9 +8,11 @@ import {
 	searchGuides,
 	type GuideArticle
 } from './guides';
-import { GUIDES } from './guides-data';
+import { GUIDES_DE as GUIDES } from './content/guides/de';
+import { GUIDES_EN } from './content/guides/en';
+import { GUIDES_ES } from './content/guides/es';
 
-describe('guides-data Integrität', () => {
+describe('guides-data Integrität (DE)', () => {
 	it('hat für jeden Artikel einen eindeutigen Slug', () => {
 		const slugs = GUIDES.map((g) => g.slug);
 		expect(new Set(slugs).size).toBe(slugs.length);
@@ -132,5 +134,65 @@ describe('searchGuides', () => {
 
 	it('gibt leeres Array für nicht vorkommende Begriffe zurück', () => {
 		expect(searchGuides(GUIDES, 'xyzxyzxyz')).toEqual([]);
+	});
+});
+
+describe('Übersetzungsparität DE/EN/ES', () => {
+	const locales: [string, GuideArticle[]][] = [
+		['en', GUIDES_EN],
+		['es', GUIDES_ES]
+	];
+
+	it('hat in jeder Sprache dieselbe Anzahl Artikel', () => {
+		for (const [, guides] of locales) {
+			expect(guides.length).toBe(GUIDES.length);
+		}
+	});
+
+	it('hat in jeder Sprache dieselben Slugs in derselben Reihenfolge', () => {
+		const deSlugs = GUIDES.map((g) => g.slug);
+		for (const [locale, guides] of locales) {
+			expect(
+				guides.map((g) => g.slug),
+				`Slugs weichen ab für ${locale}`
+			).toEqual(deSlugs);
+		}
+	});
+
+	it('hat pro Artikel in jeder Sprache dieselben Sektions-IDs', () => {
+		for (const [locale, guides] of locales) {
+			for (const deGuide of GUIDES) {
+				const translated = findGuide(guides, deGuide.slug) as GuideArticle;
+				expect(
+					translated.sections.map((s) => s.id),
+					`${deGuide.slug} (${locale}) hat andere Sektions-IDs als DE`
+				).toEqual(deGuide.sections.map((s) => s.id));
+			}
+		}
+	});
+
+	it('hat pro Artikel in jeder Sprache dieselbe FAQ-Anzahl', () => {
+		for (const [locale, guides] of locales) {
+			for (const deGuide of GUIDES) {
+				const translated = findGuide(guides, deGuide.slug) as GuideArticle;
+				expect(
+					translated.faq.length,
+					`${deGuide.slug} (${locale}) hat andere FAQ-Anzahl als DE`
+				).toBe(deGuide.faq.length);
+			}
+		}
+	});
+
+	it('hat pro Artikel in jeder Sprache dieselben category/difficulty/relatedSlugs-Werte', () => {
+		for (const [locale, guides] of locales) {
+			for (const deGuide of GUIDES) {
+				const translated = findGuide(guides, deGuide.slug) as GuideArticle;
+				expect(translated.category, `${deGuide.slug} (${locale})`).toBe(deGuide.category);
+				expect(translated.difficulty, `${deGuide.slug} (${locale})`).toBe(deGuide.difficulty);
+				expect(translated.relatedSlugs, `${deGuide.slug} (${locale})`).toEqual(
+					deGuide.relatedSlugs
+				);
+			}
+		}
 	});
 });

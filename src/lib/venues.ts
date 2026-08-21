@@ -58,10 +58,3 @@ export function filterVenues<T extends FilterableVenue>(
 ): T[] {
 	return venues.filter((v) => matchesFilter(v, filter) && matchesQuery(v, query));
 }
-
-/** Beschriftung für die Legende und die Filterknöpfe — an einer Stelle. */
-export const FILTER_LABELS: Record<VenueFilter, string> = {
-	all: 'Alle',
-	partner: 'PadelIndex Partner',
-	non_partner: 'Noch kein Partner'
-};

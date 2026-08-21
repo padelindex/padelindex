@@ -16,13 +16,18 @@
 	// gleichwertiger Weg. Sie rendert außerdem serverseitig — die Seite
 	// ist damit auch ohne JavaScript und für Suchmaschinen vollständig.
 
+	import { page } from '$app/state';
 	import { reveal } from '$lib/landing/reveal';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import VenueMap from '$lib/components/VenueMap.svelte';
-	import { FILTER_LABELS, filterVenues, type VenueFilter } from '$lib/venues';
+	import { filterVenues, type VenueFilter } from '$lib/venues';
 	import type { PageData } from './$types';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 
 	let { data }: { data: PageData } = $props();
 
@@ -33,47 +38,50 @@
 	const shown = $derived(filterVenues(data.venues, filter, query));
 	const shownOnMap = $derived(shown.filter((v) => v.lat !== null));
 	const FILTERS: VenueFilter[] = ['all', 'partner', 'non_partner'];
+	const FILTER_LABELS = $derived({
+		all: m.karte_filter_all(),
+		partner: m.karte_legend_partner(),
+		non_partner: m.karte_filter_non_partner()
+	});
+
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
 </script>
 
 <svelte:head>
-	<title>Padel-Anlagen in Deutschland — Karte | PadelIndex</title>
-	<meta
-		name="description"
-		content="Karte der Padel-Anlagen in Deutschland. Grün markiert sind Vereine, die PadelIndex für ihre Rangliste nutzen."
-	/>
-	<link rel="canonical" href="https://padelindex.de/karte" />
+	<title>{m.karte_meta_title()}</title>
+	<meta name="description" content={m.karte_meta_description()} />
+	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://padelindex.de/karte" />
+	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
-	<meta property="og:title" content="Padel-Anlagen in Deutschland" />
-	<meta
-		property="og:description"
-		content="Wo kann man in Deutschland Padel spielen — und welche Vereine nutzen PadelIndex?"
-	/>
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.karte_og_title()} />
+	<meta property="og:description" content={m.karte_og_description()} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light" id="top">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Karte</span>
-				<h1 use:reveal={{ delay: 0.05 }}>Padel-Anlagen in Deutschland.</h1>
+				<span class="eyebrow" use:reveal>{m.karte_eyebrow()}</span>
+				<h1 use:reveal={{ delay: 0.05 }}>{m.karte_h1()}</h1>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
 					{#if data.venues.length === 0}
-						Das Verzeichnis wird gerade aufgebaut — hier stehen bald die Anlagen, die wir erfasst
-						haben.
+						{m.karte_intro_empty()}
 					{:else}
-						{data.venues.length}
-						{data.venues.length === 1 ? 'erfasste Anlage' : 'erfasste Anlagen'}, davon
-						{data.partnerCount} mit PadelIndex. Das Verzeichnis wächst nach und nach und erhebt keinen
-						Anspruch auf Vollständigkeit — fehlt deine Anlage,
+						{m.karte_intro_stats({
+							count: data.venues.length,
+							unit: data.venues.length === 1 ? m.karte_count_singular() : m.karte_count_plural(),
+							partnerCount: data.partnerCount
+						})}
 						<a href="mailto:kontakt@padelindex.de?subject=Anlage%20fehlt%20auf%20der%20Karte">
-							schreib uns
+							{m.karte_intro_link()}
 						</a>.
 					{/if}
 				</p>
@@ -81,13 +89,13 @@
 
 			<!-- ============================ LEGENDE ============================ -->
 			<ul class="legend" use:reveal>
-				<li><span class="dot dot-partner" aria-hidden="true"></span> PadelIndex Partner</li>
-				<li><span class="dot dot-open" aria-hidden="true"></span> Noch kein PadelIndex Partner</li>
+				<li><span class="dot dot-partner" aria-hidden="true"></span> {m.karte_legend_partner()}</li>
+				<li><span class="dot dot-open" aria-hidden="true"></span> {m.karte_legend_open()}</li>
 			</ul>
 
 			<!-- ============================ FILTER + SUCHE ============================ -->
 			<div class="controls" use:reveal>
-				<div class="filters" role="group" aria-label="Nach Status filtern">
+				<div class="filters" role="group" aria-label={m.karte_filter_aria()}>
 					{#each FILTERS as f (f)}
 						<button
 							type="button"
@@ -102,11 +110,11 @@
 				</div>
 
 				<div class="searchbox">
-					<label class="sr-only" for="venue-search">Nach Clubname, Stadt oder PLZ suchen</label>
+					<label class="sr-only" for="venue-search">{m.karte_search_label()}</label>
 					<input
 						id="venue-search"
 						type="search"
-						placeholder="Club, Stadt oder PLZ …"
+						placeholder={m.karte_search_placeholder()}
 						bind:value={query}
 						autocomplete="off"
 					/>
@@ -115,9 +123,9 @@
 
 			<p class="count" role="status" aria-live="polite">
 				{shown.length}
-				{shown.length === 1 ? 'Anlage' : 'Anlagen'}
+				{shown.length === 1 ? m.karte_count_singular() : m.karte_count_plural()}
 				{#if shown.length !== shownOnMap.length}
-					· {shown.length - shownOnMap.length} davon ohne Koordinaten, nur in der Liste
+					· {m.karte_count_no_coords({ count: shown.length - shownOnMap.length })}
 				{/if}
 			</p>
 
@@ -127,11 +135,11 @@
 			{/if}
 
 			<!-- ============================ LISTE ============================ -->
-			<h2 class="listtitle" use:reveal>Alle Anlagen</h2>
+			<h2 class="listtitle" use:reveal>{m.karte_list_title()}</h2>
 
 			{#if shown.length === 0}
 				<p class="empty">
-					Nichts gefunden. Andere Suche probieren oder den Filter auf „Alle" stellen.
+					{m.karte_empty()}
 				</p>
 			{:else}
 				<ul class="venues">
@@ -140,7 +148,7 @@
 							<div class="v-head">
 								<h3>{v.name}</h3>
 								<span class="badge" class:badge-partner={v.isPartner}>
-									{v.isPartner ? 'PadelIndex Partner' : 'Noch kein Partner'}
+									{v.isPartner ? m.karte_legend_partner() : m.karte_filter_non_partner()}
 								</span>
 							</div>
 
@@ -155,22 +163,26 @@
 							<div class="v-links">
 								{#if v.lat !== null}
 									<button type="button" class="linkish" onclick={() => (selectedId = v.id)}>
-										Auf der Karte zeigen
+										{m.karte_show_on_map()}
 									</button>
 								{/if}
 								{#if v.website}
-									<a href={v.website} target="_blank" rel="noopener noreferrer">Website</a>
+									<a href={v.website} target="_blank" rel="noopener noreferrer"
+										>{m.karte_website()}</a
+									>
 								{/if}
 								{#if v.isPartner && v.clubSlug}
-									<a href="/c/{v.clubSlug}">Rangliste</a>
+									<a href={localizeHref(`/c/${v.clubSlug}`)}>{m.karte_ranking()}</a>
 								{/if}
 							</div>
 
 							{#if !v.isPartner}
 								<div class="v-cta">
-									<p>Betreibst du diesen Club? Werde Teil von PadelIndex.</p>
+									<p>{m.karte_owner_cta_p()}</p>
 									<div class="v-cta-actions">
-										<a class="btn btn-primary" href="/vereine#demo">Interesse anmelden</a>
+										<a class="btn btn-primary" href={localizeHref('/vereine#demo')}
+											>{m.karte_owner_cta_link()}</a
+										>
 										<a
 											class="linkish"
 											href="mailto:kontakt@padelindex.de?subject={encodeURIComponent(

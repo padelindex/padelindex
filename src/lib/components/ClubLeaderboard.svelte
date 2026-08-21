@@ -1,5 +1,8 @@
 <script lang="ts">
 	import type { LeaderboardResponse } from '$lib/leaderboard';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+	import { dateLocaleFor } from '$lib/i18n/date';
 
 	let {
 		board,
@@ -20,7 +23,7 @@
 
 	function updatedLabel(iso: string | null) {
 		if (!iso) return '';
-		return new Date(iso).toLocaleDateString('de-DE', {
+		return new Date(iso).toLocaleDateString(dateLocaleFor(getLocale()), {
 			day: '2-digit',
 			month: '2-digit',
 			year: 'numeric'
@@ -30,31 +33,31 @@
 
 {#if unavailable}
 	<div class="lb">
-		<div class="lb-head"><span class="n">Ranking</span></div>
+		<div class="lb-head"><span class="n">{m.cl_ranking()}</span></div>
 		<p class="empty">
-			Supabase ist noch nicht verbunden. Ranking erscheint, sobald die Datenbank hängt.
+			{m.cl_unavailable()}
 		</p>
 	</div>
 {:else if !board}
 	<div class="lb">
-		<div class="lb-head"><span class="n">Ranking</span></div>
-		<p class="empty">Verein nicht gefunden.</p>
+		<div class="lb-head"><span class="n">{m.cl_ranking()}</span></div>
+		<p class="empty">{m.cl_not_found()}</p>
 	</div>
 {:else if board.players.length === 0}
 	<div class="lb">
 		<div class="lb-head">
 			<span class="n">{board.club.name}</span>
-			<span class="e">Level-Ranking</span>
+			<span class="e">{m.cs_level_ranking()}</span>
 		</div>
 		<p class="empty">
-			Noch keine bestätigten Matches. Das Ranking startet mit dem ersten Ergebnis.
+			{m.cl_empty()}
 		</p>
 	</div>
 {:else}
 	<div class="lb" class:compact>
 		<div class="lb-head">
 			<span class="n">{board.club.name}</span>
-			<span class="e">Level-Ranking</span>
+			<span class="e">{m.cs_level_ranking()}</span>
 		</div>
 		<ol>
 			{#each board.players as p (p.handle)}
@@ -62,15 +65,21 @@
 				     Drittseiten sollen ihr Widget nicht ungefragt zu einer
 				     Navigation nach padelindex.de machen. -->
 				<li>
-					<svelte:element this={compact ? 'span' : 'a'} class="row" href={compact ? undefined : `/p/${p.handle}`}>
+					<svelte:element
+						this={compact ? 'span' : 'a'}
+						class="row"
+						href={compact ? undefined : localizeHref(`/p/${p.handle}`)}
+					>
 						<span class="r">{p.rank}</span>
 						<span>
 							<span class="nm">{p.name}</span>
 							{#if !p.claimed}
-								<span class="uc" title="Profil noch nicht beansprucht">frei</span>
+								<span class="uc" title={m.cl_unclaimed_title()}>{m.cl_unclaimed_badge()}</span>
 							{/if}
 							<span class="mt" class:prov={p.provisional}>
-								{p.provisional ? `provisorisch · ${p.matches} Matches` : `${p.matches} Matches`}
+								{p.provisional
+									? `${m.lab_provisional()} · ${m.cs_matches_count({ count: p.matches })}`
+									: m.cs_matches_count({ count: p.matches })}
 							</span>
 						</span>
 						<span class="sc">
@@ -79,9 +88,14 @@
 								<circle class="f" cx="11" cy="11" r="9" stroke-dasharray={dash(p.confidence)}
 								></circle>
 							</svg>
-							<span class="v" title="Sicherheit {Math.round(p.confidence * 100)} %">
+							<span
+								class="v"
+								title={m.cl_confidence_title({ percent: Math.round(p.confidence * 100) })}
+							>
 								{p.rating.toFixed(2)}
-								<span class="sr-only">, Sicherheit {Math.round(p.confidence * 100)} %</span>
+								<span class="sr-only"
+									>{m.cl_confidence_sr({ percent: Math.round(p.confidence * 100) })}</span
+								>
 							</span>
 						</span>
 					</svelte:element>
@@ -90,11 +104,15 @@
 		</ol>
 		<div class="lb-foot">
 			{#if board.dataOrigin === 'league_import'}
-				<span class="src" title="Noch keine über PadelIndex gemeldeten Matches — die Werte stammen aus importierten Liga-Ergebnissen.">
-					Aus Ligaergebnissen importiert
+				<span class="src" title={m.cl_league_import_title()}>
+					{m.cl_league_import_label()}
 				</span>
 			{:else}
-				<span>{board.updated_at ? `Stand ${updatedLabel(board.updated_at)}` : ''}</span>
+				<span
+					>{board.updated_at
+						? m.cl_updated_label({ date: updatedLabel(board.updated_at) })
+						: ''}</span
+				>
 			{/if}
 			<span>PadelIndex</span>
 		</div>

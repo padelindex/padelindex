@@ -7,15 +7,22 @@
 	import RelatedGuides from '$lib/components/guides/RelatedGuides.svelte';
 	import GuideCTA from '$lib/components/guides/GuideCTA.svelte';
 	import FAQAccordion from '$lib/components/guides/FAQAccordion.svelte';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
+	import { page } from '$app/state';
+	import { mainNav } from '$lib/landing/nav';
 	import { jsonLd } from '$lib/jsonld';
-	import { CATEGORY_LABELS, DIFFICULTY_LABELS } from '$lib/guides';
+	import { categoryLabels, difficultyLabels } from '$lib/guides';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { dateLocaleFor } from '$lib/i18n/date';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	const guide = $derived(data.guide);
-	const canonical = $derived(`https://padelindex.de/ratgeber/${guide.slug}`);
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
 
 	const articleSchema = $derived(
 		jsonLd({
@@ -25,7 +32,7 @@
 			description: guide.metaDescription,
 			dateModified: guide.updatedAt,
 			datePublished: guide.updatedAt,
-			inLanguage: 'de-DE',
+			inLanguage: dateLocaleFor(getLocale()),
 			author: { '@type': 'Organization', name: 'PadelIndex' },
 			publisher: { '@type': 'Organization', name: 'PadelIndex' },
 			mainEntityOfPage: { '@type': 'WebPage', '@id': canonical }
@@ -55,7 +62,7 @@
 				{
 					'@type': 'ListItem',
 					position: 2,
-					name: 'Ratgeber',
+					name: m.guide_breadcrumb_ratgeber(),
 					item: 'https://padelindex.de/ratgeber'
 				},
 				{ '@type': 'ListItem', position: 3, name: guide.title, item: canonical }
@@ -70,10 +77,11 @@
 	<title>{guide.metaTitle} — PadelIndex</title>
 	<meta name="description" content={guide.metaDescription} />
 	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="article" />
 	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
+	<meta property="og:locale" content={ogLocale} />
 	<meta property="og:title" content={guide.metaTitle} />
 	<meta property="og:description" content={guide.metaDescription} />
 	<meta name="twitter:card" content="summary_large_image" />
@@ -85,25 +93,27 @@
 	{/if}
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light">
 		<div class="wrap narrow">
 			<Breadcrumbs
 				items={[
-					{ label: 'PadelIndex', href: '/' },
-					{ label: 'Ratgeber', href: '/ratgeber' },
+					{ label: m.guide_breadcrumb_home(), href: localizeHref('/') },
+					{ label: m.guide_breadcrumb_ratgeber(), href: localizeHref('/ratgeber') },
 					{ label: guide.title }
 				]}
 			/>
 
 			<div class="badges">
-				<span class="badge">{CATEGORY_LABELS[guide.category]}</span>
-				<span class="badge badge-outline">{DIFFICULTY_LABELS[guide.difficulty]}</span>
-				<span class="meta">{guide.readingTime} Min. Lesezeit</span>
+				<span class="badge">{categoryLabels()[guide.category]}</span>
+				<span class="badge badge-outline">{difficultyLabels()[guide.difficulty]}</span>
+				<span class="meta">{m.guide_reading_time({ minutes: guide.readingTime })}</span>
 				<span class="meta"
-					>Aktualisiert am {new Date(guide.updatedAt).toLocaleDateString('de-DE')}</span
+					>{m.guide_updated_on({
+						date: new Date(guide.updatedAt).toLocaleDateString(dateLocaleFor(getLocale()))
+					})}</span
 				>
 			</div>
 
@@ -132,17 +142,17 @@
 				{/each}
 
 				<GuideCTA
-					heading="Bereit, dein Wissen zu testen?"
-					text="Im PadelIndex-Quiz merkst du sofort, wie sicher du dich mit Regeln, Technik und Taktik fühlst."
-					primaryHref="/quiz"
-					primaryLabel="Zum Padel-Quiz"
+					heading={m.guide_cta_heading()}
+					text={m.guide_cta_text()}
+					primaryHref={localizeHref('/quiz')}
+					primaryLabel={m.guide_cta_primary_label()}
 					secondaryHref="/level-schaetzen"
-					secondaryLabel="Mein Level schätzen"
+					secondaryLabel={m.guide_cta_secondary_label()}
 				/>
 
 				{#if guide.faq.length > 0}
 					<section class="content-section">
-						<h2>Häufige Fragen</h2>
+						<h2>{m.guide_faq_heading()}</h2>
 						<FAQAccordion items={guide.faq} />
 					</section>
 				{/if}

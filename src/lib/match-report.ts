@@ -6,6 +6,8 @@
 // Melder-Team, team2 = Gegner-Team) statt in generischer Team-Zuordnung —
 // so berichtet ein Spieler tatsächlich von seinem Match.
 
+import { m } from '$lib/paraglide/messages.js';
+
 export type SetScoreInput = { team1Games: number; team2Games: number };
 
 export type MatchType = 'gps' | 'turnier' | 'vereinsliga' | 'padelindex_challenge' | 'freizeit';
@@ -19,13 +21,15 @@ export const MATCH_TYPES: readonly MatchType[] = [
 ];
 
 /** GPS = vom Deutschen Padel Verband organisierte Punktspiele. */
-export const MATCH_TYPE_LABELS: Record<MatchType, string> = {
-	freizeit: 'Freizeit',
-	gps: 'GPS (DPV-Punktspiele)',
-	turnier: 'Turnier',
-	vereinsliga: 'Vereinsliga',
-	padelindex_challenge: 'PadelIndex Challenge'
-};
+export function matchTypeLabels(): Record<MatchType, string> {
+	return {
+		freizeit: m.mt_freizeit(),
+		gps: m.mt_gps(),
+		turnier: m.mt_turnier(),
+		vereinsliga: m.mt_vereinsliga(),
+		padelindex_challenge: m.mt_padelindex_challenge()
+	};
+}
 
 export type MatchReportInput = {
 	reporterId: string;

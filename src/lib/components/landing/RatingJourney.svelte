@@ -16,6 +16,7 @@
 	import { tween, prefersReducedMotion } from '$lib/landing/motion';
 	import type { CareerPoint } from '$lib/landing/rating-demo';
 	import { SEASON } from '$lib/landing/season';
+	import { m } from '$lib/paraglide/messages.js';
 
 	type Mod = typeof import('$lib/landing/rating-demo');
 	let mod = $state<Mod | null>(null);
@@ -97,8 +98,11 @@
 		<svg
 			viewBox="0 0 {W} {H}"
 			role="img"
-			aria-label="Rating-Verlauf über {SEASON.length} Matches, von {points[0]?.rating.toFixed(2) ??
-				''} auf {points.at(-1)?.rating.toFixed(2) ?? ''}."
+			aria-label={m.rj_svg_aria({
+				count: SEASON.length,
+				from: points[0]?.rating.toFixed(2) ?? '',
+				to: points.at(-1)?.rating.toFixed(2) ?? ''
+			})}
 		>
 			<defs>
 				<linearGradient id="rjGrad" x1="0" y1="0" x2="0" y2="1">
@@ -114,7 +118,9 @@
 			{#if points.length}
 				<rect class="rj-prov" x="0" y={PAD_T - 6} width={provX} height={H - PAD_T - PAD_B + 6} />
 				<line class="rj-provline" x1={provX} y1={PAD_T - 6} x2={provX} y2={H - PAD_B} />
-				<text class="rj-provtxt" x={provX - 8} y={PAD_T + 4} text-anchor="end">provisorisch</text>
+				<text class="rj-provtxt" x={provX - 8} y={PAD_T + 4} text-anchor="end"
+					>{m.lab_provisional()}</text
+				>
 			{/if}
 
 			<line class="rj-axis" x1="0" y1={H - PAD_B} x2={W} y2={H - PAD_B} />
@@ -132,9 +138,12 @@
 							class:on={active?.index === p.index}
 							role="button"
 							tabindex="0"
-							aria-label="Match {p.index}: {p.won ? 'gewonnen' : 'verloren'} {score(
-								p
-							)}, Wert {p.rating.toFixed(2)}"
+							aria-label={m.rj_hit_aria({
+								index: p.index,
+								result: p.won ? m.rj_won() : m.rj_lost(),
+								score: score(p),
+								rating: p.rating.toFixed(2)
+							})}
 							onclick={() => pick(i)}
 							onkeydown={(e) => key(e, i)}
 							onmouseenter={() => pick(i)}
@@ -159,7 +168,7 @@
 						y={yOf(points.at(-1)!.rating) - 16}
 						text-anchor="end"
 					>
-						du bist hier
+						{m.rj_here()}
 					</text>
 				{/if}
 			{/if}
@@ -169,28 +178,28 @@
 	<aside class="rj-detail" aria-live="polite">
 		{#if active}
 			<div class="rj-dhead">
-				<span class="rj-dnum num">Match {active.index}</span>
+				<span class="rj-dnum num">{m.rj_match_number({ index: active.index })}</span>
 				<span class="rj-dres num" class:won={active.won}>
-					{active.won ? 'Gewonnen' : 'Verloren'}
+					{active.won ? m.rj_won_label() : m.rj_lost_label()}
 				</span>
 			</div>
 
 			<div class="rj-drow">
-				<span>Ergebnis</span>
+				<span>{m.lab_result_label()}</span>
 				<span class="num">{score(active)}</span>
 			</div>
 			<div class="rj-drow">
-				<span>Gegner</span>
+				<span>{m.rj_opponent_label()}</span>
 				<span class="num">{active.opponents[0].toFixed(2)} · {active.opponents[1].toFixed(2)}</span>
 			</div>
 			<div class="rj-drow">
-				<span>Partner</span>
+				<span>{m.hseq_partner()}</span>
 				<span class="num">{active.partner.toFixed(2)}</span>
 			</div>
 
 			<div class="rj-dout">
 				<div>
-					<span class="rj-dlabel">Wert danach</span>
+					<span class="rj-dlabel">{m.rj_after_label()}</span>
 					<span class="rj-dbig num">{active.rating.toFixed(2)}</span>
 				</div>
 				<span class="rj-ddelta num" class:up={active.delta > 0} class:down={active.delta < 0}>
@@ -200,11 +209,11 @@
 
 			{#if active.provisional}
 				<p class="rj-dnote">
-					Noch in der provisorischen Phase — bis zwölf Matches bewegt sich der Wert bewusst stärker.
+					{m.rj_provisional_note()}
 				</p>
 			{/if}
 		{/if}
-		<p class="rj-hint">Punkt antippen oder mit den Pfeiltasten durchgehen.</p>
+		<p class="rj-hint">{m.rj_hint()}</p>
 	</aside>
 </div>
 

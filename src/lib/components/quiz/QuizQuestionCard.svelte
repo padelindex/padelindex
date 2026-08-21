@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { QuizOptionId, QuizQuestion } from '$lib/quiz';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let {
 		question,
@@ -33,7 +34,7 @@
 	<span class="badge" style="--accent: {accentColor}">{difficultyLabel}</span>
 	<h2>{question.question}</h2>
 
-	<div class="options" role="group" aria-label="Antwortmöglichkeiten">
+	<div class="options" role="group" aria-label={m.quiz_options_aria()}>
 		{#each question.options as option (option.id)}
 			{@const state = stateFor(option.id)}
 			<button
@@ -52,12 +53,14 @@
 	{#if answered}
 		<div class="explanation" role="status">
 			<p class="explanation-label">
-				{selectedOptionId === question.correctOptionId ? 'Richtig!' : 'Nicht ganz.'}
+				{selectedOptionId === question.correctOptionId
+					? m.quiz_feedback_correct()
+					: m.quiz_feedback_incorrect()}
 			</p>
 			<p>{question.explanation}</p>
 		</div>
 		<button class="btn btn-primary next-btn" type="button" onclick={onNext}>
-			{isLast ? 'Ergebnis anzeigen' : 'Weiter'}
+			{isLast ? m.quiz_show_result() : m.quiz_next()}
 		</button>
 	{/if}
 </div>

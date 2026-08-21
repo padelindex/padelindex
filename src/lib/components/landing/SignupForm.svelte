@@ -12,6 +12,7 @@
 	// Feld her weiterhin ein normales Textfeld, keine feste Zuordnung.
 
 	import { untrack } from 'svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { defaultClub = '' }: { defaultClub?: string } = $props();
 
@@ -31,7 +32,7 @@
 
 		if (!VALID.test(value)) {
 			status = 'error';
-			message = 'Bitte eine gültige E-Mail-Adresse eingeben.';
+			message = m.signup_invalid_email();
 			return;
 		}
 
@@ -49,17 +50,17 @@
 
 			if (!res.ok) {
 				status = 'error';
-				message = data.message || 'Konnte nicht eingetragen werden. Bitte später erneut versuchen.';
+				message = data.message || m.signup_error_generic();
 				return;
 			}
 
 			status = 'ok';
-			message = 'Fast geschafft — wir haben dir einen Bestätigungslink geschickt.';
+			message = m.signup_success();
 			email = '';
 			club = '';
 		} catch {
 			status = 'error';
-			message = 'Netzwerkfehler. Bitte später erneut versuchen.';
+			message = m.signup_network_error();
 		} finally {
 			busy = false;
 		}
@@ -67,31 +68,31 @@
 </script>
 
 <form class="signup" onsubmit={submit} novalidate>
-	<label class="sr-only" for="waitlist-mail">E-Mail-Adresse</label>
+	<label class="sr-only" for="waitlist-mail">{m.signup_email_label()}</label>
 	<input
 		id="waitlist-mail"
 		name="email"
 		type="email"
 		autocomplete="email"
-		placeholder="deine@mail.de"
+		placeholder={m.signup_email_placeholder()}
 		bind:value={email}
 		disabled={status === 'ok'}
 		aria-invalid={status === 'error'}
 		aria-describedby="waitlist-msg"
 	/>
-	<label class="sr-only" for="waitlist-club">Dein Verein (optional)</label>
+	<label class="sr-only" for="waitlist-club">{m.signup_club_label()}</label>
 	<input
 		id="waitlist-club"
 		name="clubName"
 		type="text"
 		autocomplete="organization"
-		placeholder="Dein Verein (optional)"
+		placeholder={m.signup_club_label()}
 		maxlength="120"
 		bind:value={club}
 		disabled={status === 'ok'}
 	/>
 	<button class="btn btn-primary" type="submit" disabled={busy || status === 'ok'}>
-		{#if busy}Wird gesendet …{:else if status === 'ok'}Notiert{:else}Platz sichern{/if}
+		{#if busy}{m.signup_sending()}{:else if status === 'ok'}{m.signup_done()}{:else}{m.nav_cta()}{/if}
 	</button>
 </form>
 
@@ -106,9 +107,9 @@
 </p>
 <p class="signup-hint">
 	{#if defaultClub}
-		{defaultClub} meldet sich bei dir. Kein Spam, keine Weitergabe.
+		{m.signup_hint_with_club({ club: defaultClub })}
 	{:else}
-		Sag uns, welcher Verein — dann fragen wir ihn direkt an. Kein Spam, keine Weitergabe.
+		{m.signup_hint_no_club()}
 	{/if}
 </p>
 

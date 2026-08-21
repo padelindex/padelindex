@@ -9,17 +9,20 @@
 	// Leiste zu sehen ist — die Nav braucht das, um ihren eigenen
 	// sticky-Versatz (top: 34px vs. 0) passend zu setzen.
 
-	import { CATEGORY_META, type FeedItem } from '$lib/feed';
+	import { categoryMetaFor, type FeedItem } from '$lib/feed';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 
 	let { onVisibleChange }: { onVisibleChange?: (visible: boolean) => void } = $props();
 
 	let items = $state<FeedItem[]>([]);
 	let failed = $state(false);
+	const categoryMeta = $derived(categoryMetaFor(getLocale()));
 
 	$effect(() => {
 		let cancelled = false;
 
-		fetch('/api/ticker')
+		fetch(`/api/ticker?locale=${getLocale()}`)
 			.then((res) => {
 				if (!res.ok) throw new Error('ticker request failed');
 				return res.json();
@@ -50,12 +53,12 @@
 </script>
 
 {#if visible}
-	<div class="ticker" role="region" aria-label="Aktuelles von PadelIndex">
+	<div class="ticker" role="region" aria-label={m.ticker_aria_label()}>
 		<div class="track" style="--duration: {duration}s">
 			<div class="group">
 				{#each items as entry (entry.id)}
-					{@const meta = CATEGORY_META[entry.category]}
-					<a class="item" href={entry.link}>
+					{@const meta = categoryMeta[entry.category]}
+					<a class="item" href={localizeHref(entry.link)}>
 						<span class="badge" style="--badge-bg: {meta.background}; --badge-fg: {meta.color}">
 							{meta.label}
 						</span>
@@ -65,8 +68,8 @@
 			</div>
 			<div class="group" aria-hidden="true">
 				{#each items as entry (entry.id + '-dup')}
-					{@const meta = CATEGORY_META[entry.category]}
-					<a class="item" href={entry.link} tabindex="-1">
+					{@const meta = categoryMeta[entry.category]}
+					<a class="item" href={localizeHref(entry.link)} tabindex="-1">
 						<span class="badge" style="--badge-bg: {meta.background}; --badge-fg: {meta.color}">
 							{meta.label}
 						</span>

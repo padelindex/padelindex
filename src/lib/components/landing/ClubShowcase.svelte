@@ -14,6 +14,8 @@
 	import { whenVisible } from '$lib/landing/reveal';
 	import { prefersReducedMotion } from '$lib/landing/motion';
 	import type { LeaderboardResponse } from '$lib/leaderboard';
+	import { m } from '$lib/paraglide/messages.js';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	let { board }: { board: LeaderboardResponse | null } = $props();
 
@@ -108,7 +110,7 @@
 		<div class="cs-widget" class:embedded>
 			<div class="cs-whead">
 				<span class="cs-wn">{clubName}</span>
-				<span class="cs-we">Level-Ranking</span>
+				<span class="cs-we">{m.cs_level_ranking()}</span>
 			</div>
 			<ol class="cs-list">
 				{#each rows as p (p.rank)}
@@ -117,13 +119,15 @@
 						<span class="cs-nmw">
 							<span class="cs-nm">{p.name}</span>
 							<span class="cs-mt" class:prov={p.provisional}>
-								{p.provisional ? `provisorisch · ${p.matches} Matches` : `${p.matches} Matches`}
+								{p.provisional
+									? `${m.lab_provisional()} · ${m.cs_matches_count({ count: p.matches })}`
+									: m.cs_matches_count({ count: p.matches })}
 							</span>
 						</span>
 						<span class="cs-mv num" class:up={p.trend > 0.005} class:down={p.trend < -0.005}>
 							{#if p.trend > 0.005}↑ +{p.trend.toFixed(2)}
 							{:else if p.trend < -0.005}↓ −{Math.abs(p.trend).toFixed(2)}
-							{:else if p.matches === 0}neu
+							{:else if p.matches === 0}{m.cs_trend_new()}
 							{:else}→ 0.00{/if}
 						</span>
 						<span class="cs-sc">
@@ -137,14 +141,14 @@
 				{/each}
 			</ol>
 			<div class="cs-wfoot">
-				<span>{isReal ? 'Live aus der Pilotphase' : 'Beispielliste'}</span>
+				<span>{isReal ? m.cs_live_pilot() : m.cs_example_list()}</span>
 				<span>PadelIndex</span>
 			</div>
 		</div>
 	</div>
 
 	<div class="cs-right">
-		<div class="cs-toggle" role="group" aria-label="Darstellung">
+		<div class="cs-toggle" role="group" aria-label={m.cs_toggle_aria()}>
 			<button
 				type="button"
 				class:on={!embedded}
@@ -159,12 +163,12 @@
 				onclick={() => (embedded = true)}
 				aria-pressed={embedded}
 			>
-				Auf eurer Seite
+				{m.cs_on_your_site()}
 			</button>
 		</div>
 
 		<div class="cs-snippet">
-			<span class="cs-slabel">Eine Zeile</span>
+			<span class="cs-slabel">{m.cs_snippet_label()}</span>
 			<pre><code
 					>&lt;<span class="t">script</span> <span class="at">src</span>=<span class="s"
 						>"https://padelindex.de/embed.js"</span
@@ -179,14 +183,13 @@
 		</div>
 
 		<p class="cs-note">
-			Läuft in WordPress, Elementor, Wix und allem, was HTML erlaubt. Die Styles sind gekapselt —
-			euer Theme kann das Widget nicht zerlegen und umgekehrt.
+			{m.cs_note()}
 			{#if isReal}
-				Die Liste links ist keine Attrappe: sie kommt live aus derselben Schnittstelle.
+				{m.cs_note_real()}
 			{/if}
 		</p>
 
-		<a class="btn btn-ghost-light cs-cta" href="/c/stc-oberland">Live-Ranking ansehen</a>
+		<a class="btn btn-ghost-light cs-cta" href={localizeHref('/c/stc-oberland')}>{m.cs_cta()}</a>
 	</div>
 </div>
 

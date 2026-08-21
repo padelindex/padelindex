@@ -5,6 +5,9 @@
 // testen lässt, liegt hier. Das eigentliche Zusammenstellen aus der
 // Datenbank passiert in server/feed.ts.
 
+import { m } from './paraglide/messages.js';
+import type { Locale } from './paraglide/runtime';
+
 export type FeedCategory =
 	'ERGEBNIS' | 'SPIELER' | 'NEUER_VEREIN' | 'CLUB_CTA' | 'RATGEBER' | 'FEATURE';
 
@@ -28,14 +31,36 @@ export type CategoryMeta = { label: string; background: string; color: string };
  * bestehende Marken-Tokens zurück statt neue Farben zu erfinden
  * (--court-deep fürs Ratgeber-Teal, --signal fürs Feature-Gelb).
  */
-export const CATEGORY_META: Record<FeedCategory, CategoryMeta> = {
-	ERGEBNIS: { label: 'LIVE ERGEBNIS', background: '#E4572E', color: '#FFF4EE' },
-	NEUER_VEREIN: { label: 'NEUER VEREIN', background: '#1E9E52', color: '#EAFBEF' },
-	SPIELER: { label: 'COMMUNITY', background: '#2F6FE0', color: '#EAF1FF' },
-	CLUB_CTA: { label: 'COMMUNITY', background: '#2F6FE0', color: '#EAF1FF' },
-	RATGEBER: { label: 'RATGEBER', background: '#0C6E64', color: '#E7FBF8' },
-	FEATURE: { label: 'FEATURE', background: '#E9B23C', color: '#241B00' }
-};
+export function categoryMetaFor(locale: Locale): Record<FeedCategory, CategoryMeta> {
+	return {
+		ERGEBNIS: {
+			label: m.feed_cat_ergebnis({}, { locale }),
+			background: '#E4572E',
+			color: '#FFF4EE'
+		},
+		NEUER_VEREIN: {
+			label: m.feed_cat_neuer_verein({}, { locale }),
+			background: '#1E9E52',
+			color: '#EAFBEF'
+		},
+		SPIELER: {
+			label: m.feed_cat_community({}, { locale }),
+			background: '#2F6FE0',
+			color: '#EAF1FF'
+		},
+		CLUB_CTA: {
+			label: m.feed_cat_community({}, { locale }),
+			background: '#2F6FE0',
+			color: '#EAF1FF'
+		},
+		RATGEBER: {
+			label: m.feed_cat_ratgeber({}, { locale }),
+			background: '#0C6E64',
+			color: '#E7FBF8'
+		},
+		FEATURE: { label: m.feed_cat_feature({}, { locale }), background: '#E9B23C', color: '#241B00' }
+	};
+}
 
 const ORIGIN = 'https://padelindex.de';
 export const FEED_ORIGIN = ORIGIN;

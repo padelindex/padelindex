@@ -1,18 +1,18 @@
 <script lang="ts">
 	import '$lib/styles/landing.css';
 	import { jsonLd } from '$lib/jsonld';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { children, data } = $props();
 
-	const organization = {
+	const organization = $derived({
 		'@context': 'https://schema.org',
 		'@type': 'Organization',
 		name: 'PadelIndex',
 		url: 'https://padelindex.de',
 		logo: 'https://padelindex.de/logo.svg',
-		description:
-			'Unabhängige Level-Rangliste für Padel-Amateure, berechnet aus bestätigten Matches statt Selbsteinschätzung.'
-	};
+		description: m.org_description()
+	});
 </script>
 
 <svelte:head>

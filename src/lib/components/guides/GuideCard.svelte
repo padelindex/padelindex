@@ -1,18 +1,20 @@
 <script lang="ts">
 	import type { GuideArticle } from '$lib/guides';
-	import { CATEGORY_LABELS, DIFFICULTY_LABELS } from '$lib/guides';
+	import { categoryLabels, difficultyLabels } from '$lib/guides';
+	import { localizeHref } from '$lib/paraglide/runtime';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { guide }: { guide: GuideArticle } = $props();
 </script>
 
-<a class="guide-card" href="/ratgeber/{guide.slug}">
+<a class="guide-card" href={localizeHref(`/ratgeber/${guide.slug}`)}>
 	<div class="badges">
-		<span class="badge badge-category">{CATEGORY_LABELS[guide.category]}</span>
-		<span class="badge badge-difficulty">{DIFFICULTY_LABELS[guide.difficulty]}</span>
+		<span class="badge badge-category">{categoryLabels()[guide.category]}</span>
+		<span class="badge badge-difficulty">{difficultyLabels()[guide.difficulty]}</span>
 	</div>
 	<h3>{guide.title}</h3>
 	<p class="excerpt">{guide.excerpt}</p>
-	<span class="meta">{guide.readingTime} Min. Lesezeit</span>
+	<span class="meta">{m.guide_reading_time({ minutes: guide.readingTime })}</span>
 </a>
 
 <style>

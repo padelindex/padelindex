@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-	CATEGORY_META,
+	categoryMetaFor,
 	type FeedCategory,
 	type FeedItem,
 	absoluteLink,
@@ -30,13 +30,15 @@ function item(overrides: Partial<FeedItem> & Pick<FeedItem, 'id' | 'pubDate'>): 
 	};
 }
 
-describe('CATEGORY_META', () => {
-	it('deckt jede Kategorie mit Label und Farben ab', () => {
-		for (const category of CATEGORIES) {
-			const meta = CATEGORY_META[category];
-			expect(meta.label.length).toBeGreaterThan(0);
-			expect(meta.background).toMatch(/^#/);
-			expect(meta.color).toMatch(/^#/);
+describe('categoryMetaFor', () => {
+	it('deckt jede Kategorie mit Label und Farben ab, für jede Sprache', () => {
+		for (const locale of ['de', 'en', 'es'] as const) {
+			const meta = categoryMetaFor(locale);
+			for (const category of CATEGORIES) {
+				expect(meta[category].label.length).toBeGreaterThan(0);
+				expect(meta[category].background).toMatch(/^#/);
+				expect(meta[category].color).toMatch(/^#/);
+			}
 		}
 	});
 });

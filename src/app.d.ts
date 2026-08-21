@@ -16,6 +16,8 @@ declare global {
 			user: User | null;
 			/** Das mit dem eingeloggten Auth-User verknüpfte Spielerprofil, falls vorhanden. */
 			player: SessionPlayer | null;
+			/** Aus der URL erkannte Sprache (Paraglide, siehe hooks.server.ts). 'de' außerhalb der lokalisierten Routen. */
+			locale: 'de' | 'en' | 'es';
 		}
 		interface Platform {
 			env: {

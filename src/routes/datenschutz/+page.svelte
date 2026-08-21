@@ -1,11 +1,16 @@
+<script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+	import { localizeHref } from '$lib/paraglide/runtime';
+</script>
+
 <svelte:head>
-	<title>Datenschutz — PadelIndex</title>
+	<title>{m.ds_meta_title()}</title>
 	<meta name="robots" content="noindex, follow" />
 </svelte:head>
 
 <nav class="nav">
 	<div class="wrap nav-in">
-		<a class="brand" href="/">
+		<a class="brand" href={localizeHref('/')}>
 			<img src="/logo.svg" width="30" height="30" alt="" />
 			<span>Padel<b>Index</b></span>
 		</a>
@@ -14,39 +19,33 @@
 
 <section class="sec">
 	<div class="wrap legal" style="max-width: 72ch">
-		<span class="eyebrow">Rechtliches</span>
-		<h2 style="margin-top: 18px">Datenschutzerklärung</h2>
+		<span class="eyebrow">{m.legal_eyebrow()}</span>
+		<h2 style="margin-top: 18px">{m.ds_h2()}</h2>
 
-		<h3>1. Verantwortlicher</h3>
+		<h3>{m.ds_h3_1()}</h3>
 		<p>
 			Alec Hahn<br />
 			Geltingerstrasse 12<br />
 			82515 Wolfratshausen<br />
-			Deutschland<br />
+			{m.ds_address_country()}<br />
 			E-Mail: <a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a>
 		</p>
 
-		<h3>2. Übersicht der Verarbeitungen</h3>
+		<h3>{m.ds_h3_2()}</h3>
 		<p>
-			PadelIndex verarbeitet zwei Arten personenbezogener Daten: die E-Mail-Adresse, die du beim
-			Eintragen in die Warteliste oder bei der Registrierung angibst, und die öffentlichen
-			Ranglisten-Daten von Padel-Spielerinnen und -Spielern (Name bzw. abgekürzter Name, Level,
-			Match-Ergebnisse). Beide sind unten getrennt beschrieben.
+			{m.ds_p2()}
 		</p>
 
-		<h3>3. Hosting</h3>
+		<h3>{m.ds_h3_3()}</h3>
 		<p>
-			Diese Website läuft auf Cloudflare Workers. Cloudflare verarbeitet dabei zwangsläufig
-			technische Verbindungsdaten (u. a. IP-Adresse, Zeitpunkt des Zugriffs, angefragte Seite), um
-			die Website überhaupt ausliefern zu können. Rechtsgrundlage ist unser berechtigtes Interesse
-			an einem stabilen, sicheren Betrieb (Art. 6 Abs. 1 lit. f DSGVO). Diese Zugriffsdaten werden
-			nicht mit den Ranglisten- oder Kontodaten verknüpft.
+			{m.ds_p3()}
 		</p>
 
-		<h3>4. Auftragsverarbeiter</h3>
-		<p>Wir setzen folgende externe Dienste ein, die dabei als Auftragsverarbeiter für uns tätig werden:</p>
+		<h3>{m.ds_h3_4()}</h3>
+		<p>{m.ds_p4_intro()}</p>
 		<p>
-			<b>Supabase</b> (Datenbank, Login) — speichert alle Konto-, Ranking- und Match-Daten.
+			<b>Supabase</b>
+			{m.ds_p4_supabase_desc()}
 			<!--
 			  TODO (Formulierungsvorschlag, bitte prüfen und ergänzen sobald bekannt):
 			  "Serverstandort: [Region aus den Supabase-Projekteinstellungen einsetzen,
@@ -55,11 +54,11 @@
 			  nicht abgeschlossen, über das Supabase-Dashboard unter Project Settings →
 			  Legal Documents nachholen]."
 			-->
-			Serverstandort und Stand des Auftragsverarbeitungsvertrags: wird ergänzt.
+			{m.ds_p4_supabase_status()}
 		</p>
 		<p>
-			<b>Cloudflare</b> (Hosting, Auslieferung) — liefert die Website aus und verarbeitet dafür
-			technische Verbindungsdaten (siehe Abschnitt 3).
+			<b>Cloudflare</b>
+			{m.ds_p4_cloudflare_desc()}
 			<!--
 			  TODO (Formulierungsvorschlag): "Cloudflare ist ein US-Anbieter mit
 			  Serverstandorten weltweit (Edge-Netzwerk); die konkrete Verarbeitung für diese
@@ -67,102 +66,65 @@
 			  einsetzen]. Mit Cloudflare besteht ein Auftragsverarbeitungsvertrag inkl.
 			  Standardvertragsklauseln für Datenübermittlungen in die USA."
 			-->
-			Vertragsgrundlage für die Datenübermittlung: wird ergänzt.
+			{m.ds_p4_cloudflare_status()}
 		</p>
 		<p>
-			<b>Resend</b> (Transaktions-E-Mails) — verschickt in unserem Auftrag E-Mails, die für den
-			Betrieb notwendig sind (z. B. Bestätigungslinks, Benachrichtigungen über Spielanfragen und
-			Challenges). Resend erhält dafür die E-Mail-Adresse und den Inhalt der jeweiligen Nachricht.
+			<b>Resend</b>
+			{m.ds_p4_resend_desc()}
 			<!--
 			  TODO (Formulierungsvorschlag): "Mit Resend besteht ein Auftragsverarbeitungsvertrag
 			  nach Art. 28 DSGVO: [Ja/Nein — Stand prüfen]."
 			-->
 		</p>
 
-		<h3>5. Warteliste</h3>
+		<h3>{m.ds_h3_5()}</h3>
 		<p>
-			Wenn du dich auf padelindex.de in die Warteliste einträgst, speichern wir deine E-Mail-Adresse
-			und, falls angegeben, den Namen deines Vereins, um dich über den Start des Pilotbetriebs zu
-			informieren und deinen Verein direkt anzufragen. Der Eintrag wird erst aktiv, wenn du den
-			Bestätigungslink in der Mail anklickst (Double-Opt-in) — bis dahin ist die Adresse nur
-			vorgemerkt. Rechtsgrundlage ist deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Du kannst
-			diese Einwilligung jederzeit formlos per E-Mail an
+			{m.ds_p5_pre()}
 			<a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a>
-			widerrufen; wir löschen den Eintrag dann umgehend.
+			{m.ds_p5_post()}
 		</p>
 
-		<h3>6. Demo-Anfragen von Vereinen</h3>
+		<h3>{m.ds_h3_6()}</h3>
 		<p>
-			Wenn ein Verein über das Formular im Vereins-Bereich eine Demo anfragt, speichern wir
-			Vereinsname, Ansprechperson, E-Mail-Adresse und eine optionale Nachricht, um die Anfrage
-			zu bearbeiten. Rechtsgrundlage ist die Anbahnung eines Vertragsverhältnisses
-			(Art. 6 Abs. 1 lit. b DSGVO).
+			{m.ds_p6()}
 		</p>
 
-		<h3>7. Öffentliche Spielerdaten und Rangliste</h3>
+		<h3>{m.ds_h3_7()}</h3>
 		<p>
-			Kern von PadelIndex ist eine öffentlich einsehbare Rangliste je Verein: Name (oder bei noch
-			nicht beanspruchten Profilen abgekürzt, z. B. „Robin K.“), Level-Wert, Anzahl Matches und
-			grober Formverlauf.
+			{m.ds_p7_1()}
 		</p>
 		<p>
-			Für <b>registrierte, selbst angemeldete</b> Spielerinnen und Spieler ist die Verarbeitung zur
-			Bereitstellung des Rankings Teil der Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) — wer sich
-			registriert, tut das ausdrücklich, um in einem Ranking zu erscheinen.
+			{m.ds_p7_2_pre()} <b>{m.ds_p7_2_bold()}</b>
+			{m.ds_p7_2_post()}
 		</p>
 		<p>
-			Für Profile, die aus <b>importierten Liga-Ergebnissen</b> stammen und noch nicht von der
-			betroffenen Person selbst beansprucht wurden, liegt noch keine Einwilligung vor. Hier stützen
-			wir uns auf unser berechtigtes Interesse, bestehende Liga-Ergebnisse sichtbar und vergleichbar
-			zu machen (Art. 6 Abs. 1 lit. f DSGVO) — deshalb sind diese Namen grundsätzlich nur abgekürzt
-			sichtbar, nie im Klartext. Dagegen kannst du jederzeit Widerspruch einlegen (Art. 21 DSGVO,
-			siehe Abschnitt 9) — dein Profil verschwindet dann aus der öffentlichen Ansicht, ohne dass du
-			dafür ein Konto brauchst.
-			<!--
-			  TODO (rechtliche Prüfung empfohlen): Die Einordnung importierter, unbeanspruchter
-			  Profile unter Art. 6 Abs. 1 lit. f DSGVO (statt Einwilligung) ist eine begründbare,
-			  aber keine abschließend geprüfte rechtliche Bewertung. Vor größerem Rollout
-			  (mehr Vereine, mehr Spieler) anwaltlich gegenprüfen lassen.
-			-->
+			{m.ds_p7_3_pre()} <b>{m.ds_p7_3_bold()}</b>
+			{m.ds_p7_3_post()}
 		</p>
 
-		<h3>8. Cookies und lokale Speicherung</h3>
+		<h3>{m.ds_h3_8()}</h3>
 		<p>
-			Wir setzen ausschließlich technisch notwendige Cookies ein, um dich nach der Anmeldung
-			eingeloggt zu halten (Session-Cookie von Supabase Auth). Es gibt aktuell keine
-			Analyse-, Marketing- oder Tracking-Cookies und keine Werbenetzwerke auf dieser Seite.
+			{m.ds_p8()}
 		</p>
 
-		<h3>9. Speicherdauer</h3>
+		<h3>{m.ds_h3_9()}</h3>
 		<p>
-			Konto- und Ranglisten-Daten speichern wir, solange dein Konto bzw. Profil besteht.
-			Warteliste-Einträge speichern wir bis zum Pilotstart oder bis zu deinem Widerruf. Nach einer
-			Löschung oder einem erfolgreichen Widerspruch (Abschnitt 6 und 9) entfernen wir die
-			betroffenen Daten aus der öffentlichen Ansicht sofort; die vollständige Löschung aus Backups
-			erfolgt im Rahmen der technisch üblichen Backup-Zyklen.
+			{m.ds_p9()}
 		</p>
 
-		<h3>10. Deine Rechte</h3>
-		<p>Du hast jederzeit das Recht auf:</p>
+		<h3>{m.ds_h3_10()}</h3>
+		<p>{m.ds_p10_intro()}</p>
 		<p>
-			Auskunft über die zu dir gespeicherten Daten (Art. 15 DSGVO), Berichtigung unrichtiger Daten
-			(Art. 16 DSGVO), Löschung (Art. 17 DSGVO), Einschränkung der Verarbeitung (Art. 18 DSGVO),
-			Datenübertragbarkeit (Art. 20 DSGVO) sowie Widerspruch gegen eine auf berechtigtem Interesse
-			gestützte Verarbeitung (Art. 21 DSGVO). Für dein eigenes, öffentliches Spielerprofil findest
-			du dazu einen direkten Link „Ich möchte hier nicht gelistet sein“ auf deiner Profilseite, der
-			ohne Login funktioniert. Für alle anderen Anliegen genügt eine E-Mail an
+			{m.ds_p10_1_pre()}
 			<a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a>.
 		</p>
 		<p>
-			Du hast außerdem das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Für
-			uns zuständig ist das Bayerische Landesamt für Datenschutzaufsicht (BayLDA).
+			{m.ds_p10_2()}
 		</p>
 
-		<h3>11. Sicherheit</h3>
+		<h3>{m.ds_h3_11()}</h3>
 		<p>
-			Die Übertragung zwischen deinem Browser und unseren Servern ist durchgehend TLS-verschlüsselt
-			(https). Zugriff auf Kontodaten und nicht-öffentliche Profildaten ist über Zugriffsregeln
-			(Row Level Security) auf Datenbankebene beschränkt.
+			{m.ds_p11()}
 		</p>
 	</div>
 </section>

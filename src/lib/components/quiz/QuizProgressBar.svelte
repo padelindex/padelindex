@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+
 	let { current, total }: { current: number; total: number } = $props();
 	const percent = $derived(total > 0 ? Math.round((current / total) * 100) : 0);
 </script>
@@ -9,12 +11,12 @@
 	aria-valuenow={current}
 	aria-valuemin={0}
 	aria-valuemax={total}
-	aria-label="Frage {current} von {total}"
+	aria-label={m.quiz_progress_aria({ current, total })}
 >
 	<div class="track">
 		<div class="fill" style="width: {percent}%"></div>
 	</div>
-	<span class="label">Frage {current} / {total}</span>
+	<span class="label">{m.quiz_progress_label({ current, total })}</span>
 </div>
 
 <style>

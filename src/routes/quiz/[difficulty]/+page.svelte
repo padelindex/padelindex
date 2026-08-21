@@ -1,14 +1,19 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import QuizProgressBar from '$lib/components/quiz/QuizProgressBar.svelte';
 	import QuizQuestionCard from '$lib/components/quiz/QuizQuestionCard.svelte';
 	import QuizResultScreen from '$lib/components/quiz/QuizResultScreen.svelte';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
+	import { mainNav } from '$lib/landing/nav';
 	import { jsonLd } from '$lib/jsonld';
 	import { percentageFor, resultTierFor, shareText, type QuizOptionId } from '$lib/quiz';
-	import { QUIZ_RESULT_TIERS } from '$lib/quiz-data';
+	import { resultTiersFor } from '$lib/quiz-data';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -50,14 +55,16 @@
 	}
 
 	function changeDifficulty() {
-		goto('/quiz');
+		goto(localizeHref('/quiz'));
 	}
 
 	const percentage = $derived(percentageFor(correctCount, total));
-	const tier = $derived(resultTierFor(QUIZ_RESULT_TIERS, percentage));
-	const shareTextValue = $derived(shareText(data.difficulty, correctCount, total, percentage));
-
-	const canonical = $derived(`https://padelindex.de/quiz/${data.difficulty.slug}`);
+	const tier = $derived(resultTierFor(resultTiersFor(getLocale()), percentage));
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
+	const shareTextValue = $derived(
+		shareText(data.difficulty, correctCount, total, percentage, canonical, getLocale())
+	);
 
 	const breadcrumbSchema = $derived(
 		jsonLd({
@@ -65,7 +72,12 @@
 			'@type': 'BreadcrumbList',
 			itemListElement: [
 				{ '@type': 'ListItem', position: 1, name: 'PadelIndex', item: 'https://padelindex.de/' },
-				{ '@type': 'ListItem', position: 2, name: 'Quiz', item: 'https://padelindex.de/quiz' },
+				{
+					'@type': 'ListItem',
+					position: 2,
+					name: m.quiz_breadcrumb_name(),
+					item: 'https://padelindex.de/quiz'
+				},
 				{ '@type': 'ListItem', position: 3, name: data.difficulty.label, item: canonical }
 			]
 		})
@@ -76,10 +88,11 @@
 	<title>{data.difficulty.metaTitle} — PadelIndex</title>
 	<meta name="description" content={data.difficulty.metaDescription} />
 	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
+	<meta property="og:locale" content={ogLocale} />
 	<meta property="og:title" content={data.difficulty.metaTitle} />
 	<meta property="og:description" content={data.difficulty.metaDescription} />
 	<meta name="twitter:card" content="summary_large_image" />
@@ -87,13 +100,13 @@
 	{@html `<script type="application/ld+json">${breadcrumbSchema}</script>`}
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light">
 		<div class="wrap narrow">
 			{#if !finished}
-				<h1 class="sr-only">Padel Quiz — {data.difficulty.label}</h1>
+				<h1 class="sr-only">{m.quiz_h1_playing({ label: data.difficulty.label })}</h1>
 				<QuizProgressBar current={currentIndex + 1} {total} />
 				<QuizQuestionCard
 					question={currentQuestion}
@@ -105,7 +118,7 @@
 					onNext={next}
 				/>
 			{:else}
-				<h1 class="sr-only">Dein Quiz-Ergebnis — {data.difficulty.label}</h1>
+				<h1 class="sr-only">{m.quiz_h1_result({ label: data.difficulty.label })}</h1>
 				<QuizResultScreen
 					difficulty={data.difficulty}
 					{correctCount}

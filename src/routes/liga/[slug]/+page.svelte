@@ -11,12 +11,18 @@
 	// jede Box ihre eigene, in sich geschlossene Tabelle statt einer
 	// durchgehenden Rangliste über alle Boxen.
 
+	import { page } from '$app/state';
 	import { reveal } from '$lib/landing/reveal';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import SignupForm from '$lib/components/landing/SignupForm.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import type { PageData } from './$types';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { dateLocaleFor } from '$lib/i18n/date';
 
 	let { data }: { data: PageData } = $props();
 
@@ -29,87 +35,93 @@
 		return round.sets.map((s) => `${s.team1Games}:${s.team2Games}`).join(', ');
 	}
 
-	const dateFmt = new Intl.DateTimeFormat('de-DE', {
-		day: '2-digit',
-		month: '2-digit',
-		year: 'numeric'
-	});
+	function boxLabel(box: PageData['ladder'][number]): string {
+		return box.label ?? m.liga_box_label_fallback({ n: box.ladderPosition });
+	}
+
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
+
+	const dateFmt = $derived(
+		new Intl.DateTimeFormat(dateLocaleFor(getLocale()), {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric'
+		})
+	);
 	function fmtDate(iso: string | null): string {
 		return iso ? dateFmt.format(new Date(iso)) : '';
 	}
 </script>
 
 <svelte:head>
-	<title>{data.league.name} — Tabellen und Ergebnisse | PadelIndex</title>
-	<meta
-		name="description"
-		content="Boxen, Tabellen und Ergebnisse der {data.league
-			.name} auf PadelIndex. Jede Box wird für sich gewertet: Matchpunkte, Sätze, Spiele."
-	/>
-	<link rel="canonical" href="https://padelindex.de/liga/{data.league.slug}" />
+	<title>{m.liga_title({ name: data.league.name })}</title>
+	<meta name="description" content={m.liga_meta_description({ name: data.league.name })} />
+	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://padelindex.de/liga/{data.league.slug}" />
+	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
-	<meta property="og:title" content="{data.league.name} — Tabellen und Ergebnisse" />
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.liga_og_title({ name: data.league.name })} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light" id="top">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Liga</span>
+				<span class="eyebrow" use:reveal>{m.liga_eyebrow()}</span>
 				<h1 use:reveal={{ delay: 0.05 }}>{data.league.name}</h1>
 				{#if data.cycle}
 					<p class="muted" use:reveal={{ delay: 0.1 }}>
-						{data.cycle.name ?? `Zyklus ${data.cycle.ordinal}`} · {fmtDate(data.cycle.startDate)} bis
+						{data.cycle.name ?? m.liga_cycle_ordinal({ ordinal: data.cycle.ordinal })} · {fmtDate(
+							data.cycle.startDate
+						)}
+						{m.liga_date_range_to()}
 						{fmtDate(data.cycle.endDate)}
-						{#if data.cycle.status === 'running'}<span class="pill">läuft</span>{:else}<span
-								class="pill pill-done">abgeschlossen</span
-							>{/if}
+						{#if data.cycle.status === 'running'}<span class="pill">{m.liga_cycle_running()}</span
+							>{:else}<span class="pill pill-done">{m.liga_cycle_done()}</span>{/if}
 					</p>
 				{/if}
 				<p class="muted note" use:reveal={{ delay: 0.14 }}>
-					Jede Box wird für sich gewertet — Tabellen verschiedener Boxen sind nicht vergleichbar.
-					Sortiert nach Matchpunkten, dann Sätzen, dann Spielen. Das ist die Liga-Wertung und
-					<strong>nicht</strong> dasselbe wie dein <a href="/rating">PadelIndex-Level</a>;
-					Ergebnisse fließen dort zusätzlich ein.
+					{m.liga_note_pre()}
+					<strong>{m.liga_note_not()}</strong>
+					{m.liga_note_mid()}
+					<a href={localizeHref('/rating')}>{m.liga_note_link_label()}</a>{m.liga_note_post()}
 				</p>
 			</div>
 
 			{#if !data.cycle}
-				<p class="empty" use:reveal>Für diese Liga läuft gerade kein Zyklus.</p>
+				<p class="empty" use:reveal>{m.liga_no_cycle()}</p>
 			{:else if data.ladder.length === 0}
-				<p class="empty" use:reveal>In diesem Zyklus sind noch keine Boxen eingeteilt.</p>
+				<p class="empty" use:reveal>{m.liga_no_boxes()}</p>
 			{:else}
 				<div class="boxes">
 					{#each data.ladder as box (box.id)}
 						<article class="box" class:mine={box.id === data.myBoxId} use:reveal>
 							<header>
-								<h2>{box.label ?? `Box ${box.ladderPosition}`}</h2>
+								<h2>{boxLabel(box)}</h2>
 								<div class="box-meta">
 									{#if box.scheduledAt}<span class="num">{fmtDate(box.scheduledAt)}</span>{/if}
 									{#if box.court}<span>{box.court}</span>{/if}
-									{#if !box.complete}<span class="pill pill-open">offen</span>{/if}
+									{#if !box.complete}<span class="pill pill-open">{m.liga_box_open_pill()}</span
+										>{/if}
 								</div>
 							</header>
 
 							<table class="standings">
-								<caption class="sr-only"
-									>Tabelle {box.label ?? `Box ${box.ladderPosition}`}: Platz, Spieler, Matchpunkte,
-									Sätze, Spiele</caption
-								>
+								<caption class="sr-only">{m.liga_table_caption({ box: boxLabel(box) })}</caption>
 								<thead>
 									<tr>
 										<th scope="col" class="c-rank">#</th>
-										<th scope="col">Spieler</th>
-										<th scope="col" class="c-num">Pkt</th>
-										<th scope="col" class="c-num">Sätze</th>
-										<th scope="col" class="c-num">Spiele</th>
+										<th scope="col">{m.liga_th_player()}</th>
+										<th scope="col" class="c-num">{m.liga_th_points()}</th>
+										<th scope="col" class="c-num">{m.liga_th_sets()}</th>
+										<th scope="col" class="c-num">{m.liga_th_games()}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -123,12 +135,13 @@
 											<td class="c-rank num">{unplayed ? '–' : row.rank}</td>
 											<td>
 												{#if player?.handle}
-													<a href="/p/{player.handle}">{player.name}</a>
+													<a href={localizeHref(`/p/${player.handle}`)}>{player.name}</a>
 												{:else}
 													{player?.name ?? '—'}
 												{/if}
-												{#if player?.role === 'substitute'}<span class="sub" title="Ersatzspieler"
-														>E</span
+												{#if player?.role === 'substitute'}<span
+														class="sub"
+														title={m.liga_substitute_title()}>{m.liga_substitute_short()}</span
 													>{/if}
 											</td>
 											<td class="c-num num">{row.matchPoints}</td>
@@ -141,22 +154,24 @@
 
 							<details class="rounds">
 								<summary
-									>Runden ({box.rounds.filter((r) => r.matchId).length}/{box.rounds
-										.length})</summary
+									>{m.liga_rounds_summary({
+										done: box.rounds.filter((r) => r.matchId).length,
+										total: box.rounds.length
+									})}</summary
 								>
 								<ul>
 									{#each box.rounds as round (round.id)}
 										<li>
-											<span class="rnum num">R{round.roundNumber}</span>
+											<span class="rnum num">{m.liga_round_short({ n: round.roundNumber })}</span>
 											<span class="pairing">
 												{nameOf(box, round.team1[0])} / {nameOf(box, round.team1[1])}
-												<em>vs</em>
+												<em>{m.liga_pairing_vs()}</em>
 												{nameOf(box, round.team2[0])} / {nameOf(box, round.team2[1])}
 											</span>
 											<span class="score num">{setsLabel(round)}</span>
 											{#if round.matchId && !round.confirmed}
-												<span class="pill pill-open" title="Wartet auf Bestätigung des Gegnerteams"
-													>offen</span
+												<span class="pill pill-open" title={m.liga_round_open_title()}
+													>{m.liga_box_open_pill()}</span
 												>
 											{/if}
 										</li>
@@ -165,8 +180,11 @@
 							</details>
 
 							{#if box.id === data.myBoxId}
-								<a class="btn btn-primary report" href="/liga/{data.league.slug}/box/{box.id}">
-									Ergebnis melden
+								<a
+									class="btn btn-primary report"
+									href={localizeHref(`/liga/${data.league.slug}/box/${box.id}`)}
+								>
+									{m.liga_report_result()}
 								</a>
 							{/if}
 						</article>
@@ -176,17 +194,17 @@
 
 			<section class="joinbox" use:reveal>
 				{#if data.viewerLoggedIn}
-					<h2>Mitspielen</h2>
+					<h2>{m.liga_join_heading_loggedin()}</h2>
 					<p class="muted">
-						Du bist schon angemeldet. Beitritt, Austritt und dein Status stehen unter
-						<a href="/konto#liga">deinem Konto</a>.
+						{m.liga_join_loggedin_pre()}
+						<a href="/konto#liga">{m.liga_join_loggedin_link()}</a>{m.liga_join_loggedin_post()}
 					</p>
 				{:else}
-					<h2>Neu hier? Mitspielen.</h2>
+					<h2>{m.liga_join_heading_anon()}</h2>
 					<p class="muted">
-						Trag dich mit deiner E-Mail ein — {data.league.clubName ?? 'euer Verein'} meldet sich bei
-						dir, sobald ein Platz frei wird. Ein Box-Platz ist immer eine Zuteilung durch den Vereins-Admin,
-						kein automatischer Login.
+						{m.liga_join_text_anon({
+							clubName: data.league.clubName ?? m.liga_join_fallback_club()
+						})}
 					</p>
 					<SignupForm defaultClub={data.league.clubName ?? ''} />
 				{/if}

@@ -3,12 +3,16 @@
 	// (Rotation) und wird deshalb angezeigt statt zur Auswahl gestellt —
 	// der Server nimmt sie ohnehin aus der Rotation, nicht aus dem Formular.
 
+	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import { reveal } from '$lib/landing/reveal';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import type { ActionData, PageData } from './$types';
-	import { MAIN_NAV } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
+	import { m } from '$lib/paraglide/messages.js';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -19,16 +23,19 @@
 		return data.box.lineup.find((p) => p.seat === seat)?.name ?? '—';
 	}
 
-	const boxTitle = $derived(data.box.label ?? `Box ${data.box.ladderPosition}`);
+	const boxTitle = $derived(
+		data.box.label ?? m.liga_box_label_fallback({ n: data.box.ladderPosition })
+	);
 </script>
 
 <svelte:head>
-	<title>Ergebnis melden — {boxTitle} | {data.league.name}</title>
+	<title>{m.ligabox_title({ boxTitle, leagueName: data.league.name })}</title>
 	<meta name="robots" content="noindex, follow" />
+	<HreflangLinks path={page.url.pathname} />
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
 
-<LandingNav links={MAIN_NAV} />
+<LandingNav links={mainNav()} />
 
 <main>
 	<section class="sec sec-light" id="top">
@@ -36,8 +43,7 @@
 			<span class="eyebrow" use:reveal>{data.league.name}</span>
 			<h1 use:reveal={{ delay: 0.05 }}>{boxTitle}</h1>
 			<p class="muted intro" use:reveal={{ delay: 0.1 }}>
-				Trag das Ergebnis einer Runde ein. Wie überall auf PadelIndex zählt es erst, wenn das
-				Gegnerteam zustimmt — die anderen drei bekommen es danach zum Bestätigen angezeigt.
+				{m.ligabox_intro()}
 			</p>
 
 			{#if form?.message}
@@ -45,7 +51,7 @@
 			{/if}
 			{#if form?.success}
 				<p class="ok" role="status">
-					Ergebnis gespeichert. Es zählt für die Tabelle, sobald das Gegnerteam bestätigt hat.
+					{m.ligabox_saved()}
 				</p>
 			{/if}
 
@@ -54,17 +60,17 @@
 					{@const done = round.matchId !== null}
 					<li class="round" class:done>
 						<div class="round-head">
-							<span class="rnum num">Runde {round.roundNumber}</span>
+							<span class="rnum num">{m.ligabox_round_number({ n: round.roundNumber })}</span>
 							{#if done && round.confirmed}
-								<span class="pill">bestätigt</span>
+								<span class="pill">{m.ligabox_confirmed_pill()}</span>
 							{:else if done}
-								<span class="pill pill-open">wartet auf Bestätigung</span>
+								<span class="pill pill-open">{m.ligabox_waiting_pill()}</span>
 							{/if}
 						</div>
 
 						<p class="pairing">
 							<strong>{nameOf(round.team1[0])} / {nameOf(round.team1[1])}</strong>
-							<em>gegen</em>
+							<em>{m.ligabox_vs()}</em>
 							<strong>{nameOf(round.team2[0])} / {nameOf(round.team2[1])}</strong>
 						</p>
 
@@ -87,12 +93,16 @@
 							>
 								<input type="hidden" name="boxMatchId" value={round.id} />
 								<fieldset disabled={busy}>
-									<legend class="sr-only">Sätze für Runde {round.roundNumber}</legend>
+									<legend class="sr-only">{m.ligabox_sets_legend({ n: round.roundNumber })}</legend>
 									{#each [1, 2, 3] as n (n)}
 										<div class="setrow">
-											<span class="setlabel">Satz {n}</span>
+											<span class="setlabel">{m.ligabox_set_label({ n })}</span>
 											<label class="sr-only" for="s{round.id}-{n}-a">
-												Satz {n}, Spiele {nameOf(round.team1[0])} / {nameOf(round.team1[1])}
+												{m.ligabox_set_sr_label({
+													n,
+													team1: nameOf(round.team1[0]),
+													team2: nameOf(round.team1[1])
+												})}
 											</label>
 											<input
 												id="s{round.id}-{n}-a"
@@ -105,7 +115,11 @@
 											/>
 											<span aria-hidden="true">:</span>
 											<label class="sr-only" for="s{round.id}-{n}-b">
-												Satz {n}, Spiele {nameOf(round.team2[0])} / {nameOf(round.team2[1])}
+												{m.ligabox_set_sr_label({
+													n,
+													team1: nameOf(round.team2[0]),
+													team2: nameOf(round.team2[1])
+												})}
 											</label>
 											<input
 												id="s{round.id}-{n}-b"
@@ -120,14 +134,14 @@
 									{/each}
 									<div class="actions">
 										<button class="btn btn-primary" type="submit">
-											{busy ? 'Wird gespeichert …' : 'Ergebnis speichern'}
+											{busy ? m.ligabox_saving() : m.ligabox_save_result()}
 										</button>
 										<button
 											class="btn btn-ghost-light"
 											type="button"
 											onclick={() => (openRound = null)}
 										>
-											Abbrechen
+											{m.ligabox_cancel()}
 										</button>
 									</div>
 								</fieldset>
@@ -138,7 +152,7 @@
 								type="button"
 								onclick={() => (openRound = round.id)}
 							>
-								Ergebnis eintragen
+								{m.ligabox_enter_result()}
 							</button>
 						{/if}
 					</li>
@@ -146,7 +160,7 @@
 			</ol>
 
 			<p class="back">
-				<a href="/liga/{data.league.slug}">← Zurück zur Ligaübersicht</a>
+				<a href={localizeHref(`/liga/${data.league.slug}`)}>{m.liga_back_link()}</a>
 			</p>
 		</div>
 	</section>

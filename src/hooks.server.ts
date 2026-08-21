@@ -2,7 +2,11 @@
 // PadelIndex — Session pro Request
 // ============================================================
 //
-// Zwei Hooks nacheinander:
+// Drei Hooks nacheinander:
+//   0. paraglideHandle — bestimmt die Sprache aus der URL (/en/…, /es/…,
+//      sonst Deutsch), siehe src/hooks.ts für den zugehörigen reroute()-
+//      Hook. Läuft bewusst ZUERST, damit event.locals.locale schon steht,
+//      bevor irgendeine Ladefunktion läuft.
 //   1. attachSupabase — baut den cookie-gebundenen Supabase-Client.
 //      @supabase/ssr übernimmt dabei das Lesen/Schreiben der Auth-Cookies
 //      (Set-Cookie beim Login/Logout, Refresh bei abgelaufenem Token).
@@ -18,6 +22,18 @@ import { sequence } from '@sveltejs/kit/hooks';
 import type { Handle } from '@sveltejs/kit';
 import { readAppEnv } from '$lib/server/env';
 import { loadSessionPlayer } from '$lib/server/session';
+import { paraglideMiddleware } from '$lib/paraglide/server';
+import { getTextDirection } from '$lib/paraglide/runtime';
+
+const paraglideHandle: Handle = ({ event, resolve }) =>
+	paraglideMiddleware(event.request, ({ request, locale }) => {
+		event.request = request;
+		event.locals.locale = locale;
+		return resolve(event, {
+			transformPageChunk: ({ html }) =>
+				html.replace('%lang%', locale).replace('%dir%', getTextDirection(locale))
+		});
+	});
 
 const attachSupabase: Handle = async ({ event, resolve }) => {
 	const env = readAppEnv(event.platform);
@@ -71,4 +87,4 @@ const attachSession: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle: Handle = sequence(attachSupabase, attachSession);
+export const handle: Handle = sequence(paraglideHandle, attachSupabase, attachSession);

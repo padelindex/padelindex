@@ -5,6 +5,9 @@
 // unabhängig vom Svelte-Component testbar ist (gleiches Muster wie
 // roulette-wheel.ts).
 
+import { m } from './paraglide/messages.js';
+import type { Locale } from './paraglide/runtime';
+
 export type QuizDifficultySlug = 'anfaenger' | 'fortgeschritten' | 'experte';
 
 export type QuizOptionId = 'A' | 'B' | 'C' | 'D';
@@ -56,7 +59,12 @@ export function shareText(
 	difficulty: QuizDifficulty,
 	scoreCorrect: number,
 	total: number,
-	percentage: number
+	percentage: number,
+	url: string,
+	locale: Locale
 ): string {
-	return `Ich habe beim PadelIndex-Quiz (${difficulty.label}) ${scoreCorrect} von ${total} Fragen richtig beantwortet (${percentage} %). Teste dein Padel-Wissen: https://padelindex.de/quiz/${difficulty.slug}`;
+	return m.quiz_share_text(
+		{ difficultyLabel: difficulty.label, scoreCorrect, total, percentage, url },
+		{ locale }
+	);
 }

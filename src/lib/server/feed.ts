@@ -5,7 +5,7 @@
 // feed.ts fürs FeedItem-Format): Ergebnisse und Spieler-Spotlight
 // brauchen echte DB-Zugriffe, der Rest ist entweder eine öffentliche
 // View/Tabelle oder komplett statisch (Feature-Hinweise, Club-Aufruf,
-// Ratgeber-Rotation aus guides-data.ts).
+// Ratgeber-Rotation über guidesFor(locale)).
 //
 // Jeder Loader fängt seine eigenen Fehler ab und gibt im Zweifel []
 // zurück (gleiches Muster wie resolveDataOrigin() in leaderboard.ts):
@@ -18,9 +18,11 @@
 
 import { supabaseAdmin, supabaseAnon } from './supabase';
 import { formatPlayerName } from '$lib/claim-match';
-import { GUIDES } from '$lib/guides-data';
+import { guidesFor } from '$lib/guides';
 import { MIN_MATCHES_FOR_INDEXING } from '$lib/seo';
 import { capFeed, hashString, pseudoRecentDate, type FeedItem } from '$lib/feed';
+import { m } from '$lib/paraglide/messages.js';
+import type { Locale } from '$lib/paraglide/runtime';
 
 const RESULT_LIMIT = 5;
 const SPOTLIGHT_LIMIT = 3;
@@ -47,7 +49,7 @@ type MatchRow = {
 	match_sets: MatchSetRow[];
 };
 
-function resultItemFor(match: MatchRow): FeedItem | null {
+function resultItemFor(match: MatchRow, locale: Locale): FeedItem | null {
 	const participants = match.match_participants ?? [];
 	if (participants.length !== 4) return null;
 	if (!match.clubs) return null;
@@ -82,15 +84,18 @@ function resultItemFor(match: MatchRow): FeedItem | null {
 
 	return {
 		id: `ergebnis-${match.id}`,
-		title: `${winners.join(' & ')} gewinnen ${score} gegen ${losers.join(' & ')}`,
+		title: m.feed_result_title(
+			{ winners: winners.join(' & '), score, losers: losers.join(' & ') },
+			{ locale }
+		),
 		link: `/c/${match.clubs.slug}`,
 		category: 'ERGEBNIS',
 		pubDate: match.played_at,
-		description: `Bestätigtes Match beim ${match.clubs.name}.`
+		description: m.feed_result_desc({ club: match.clubs.name }, { locale })
 	};
 }
 
-async function loadRecentResults(platform?: App.Platform): Promise<FeedItem[]> {
+async function loadRecentResults(locale: Locale, platform?: App.Platform): Promise<FeedItem[]> {
 	try {
 		const admin = supabaseAdmin(platform);
 		const { data, error } = await admin
@@ -107,7 +112,7 @@ async function loadRecentResults(platform?: App.Platform): Promise<FeedItem[]> {
 		const items: FeedItem[] = [];
 		for (const match of data as unknown as MatchRow[]) {
 			if (items.length >= RESULT_LIMIT) break;
-			const item = resultItemFor(match);
+			const item = resultItemFor(match, locale);
 			if (item) items.push(item);
 		}
 		return items;
@@ -143,7 +148,7 @@ function pickRandom<T>(pool: T[], count: number): T[] {
  * aussagekräftig genug hält, um es indexieren zu lassen — konsistent,
  * statt fürs Spotlight eine eigene, willkürliche Grenze zu erfinden.
  */
-async function loadPlayerSpotlights(platform?: App.Platform): Promise<FeedItem[]> {
+async function loadPlayerSpotlights(locale: Locale, platform?: App.Platform): Promise<FeedItem[]> {
 	try {
 		const sb = supabaseAnon(platform);
 		if (!sb) return [];
@@ -163,14 +168,17 @@ async function loadPlayerSpotlights(platform?: App.Platform): Promise<FeedItem[]
 		const pool = data as unknown as PlayerSpotlightRow[];
 		return pickRandom(pool, SPOTLIGHT_LIMIT).map((p) => {
 			const name = formatPlayerName(p.display_name, p.claim_status, p.show_full_name);
-			const place = p.city ? ` in ${p.city}` : '';
+			const rating = Number(p.rating).toFixed(1);
+			const title = p.city
+				? m.feed_player_title_city({ name, rating, city: p.city }, { locale })
+				: m.feed_player_title_plain({ name, rating }, { locale });
 			return {
 				id: `spieler-${p.handle}`,
-				title: `Spieler-Profil: ${name} – Level ${Number(p.rating).toFixed(1)}${place}`,
+				title,
 				link: `/p/${p.handle}`,
 				category: 'SPIELER',
 				pubDate: p.last_match_at ?? new Date().toISOString(),
-				description: `${name} hat bereits ${p.matches_played} bestätigte Matches auf PadelIndex gespielt.`
+				description: m.feed_player_desc({ name, count: p.matches_played }, { locale })
 			};
 		});
 	} catch {
@@ -180,7 +188,7 @@ async function loadPlayerSpotlights(platform?: App.Platform): Promise<FeedItem[]
 
 type ClubRow = { name: string; slug: string; created_at: string };
 
-async function loadNewClubs(platform?: App.Platform): Promise<FeedItem[]> {
+async function loadNewClubs(locale: Locale, platform?: App.Platform): Promise<FeedItem[]> {
 	try {
 		const sb = supabaseAnon(platform);
 		if (!sb) return [];
@@ -195,11 +203,11 @@ async function loadNewClubs(platform?: App.Platform): Promise<FeedItem[]> {
 
 		return (data as unknown as ClubRow[]).map((c) => ({
 			id: `verein-${c.slug}`,
-			title: `Neu dabei: ${c.name}!`,
+			title: m.feed_new_club_title({ name: c.name }, { locale }),
 			link: `/c/${c.slug}`,
 			category: 'NEUER_VEREIN',
 			pubDate: c.created_at,
-			description: `${c.name} ist jetzt mit PadelIndex-Rating auf der Plattform vertreten.`
+			description: m.feed_new_club_desc({ name: c.name }, { locale })
 		}));
 	} catch {
 		return [];
@@ -212,30 +220,31 @@ async function loadNewClubs(platform?: App.Platform): Promise<FeedItem[]> {
  * dessen Zutun als Zielscheibe nennen. Ein Aufruf ohne Namen ist ebenso
  * wirksam und sauber.
  */
-function clubCallToAction(): FeedItem[] {
+function clubCallToAction(locale: Locale): FeedItem[] {
 	return [
 		{
 			id: 'cta-vereine',
-			title: 'Dein Verein ist noch nicht dabei? Jetzt kostenlos eintragen.',
+			title: m.feed_cta_club_title({}, { locale }),
 			link: '/vereine',
 			category: 'CLUB_CTA',
 			pubDate: pseudoRecentDate('cta-vereine', 60),
-			description: 'PadelIndex läuft direkt auf eurer Vereinsseite — eine Zeile Code genügt.'
+			description: m.feed_cta_club_desc({}, { locale })
 		}
 	];
 }
 
-/** Rotiert deterministisch pro Kalendertag durch guides-data.ts, ohne Wiederholungen innerhalb einer Auswahl. */
-function guideHighlights(): FeedItem[] {
-	if (GUIDES.length === 0) return [];
+/** Rotiert deterministisch pro Kalendertag durch die Guide-Slugs, ohne Wiederholungen innerhalb einer Auswahl. */
+function guideHighlights(locale: Locale): FeedItem[] {
+	const guides = guidesFor(locale);
+	if (guides.length === 0) return [];
 
 	const day = new Date().toISOString().slice(0, 10);
-	const offset = hashString(day) % GUIDES.length;
-	const count = Math.min(GUIDE_HIGHLIGHT_LIMIT, GUIDES.length);
+	const offset = hashString(day) % guides.length;
+	const count = Math.min(GUIDE_HIGHLIGHT_LIMIT, guides.length);
 
-	return Array.from({ length: count }, (_, i) => GUIDES[(offset + i) % GUIDES.length]).map((g) => ({
+	return Array.from({ length: count }, (_, i) => guides[(offset + i) % guides.length]).map((g) => ({
 		id: `ratgeber-${g.slug}`,
-		title: `Ratgeber: ${g.title}`,
+		title: m.feed_guide_title({ title: g.title }, { locale }),
 		link: `/ratgeber/${g.slug}`,
 		category: 'RATGEBER',
 		pubDate: pseudoRecentDate(g.slug, 72),
@@ -249,62 +258,67 @@ function guideHighlights(): FeedItem[] {
  * Liga-Teaser auf der Startseite: ein konkretes Beispiel, keine Behauptung
  * flächendeckender Verfügbarkeit.
  */
-const FEATURE_ANNOUNCEMENTS: Omit<FeedItem, 'pubDate'>[] = [
-	{
-		id: 'feature-roulette',
-		title: 'Neu: Probier das Padel Roulette aus!',
-		link: '/c/stc-oberland/roulette',
-		category: 'FEATURE',
-		description: 'Zufällige Doppelpartner für offene Vereinstermine — direkt online zusagen.'
-	},
-	{
-		id: 'feature-quiz',
-		title: 'Neu: Teste dein Padel-Wissen im Quiz',
-		link: '/quiz',
-		category: 'FEATURE',
-		description: 'Drei Schwierigkeitsgrade, mit Erklärung zu jeder Antwort.'
-	},
-	{
-		id: 'feature-ratgeber',
-		title: 'Neu: Der PadelIndex-Ratgeber ist da',
-		link: '/ratgeber',
-		category: 'FEATURE',
-		description: 'Regeln, Ausrüstung, Technik und Taktik verständlich erklärt.'
-	},
-	{
-		id: 'feature-rating',
-		title: 'Rating-Simulator: Sieh, wie ein Match dein Level verändert',
-		link: '/rating',
-		category: 'FEATURE',
-		description: 'Derselbe Code wie im echten Betrieb — zum Selberausprobieren.'
-	},
-	{
-		id: 'feature-karte',
-		title: 'Karte: Finde Padel-Anlagen in deiner Nähe',
-		link: '/karte',
-		category: 'FEATURE',
-		description: 'Anlagen-Verzeichnis mit Filter nach PadelIndex-Partnern.'
-	}
-];
-
-function featureAnnouncements(): FeedItem[] {
-	return FEATURE_ANNOUNCEMENTS.map((item) => ({ ...item, pubDate: pseudoRecentDate(item.id, 96) }));
+function featureAnnouncements(locale: Locale): FeedItem[] {
+	const announcements: Omit<FeedItem, 'pubDate'>[] = [
+		{
+			id: 'feature-roulette',
+			title: m.feed_feature_roulette_title({}, { locale }),
+			link: '/c/stc-oberland/roulette',
+			category: 'FEATURE',
+			description: m.feed_feature_roulette_desc({}, { locale })
+		},
+		{
+			id: 'feature-quiz',
+			title: m.feed_feature_quiz_title({}, { locale }),
+			link: '/quiz',
+			category: 'FEATURE',
+			description: m.feed_feature_quiz_desc({}, { locale })
+		},
+		{
+			id: 'feature-ratgeber',
+			title: m.feed_feature_ratgeber_title({}, { locale }),
+			link: '/ratgeber',
+			category: 'FEATURE',
+			description: m.feed_feature_ratgeber_desc({}, { locale })
+		},
+		{
+			id: 'feature-rating',
+			title: m.feed_feature_rating_title({}, { locale }),
+			link: '/rating',
+			category: 'FEATURE',
+			description: m.feed_feature_rating_desc({}, { locale })
+		},
+		{
+			id: 'feature-karte',
+			title: m.feed_feature_karte_title({}, { locale }),
+			link: '/karte',
+			category: 'FEATURE',
+			description: m.feed_feature_karte_desc({}, { locale })
+		}
+	];
+	return announcements.map((item) => ({ ...item, pubDate: pseudoRecentDate(item.id, 96) }));
 }
 
-/** Zentrale Einstiegsstelle für feed.xml und api/ticker — beide bündeln dieselben sechs Quellen. */
-export async function buildFeed(platform?: App.Platform): Promise<FeedItem[]> {
+/** Zentrale Einstiegsstelle für feed.xml und api/ticker — beide bündeln dieselben sechs Quellen.
+ *  locale bleibt optional und fällt auf 'de' zurück: feed.xml (RSS) ist bewusst nicht Teil des
+ *  i18n-Scope und ruft buildFeed() ohne Argument auf, api/ticker (Header-Ticker) übergibt die
+ *  aktuelle Sprache des Betrachters. */
+export async function buildFeed(
+	platform?: App.Platform,
+	locale: Locale = 'de'
+): Promise<FeedItem[]> {
 	const [results, spotlights, newClubs] = await Promise.all([
-		loadRecentResults(platform),
-		loadPlayerSpotlights(platform),
-		loadNewClubs(platform)
+		loadRecentResults(locale, platform),
+		loadPlayerSpotlights(locale, platform),
+		loadNewClubs(locale, platform)
 	]);
 
 	return capFeed([
 		...results,
 		...spotlights,
 		...newClubs,
-		...clubCallToAction(),
-		...guideHighlights(),
-		...featureAnnouncements()
+		...clubCallToAction(locale),
+		...guideHighlights(locale),
+		...featureAnnouncements(locale)
 	]);
 }
