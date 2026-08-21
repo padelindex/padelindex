@@ -13,6 +13,7 @@
 
 	import { whenVisible } from '$lib/landing/reveal';
 	import AnimatedNumber from './AnimatedNumber.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	type Mod = typeof import('$lib/landing/rating-demo');
 	let mod = $state<Mod | null>(null);
@@ -39,8 +40,8 @@
 	];
 
 	const SCENARIOS = [
-		{ key: 'weak', partner: 3.2, label: 'Schwächerer Partner' },
-		{ key: 'strong', partner: 5.6, label: 'Stärkerer Partner' }
+		{ key: 'weak', partner: 3.2, label: m.pp_scenario_weak() },
+		{ key: 'strong', partner: 5.6, label: m.pp_scenario_strong() }
 	];
 
 	function outcome(partnerRating: number) {
@@ -62,22 +63,24 @@
 <div class="pp" use:whenVisible={{ onVisible: loadModel, threshold: 0.15 }}>
 	<div class="pp-head">
 		<p class="pp-q">
-			„Mein Partner hatte einen schlechten Tag. Warum sinkt <em>mein</em> Level?"
+			{m.pp_q_pre()} <em>{m.pp_q_em()}</em>
+			{m.pp_q_post()}
 		</p>
-		<div class="pp-toggle" role="group" aria-label="Ergebnis wählen">
+		<div class="pp-toggle" role="group" aria-label={m.pp_toggle_aria()}>
 			<button type="button" class:on={won} onclick={() => (won = true)} aria-pressed={won}>
-				Gewonnen
+				{m.pp_won()}
 			</button>
 			<button type="button" class:on={!won} onclick={() => (won = false)} aria-pressed={!won}>
-				Verloren
+				{m.pp_lost()}
 			</button>
 		</div>
 	</div>
 
 	<p class="pp-setup">
-		Du stehst bei <b class="num">4.80</b>, die Gegner bei
-		<b class="num">4.50</b> und <b class="num">4.60</b>. Gleiches Ergebnis
-		<b class="num">{won ? '6:4 6:3' : '4:6 3:6'}</b>, nur der Partner ist ein anderer.
+		{m.pp_setup_p1()} <b class="num">4.80</b>{m.pp_setup_p2()}
+		<b class="num">4.50</b>
+		{m.pp_setup_and()} <b class="num">4.60</b>{m.pp_setup_p3()}
+		<b class="num">{won ? '6:4 6:3' : '4:6 3:6'}</b>{m.pp_setup_p4()}
 	</p>
 
 	<div class="pp-grid">
@@ -90,19 +93,19 @@
 
 				<div class="pp-pair">
 					<div class="pp-pl pp-you">
-						<span class="pp-nm">Du</span>
+						<span class="pp-nm">{m.pp_you_label()}</span>
 						<span class="pp-rt num">4.80</span>
 					</div>
 					<span class="pp-plus" aria-hidden="true">+</span>
 					<div class="pp-pl">
-						<span class="pp-nm">Partner</span>
+						<span class="pp-nm">{m.pp_partner_label()}</span>
 						<span class="pp-rt num">{s.partner.toFixed(2)}</span>
 					</div>
 				</div>
 
 				{#if s.out}
 					<div class="pp-prob">
-						<span>Siegchance vorher</span>
+						<span>{m.pp_win_prob_label()}</span>
 						<span class="num">{Math.round(s.out.factors.expectedWinProb * 100)}%</span>
 					</div>
 					<div class="pp-probbar" aria-hidden="true">
@@ -110,7 +113,7 @@
 					</div>
 
 					<div class="pp-out">
-						<span class="pp-olabel">Dein Wert danach</span>
+						<span class="pp-olabel">{m.pp_outcome_label()}</span>
 						<span class="pp-delta num" class:up={s.out.delta > 0} class:down={s.out.delta < 0}>
 							<AnimatedNumber value={s.out.delta} decimals={2} signed duration={650} />
 						</span>
@@ -124,11 +127,9 @@
 
 	<p class="pp-verdict">
 		{#if won}
-			Mit dem schwächeren Partner wart ihr Außenseiter — der Sieg sagt mehr über dich aus und zählt
-			entsprechend mehr.
+			{m.pp_verdict_won()}
 		{:else}
-			Genau hier liegt der Unterschied: Die Niederlage mit dem schwächeren Partner kostet dich nur
-			etwa halb so viel. Das Modell weiß, dass ihr nicht favorisiert wart.
+			{m.pp_verdict_lost()}
 		{/if}
 	</p>
 </div>

@@ -80,7 +80,11 @@
 							unit: data.venues.length === 1 ? m.karte_count_singular() : m.karte_count_plural(),
 							partnerCount: data.partnerCount
 						})}
-						<a href="mailto:kontakt@padelindex.de?subject=Anlage%20fehlt%20auf%20der%20Karte">
+						<a
+							href="mailto:kontakt@padelindex.de?subject={encodeURIComponent(
+								m.karte_missing_venue_subject()
+							)}"
+						>
 							{m.karte_intro_link()}
 						</a>.
 					{/if}
@@ -186,7 +190,7 @@
 										<a
 											class="linkish"
 											href="mailto:kontakt@padelindex.de?subject={encodeURIComponent(
-												`PadelIndex für ${v.name}`
+												m.venuemap_email_subject({ name: v.name })
 											)}"
 										>
 											kontakt@padelindex.de
