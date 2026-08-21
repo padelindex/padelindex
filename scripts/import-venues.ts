@@ -225,6 +225,23 @@ function isNonVenueName(name: string): boolean {
 	// Beginnt mit einer Platzbezeichnung ("Padelplätze (2x fest, 1x Sand)").
 	if (/^(court|platz|padel-?court|padel court|padelplatz|padelplätze)\b/.test(n)) return true;
 
+	// Veranstaltung statt Anlage. In OSM stehen gelegentlich temporäre
+	// Events auf Padelplätzen ("Padel Days 2026 im MAC Forum") — ein
+	// Verzeichnis von Clubs sollte die nicht führen, und die CTA
+	// "Betreibst du diesen Club?" ergibt dort keinen Sinn. Jahreszahl im
+	// Namen ist dafür das verlässlichste Signal; ein Club heißt selten so.
+	if (/\b20\d{2}\b/.test(n)) return true;
+
+	// Durchnummerierter Platz ohne das Wort "Court"/"Platz" im Namen
+	// ("Outdoor Spree 1", "Outdoor Spree 2"). Eine angehängte kleine Zahl
+	// ist in OSM fast immer eine Platznummer.
+	//
+	// Bewusst in Kauf genommen: eine Anlage, die wirklich so heißt (etwa
+	// eine zweite Filiale "… 2"), fällt damit ebenfalls raus. Lieber ein
+	// Standort weniger als ein Platz, der sich als Club ausgibt — und die
+	// Rohdaten sind ja nicht verloren.
+	if (/\s\d{1,2}$/.test(n)) return true;
+
 	return false;
 }
 
@@ -278,7 +295,16 @@ function clusterToVenues(things: OsmThing[]): { venues: VenueInput[]; unnamed: n
 			cluster.find((t) => isVenueObject(t) && t.tags.name && !isNonVenueName(t.tags.name)) ??
 			cluster.find((t) => t.tags.name && !isNonVenueName(t.tags.name));
 		const name = nameFrom?.tags.name?.trim() ?? null;
-		if (!name) unnamed++;
+
+		// Ohne Namen wird nicht importiert (Entscheidung 21.08.): ein Pin
+		// "Padelanlage (Name unbekannt)" ohne Adresse und Website ist für
+		// die Akquise wertlos und lässt das Verzeichnis unfertig wirken.
+		// Die Rohdaten bleiben ja erhalten — sobald OSM einen Namen hat,
+		// holt der nächste Import die Anlage nach.
+		if (!name) {
+			unnamed++;
+			continue;
+		}
 
 		// Übrige Felder aus dem ganzen Cluster einsammeln — die Adresse
 		// hängt oft am Gebäude, die Website am Platz.
@@ -304,7 +330,7 @@ function clusterToVenues(things: OsmThing[]): { venues: VenueInput[]; unnamed: n
 		const anchor = nameFrom ?? cluster.find((t) => isVenueObject(t)) ?? cluster[0];
 
 		venues.push({
-			name: name ?? 'Padelanlage (Name unbekannt)',
+			name,
 			city: pick((t) => t.tags['addr:city']),
 			postal_code: pick((t) => t.tags['addr:postcode']),
 			address:
@@ -444,7 +470,7 @@ if (clusterReport) {
 	);
 	if (clusterReport.unnamed > 0) {
 		console.log(
-			`Davon ${clusterReport.unnamed} ohne Namen in OSM — als "Padelanlage (Name unbekannt)" eingetragen.`
+			`${clusterReport.unnamed} weitere Standorte übersprungen: in OSM ohne Namen (siehe clusterToVenues).`
 		);
 	}
 }
