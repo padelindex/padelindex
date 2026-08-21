@@ -6,33 +6,36 @@
 	// Startseite. Inhalt hierher VERSCHOBEN, nicht kopiert — auf "/"
 	// steht dafür nur ein kurzer Teaser mit Link hierher.
 
+	import { page } from '$app/state';
 	import { reveal } from '$lib/landing/reveal';
 	import ClubShowcase from '$lib/components/landing/ClubShowcase.svelte';
 	import ClubDemoForm from '$lib/components/landing/ClubDemoForm.svelte';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import type { PageData } from './$types';
 	import { mainNav } from '$lib/landing/nav';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 
 	let { data }: { data: PageData } = $props();
+
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
 </script>
 
 <svelte:head>
-	<title>PadelIndex für Vereine — Ranking auf eurer Website</title>
-	<meta
-		name="description"
-		content="Das Level-Ranking eures Padel-Vereins auf eurer eigenen Website, in euren Farben, ohne Plugin-Chaos. Spieler tragen Ergebnisse selbst ein, das Gegnerteam bestätigt. Kostenloser Einstieg, Demo jederzeit anfragbar."
-	/>
-	<link rel="canonical" href="https://padelindex.de/vereine" />
+	<title>{m.vereine_meta_title()}</title>
+	<meta name="description" content={m.vereine_meta_description()} />
+	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://padelindex.de/vereine" />
+	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
-	<meta property="og:title" content="PadelIndex für Vereine" />
-	<meta
-		property="og:description"
-		content="Level-Ranking eures Vereins auf eurer eigenen Website — in euren Farben, ohne Datenpflege."
-	/>
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.vereine_og_title()} />
+	<meta property="og:description" content={m.vereine_og_description()} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
@@ -44,12 +47,10 @@
 	<section class="sec sec-light" id="top">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Für Vereine</span>
-				<h1 use:reveal={{ delay: 0.05 }}>Die Rangliste läuft auf eurer Seite.</h1>
+				<span class="eyebrow" use:reveal>{m.home_vereine_eyebrow()}</span>
+				<h1 use:reveal={{ delay: 0.05 }}>{m.home_vereine_h2()}</h1>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
-					Eine Zeile Code, und das Ranking eures Vereins steht auf eurer Website — in euren Farben,
-					ohne Plugin-Chaos, ohne dass ihr Daten pflegen müsst. Die Spieler tragen die Ergebnisse
-					selbst ein, das Gegnerteam bestätigt.
+					{m.vereine_intro_p()}
 				</p>
 			</div>
 
@@ -59,52 +60,52 @@
 
 			{#if data.trialOfferEnabled}
 				<p class="trial-banner" use:reveal>
-					Gründungsvereine spielen die ersten 12 Monate kostenlos — unabhängig vom Paket.
+					{m.vereine_trial_banner()}
 				</p>
 			{/if}
 
 			<div class="tiers">
 				<div class="tier" use:reveal>
-					<span class="lvl">Kostenlos</span>
-					<h2>Einstieg</h2>
+					<span class="lvl">{m.vereine_tier_free_badge()}</span>
+					<h2>{m.vereine_tier_free_h2()}</h2>
 					<ul>
-						<li>Top 10 des Vereins</li>
-						<li>Spielerprofile öffentlich</li>
-						<li>Hinweis auf PadelIndex</li>
+						<li>{m.vereine_tier_free_li1()}</li>
+						<li>{m.vereine_tier_free_li2()}</li>
+						<li>{m.vereine_tier_free_li3()}</li>
 					</ul>
 				</div>
 				<div class="tier hl" use:reveal={{ delay: 0.06 }}>
-					<span class="lvl">Basic</span>
-					<h2>Vereinsranking</h2>
+					<span class="lvl">{m.vereine_tier_basic_badge()}</span>
+					<h2>{m.vereine_tier_basic_h2()}</h2>
 					<ul>
-						<li>Vollständige Tabelle</li>
-						<li>Filter nach Level, Geschlecht, Zeitraum</li>
-						<li>Clubfarben und Logo</li>
-						<li>Liga-Ergebnisse importieren</li>
+						<li>{m.vereine_tier_basic_li1()}</li>
+						<li>{m.vereine_tier_basic_li2()}</li>
+						<li>{m.vereine_tier_basic_li3()}</li>
+						<li>{m.vereine_tier_basic_li4()}</li>
 					</ul>
 				</div>
 				<div class="tier" use:reveal={{ delay: 0.12 }}>
-					<span class="lvl">Pro</span>
-					<h2>Volle Integration</h2>
+					<span class="lvl">{m.vereine_tier_pro_badge()}</span>
+					<h2>{m.vereine_tier_pro_h2()}</h2>
 					<ul>
-						<li>Matchfinder nach Level</li>
-						<li>Prämienkatalog für Tokens</li>
-						<li>Eigene Subdomain</li>
-						<li>Hinweis abschaltbar</li>
+						<li>{m.vereine_tier_pro_li1()}</li>
+						<li>{m.vereine_tier_pro_li2()}</li>
+						<li>{m.vereine_tier_pro_li3()}</li>
+						<li>{m.vereine_tier_pro_li4()}</li>
 					</ul>
 				</div>
 			</div>
 
 			<!-- id="demo": Sprungziel für "Interesse anmelden" von /karte. -->
 			<div class="demo-block" id="demo" use:reveal>
-				<h2>Lust, es auszuprobieren?</h2>
-				<p class="muted">Kurz Verein und Kontakt hinterlassen, wir zeigen es euch.</p>
+				<h2>{m.vereine_demo_h2()}</h2>
+				<p class="muted">{m.vereine_demo_p()}</p>
 				<ClubDemoForm />
 			</div>
 
 			<p class="claim-cta">
-				Du spielst als Spieler:in und noch nicht bei PadelIndex?
-				<a href="/#anmelden">Platz auf der Warteliste sichern</a>
+				{m.vereine_claim_cta_pre()}
+				<a href={localizeHref('/#anmelden')}>{m.vereine_claim_cta_link()}</a>
 			</p>
 		</div>
 	</section>

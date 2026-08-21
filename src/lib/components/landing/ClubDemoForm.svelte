@@ -4,6 +4,8 @@
 	// Spieler-Warteliste (SignupForm.svelte) — deshalb eigenes Formular,
 	// eigener Endpunkt, eigene Erfolgsmeldung.
 
+	import { m } from '$lib/paraglide/messages.js';
+
 	let clubName = $state('');
 	let contactName = $state('');
 	let email = $state('');
@@ -19,12 +21,12 @@
 
 		if (!clubName.trim() || !contactName.trim()) {
 			status = 'error';
-			feedback = 'Bitte Vereinsnamen und Ansprechperson angeben.';
+			feedback = m.demo_error_missing();
 			return;
 		}
 		if (!VALID.test(email.trim())) {
 			status = 'error';
-			feedback = 'Bitte eine gültige E-Mail-Adresse eingeben.';
+			feedback = m.demo_error_email();
 			return;
 		}
 
@@ -47,19 +49,19 @@
 
 			if (!res.ok) {
 				status = 'error';
-				feedback = data.message || 'Konnte nicht gesendet werden. Bitte später erneut versuchen.';
+				feedback = data.message || m.demo_error_generic();
 				return;
 			}
 
 			status = 'ok';
-			feedback = 'Angekommen — wir melden uns bei euch.';
+			feedback = m.demo_success();
 			clubName = '';
 			contactName = '';
 			email = '';
 			message = '';
 		} catch {
 			status = 'error';
-			feedback = 'Netzwerkfehler. Bitte später erneut versuchen.';
+			feedback = m.demo_error_network();
 		} finally {
 			busy = false;
 		}
@@ -67,39 +69,39 @@
 </script>
 
 <form class="demo" onsubmit={submit} novalidate>
-	<label for="demo-club">Vereinsname</label>
+	<label for="demo-club">{m.demo_label_club()}</label>
 	<input
 		id="demo-club"
 		name="clubName"
 		type="text"
 		autocomplete="organization"
-		placeholder="z. B. TC Wolfratshausen"
+		placeholder={m.demo_placeholder_club()}
 		maxlength="120"
 		bind:value={clubName}
 		disabled={status === 'ok'}
 		required
 	/>
 
-	<label for="demo-contact">Ansprechperson</label>
+	<label for="demo-contact">{m.demo_label_contact()}</label>
 	<input
 		id="demo-contact"
 		name="contactName"
 		type="text"
 		autocomplete="name"
-		placeholder="Dein Name"
+		placeholder={m.demo_placeholder_contact()}
 		maxlength="120"
 		bind:value={contactName}
 		disabled={status === 'ok'}
 		required
 	/>
 
-	<label for="demo-email">E-Mail-Adresse</label>
+	<label for="demo-email">{m.demo_label_email()}</label>
 	<input
 		id="demo-email"
 		name="email"
 		type="email"
 		autocomplete="email"
-		placeholder="du@verein.de"
+		placeholder={m.demo_placeholder_email()}
 		bind:value={email}
 		disabled={status === 'ok'}
 		aria-invalid={status === 'error'}
@@ -107,19 +109,18 @@
 		required
 	/>
 
-	<label for="demo-message">Nachricht (optional)</label>
+	<label for="demo-message">{m.demo_label_message()}</label>
 	<textarea
 		id="demo-message"
 		name="message"
 		rows="3"
-		placeholder="Womit wollt ihr starten? Liga-Ergebnisse importieren, offenes Ranking, beides…"
+		placeholder={m.demo_placeholder_message()}
 		maxlength="2000"
 		bind:value={message}
-		disabled={status === 'ok'}
-	></textarea>
+		disabled={status === 'ok'}></textarea>
 
 	<button class="btn btn-primary" type="submit" disabled={busy || status === 'ok'}>
-		{#if busy}Wird gesendet …{:else if status === 'ok'}Gesendet{:else}Demo anfragen{/if}
+		{#if busy}{m.demo_sending()}{:else if status === 'ok'}{m.demo_sent()}{:else}{m.demo_submit()}{/if}
 	</button>
 </form>
 
