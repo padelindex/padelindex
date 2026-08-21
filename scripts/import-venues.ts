@@ -53,9 +53,11 @@ const OUT = resolve(ROOT, 'supabase/seed-venues.local.sql');
 // argv[2] bereits dieses Skript selbst, die Datei erst in argv[3]. Statt
 // einen festen Index zu raten, die erste .csv/.json-Datei aus den
 // Argumenten nehmen — funktioniert über run.mjs wie auch direkt.
-const input = process.argv.slice(2).find((a) => /\.(csv|json)$/i.test(a));
+const input = process.argv.slice(2).find((a) => /\.(csv|json|geojson)$/i.test(a));
 if (!input) {
-	console.error('Aufruf: node scripts/run.mjs scripts/import-venues.ts <datei.csv|datei.json>');
+	console.error(
+		'Aufruf: node scripts/run.mjs scripts/import-venues.ts <datei.csv|datei.json|datei.geojson>'
+	);
 	process.exit(1);
 }
 
@@ -130,10 +132,20 @@ function parseCsv(text: string): Record<string, string>[] {
 	});
 }
 
-/** Overpass-JSON (elements[] mit tags + lat/lon oder center). */
-function parseOverpass(json: { elements?: unknown[] }): VenueInput[] {
-	const out: VenueInput[] = [];
-	for (const raw of json.elements ?? []) {
+/**
+ * Ein OSM-Objekt, formatunabhängig eingelesen (Overpass-Rohformat ODER
+ * GeoJSON aus overpass-turbo, das anders aufgebaut ist).
+ */
+type OsmThing = {
+	ref: string | null;
+	lat: number | null;
+	lon: number | null;
+	tags: Record<string, string>;
+};
+
+/** Overpass-Rohformat: elements[] mit tags + lat/lon oder center. */
+function readOverpass(json: { elements?: unknown[] }): OsmThing[] {
+	return (json.elements ?? []).map((raw) => {
 		const el = raw as {
 			type?: string;
 			id?: number;
@@ -142,27 +154,171 @@ function parseOverpass(json: { elements?: unknown[] }): VenueInput[] {
 			center?: { lat: number; lon: number };
 			tags?: Record<string, string>;
 		};
-		const tags = el.tags ?? {};
-		const name = tags.name?.trim();
-		// Ohne Namen ist ein Kartenpunkt für Nutzer wertlos — OSM hat
-		// viele unbenannte Plätze, die zu einer Anlage gehören.
-		if (!name) continue;
+		return {
+			ref: el.type && el.id ? `${el.type}/${el.id}` : null,
+			lat: el.lat ?? el.center?.lat ?? null,
+			lon: el.lon ?? el.center?.lon ?? null,
+			tags: el.tags ?? {}
+		};
+	});
+}
 
-		const lat = el.lat ?? el.center?.lat ?? null;
-		const lon = el.lon ?? el.center?.lon ?? null;
+/**
+ * GeoJSON aus overpass-turbo ("Exportieren -> GeoJSON"). Anders als das
+ * Rohformat stecken die Tags direkt in properties (inklusive
+ * Meta-Schlüsseln wie "@id"), und die Koordinaten liegen als
+ * [lon, lat] in geometry — in dieser Reihenfolge, nicht andersherum.
+ */
+function readGeoJson(json: { features?: unknown[] }): OsmThing[] {
+	return (json.features ?? []).map((raw) => {
+		const f = raw as {
+			id?: string;
+			properties?: Record<string, string>;
+			geometry?: { type?: string; coordinates?: number[] };
+		};
+		const props = f.properties ?? {};
+		const coords = f.geometry?.coordinates;
+		const isPoint = f.geometry?.type === 'Point' && Array.isArray(coords) && coords.length >= 2;
 
-		out.push({
-			name,
-			city: tags['addr:city'] ?? null,
-			postal_code: tags['addr:postcode'] ?? null,
-			address: [tags['addr:street'], tags['addr:housenumber']].filter(Boolean).join(' ') || null,
-			website: tags.website ?? tags['contact:website'] ?? null,
-			latitude: lat,
-			longitude: lon,
-			source_ref: el.type && el.id ? `${el.type}/${el.id}` : null
+		const tags: Record<string, string> = {};
+		for (const [k, v] of Object.entries(props)) {
+			if (!k.startsWith('@')) tags[k] = v;
+		}
+
+		return {
+			ref: (props['@id'] ?? f.id ?? null) as string | null,
+			lat: isPoint ? coords![1] : null,
+			lon: isPoint ? coords![0] : null,
+			tags
+		};
+	});
+}
+
+/**
+ * Namen, die keine Anlage bezeichnen und deshalb nicht als Clubname auf
+ * der Karte landen dürfen. Zwei Sorten, beide reichlich in OSM:
+ *
+ *   1. Einzelne PLÄTZE — "Platz 1", "Court 3", "1",
+ *      "CUPRA Center Court 2". Ein Platz ist kein Club.
+ *   2. Rein GENERISCHE Bezeichnungen — "Padel", "Padel-Anlage".
+ *      Die sehen auf der Karte aus wie ein Eigenname, sagen aber nichts.
+ *      Unser Platzhalter "Padelanlage (Name unbekannt)" ist ehrlicher.
+ *
+ * Nicht gefiltert wird alles, was zusätzliche Information trägt
+ * ("Padel Oldenburg", "Padel Club One") — im Zweifel lieber den echten
+ * OSM-Namen zeigen als ihn wegzuwerfen.
+ */
+function isNonVenueName(name: string): boolean {
+	const n = name.trim().toLowerCase();
+
+	// Reine Nummer.
+	if (/^\d+$/.test(n)) return true;
+
+	// Generische Bezeichnung ohne Zusatz.
+	if (/^(padel|padel[- ]?anlage|padelanlage|padelplatz|padelplätze|padel[- ]?court|court|platz)$/.test(n)) {
+		return true;
+	}
+
+	// Platzbezeichnung mit Nummer ("Court 3", "Platz 1", "Feld 2").
+	if (/\b(court|platz|feld|piste|bahn)\b/.test(n) && /\d/.test(n)) return true;
+
+	// Beginnt mit einer Platzbezeichnung ("Padelplätze (2x fest, 1x Sand)").
+	if (/^(court|platz|padel-?court|padel court|padelplatz|padelplätze)\b/.test(n)) return true;
+
+	return false;
+}
+
+/** Entfernung zweier Punkte in Metern (grob, reicht fürs Clustern). */
+function metersBetween(a: OsmThing, b: OsmThing): number {
+	if (a.lat === null || a.lon === null || b.lat === null || b.lon === null) return Infinity;
+	const midLat = ((a.lat + b.lat) / 2) * (Math.PI / 180);
+	const dx = (a.lon - b.lon) * 111320 * Math.cos(midLat);
+	const dy = (a.lat - b.lat) * 110540;
+	return Math.hypot(dx, dy);
+}
+
+const CLUSTER_RADIUS_M = 200;
+
+/**
+ * Fasst OSM-Objekte, die dicht beieinander liegen, zu EINER Anlage
+ * zusammen.
+ *
+ * Warum überhaupt: eine Overpass-Abfrage auf sport=padel liefert
+ * überwiegend einzelne Plätze (leisure=pitch). Eine Halle mit fünf
+ * Courts erscheint als fünf Objekte. Ungefiltert stünden auf der Karte
+ * fünf Pins mit Namen wie "CUPRA Court 3" — als wären das fünf Clubs.
+ *
+ * 200 m als Radius: groß genug, um Plätze, Halle und Gebäude derselben
+ * Anlage einzusammeln, klein genug, um zwei echte Clubs im selben Ort
+ * nicht zu verschmelzen.
+ *
+ * Der Anlagenname kommt bevorzugt von einem sports_centre/sports_hall
+ * (das IST die Anlage), erst danach von einem Platz — und nie von einem
+ * reinen Platznamen.
+ */
+function clusterToVenues(things: OsmThing[]): { venues: VenueInput[]; unnamed: number } {
+	const relevant = things.filter((t) => t.lat !== null && t.lon !== null);
+	const clusters: OsmThing[][] = [];
+
+	for (const t of relevant) {
+		const hit = clusters.find((c) => c.some((o) => metersBetween(t, o) < CLUSTER_RADIUS_M));
+		if (hit) hit.push(t);
+		else clusters.push([t]);
+	}
+
+	let unnamed = 0;
+	const venues: VenueInput[] = [];
+
+	for (const cluster of clusters) {
+		const isVenueObject = (t: OsmThing) =>
+			t.tags.leisure === 'sports_centre' || t.tags.leisure === 'sports_hall';
+
+		// Name: Anlagen-Objekt schlägt Platz, echter Name schlägt Platzname.
+		const nameFrom =
+			cluster.find((t) => isVenueObject(t) && t.tags.name && !isNonVenueName(t.tags.name)) ??
+			cluster.find((t) => t.tags.name && !isNonVenueName(t.tags.name));
+		const name = nameFrom?.tags.name?.trim() ?? null;
+		if (!name) unnamed++;
+
+		// Übrige Felder aus dem ganzen Cluster einsammeln — die Adresse
+		// hängt oft am Gebäude, die Website am Platz.
+		const pick = (fn: (t: OsmThing) => string | undefined) => {
+			for (const t of cluster) {
+				const v = fn(t)?.trim();
+				if (v) return v;
+			}
+			return null;
+		};
+
+		// Stabile Referenz: bevorzugt das Anlagen-Objekt, sonst die
+		// alphabetisch erste ID — damit ein zweiter Import dieselbe Zeile
+		// trifft, solange sich der Cluster nicht grundlegend ändert.
+		const refCandidate =
+			cluster.find((t) => isVenueObject(t) && t.ref)?.ref ??
+			cluster
+				.map((t) => t.ref)
+				.filter((r): r is string => Boolean(r))
+				.sort()[0] ??
+			null;
+
+		const anchor = nameFrom ?? cluster.find((t) => isVenueObject(t)) ?? cluster[0];
+
+		venues.push({
+			name: name ?? 'Padelanlage (Name unbekannt)',
+			city: pick((t) => t.tags['addr:city']),
+			postal_code: pick((t) => t.tags['addr:postcode']),
+			address:
+				pick((t) =>
+					[t.tags['addr:street'], t.tags['addr:housenumber']].filter(Boolean).join(' ') || undefined
+				) ?? null,
+			website: pick((t) => t.tags.website ?? t.tags['contact:website']),
+			latitude: anchor.lat,
+			longitude: anchor.lon,
+			source_ref: refCandidate
 		});
 	}
-	return out;
+
+	return { venues, unnamed };
 }
 
 // ---------- Einlesen ----------
@@ -170,16 +326,29 @@ const rawText = readFileSync(resolve(process.cwd(), input), 'utf8');
 let venues: VenueInput[];
 let source: 'osm' | 'import';
 
-if (input.endsWith('.json')) {
+let clusterReport: { raw: number; unnamed: number } | null = null;
+
+if (input.endsWith('.json') || input.endsWith('.geojson')) {
 	const parsed = JSON.parse(rawText);
-	if (parsed && typeof parsed === 'object' && Array.isArray(parsed.elements)) {
-		venues = parseOverpass(parsed);
+	const things =
+		parsed && typeof parsed === 'object' && Array.isArray(parsed.elements)
+			? readOverpass(parsed)
+			: parsed && typeof parsed === 'object' && Array.isArray(parsed.features)
+				? readGeoJson(parsed)
+				: null;
+
+	if (things) {
+		const result = clusterToVenues(things);
+		venues = result.venues;
+		clusterReport = { raw: things.length, unnamed: result.unnamed };
 		source = 'osm';
 	} else if (Array.isArray(parsed)) {
 		venues = parsed as VenueInput[];
 		source = 'import';
 	} else {
-		throw new Error('JSON muss entweder ein Overpass-Ergebnis (elements[]) oder ein Array sein.');
+		throw new Error(
+			'JSON muss ein Overpass-Ergebnis (elements[]), ein GeoJSON (features[]) oder ein Array sein.'
+		);
 	}
 } else {
 	venues = parseCsv(rawText).map((r) => ({
@@ -269,6 +438,16 @@ L.push('');
 writeFileSync(OUT, L.join('\n'), 'utf8');
 
 console.log(`Geschrieben: ${OUT}`);
+if (clusterReport) {
+	console.log(
+		`${clusterReport.raw} OSM-Objekte (meist einzelne Plätze) -> ${named.length} Anlagen zusammengefasst.`
+	);
+	if (clusterReport.unnamed > 0) {
+		console.log(
+			`Davon ${clusterReport.unnamed} ohne Namen in OSM — als "Padelanlage (Name unbekannt)" eingetragen.`
+		);
+	}
+}
 console.log(`${named.length} Anlagen (${withCoords.length} mit Koordinaten, ${withRef.length} mit source_ref).`);
 if (withCoords.length < named.length) {
 	console.log(
