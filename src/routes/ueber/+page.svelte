@@ -1,26 +1,29 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { reveal } from '$lib/landing/reveal';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import { mainNav } from '$lib/landing/nav';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
+
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
 </script>
 
 <svelte:head>
-	<title>Über PadelIndex — wer dahintersteht</title>
-	<meta
-		name="description"
-		content="PadelIndex ist ein Projekt von Alec Hahn (Sportcenter Hahn GmbH) — ein Rating für Padel-Amateure aus bestätigten Matches, kein Fragebogen und kein Vereinsverzeichnis."
-	/>
-	<link rel="canonical" href="https://padelindex.de/ueber" />
+	<title>{m.ueber_meta_title()}</title>
+	<meta name="description" content={m.ueber_meta_description()} />
+	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://padelindex.de/ueber" />
+	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
-	<meta property="og:title" content="Über PadelIndex" />
-	<meta
-		property="og:description"
-		content="Ein Rating für Padel-Amateure aus bestätigten Matches — wer hinter PadelIndex steht und warum es das gibt."
-	/>
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.ueber_og_title()} />
+	<meta property="og:description" content={m.ueber_og_description()} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
@@ -30,84 +33,68 @@
 <main>
 	<section class="sec" id="top" style="background:var(--night-2)">
 		<div class="wrap legal-wide">
-			<span class="eyebrow" use:reveal>Über PadelIndex</span>
-			<h1 use:reveal={{ delay: 0.05 }}>Orientierung für die wachsende Padel-Community.</h1>
+			<span class="eyebrow" use:reveal>{m.ueber_eyebrow()}</span>
+			<h1 use:reveal={{ delay: 0.05 }}>{m.ueber_h1()}</h1>
 			<p class="muted" use:reveal={{ delay: 0.1 }}>
-				PadelIndex ist eine Plattform für alle, die Padel in Deutschland spielen und wissen wollen,
-				wie stark sie wirklich sind.
+				{m.ueber_intro_p1()}
 			</p>
 			<p class="muted" use:reveal={{ delay: 0.14 }}>
-				Unser Ziel ist einfach: ein Level, das aus echten, bestätigten Matches entsteht — nicht aus
-				einer Selbsteinschätzung oder einer Zahl, die sich nie bewegt. Von deinem eigenen Rating
-				über die Rangliste deines Vereins bis zur Frage, wie du gegen ein bestimmtes Team wirklich
-				stehst — PadelIndex soll die Anlaufstelle für dein Level im deutschen Padel werden.
+				{m.ueber_intro_p2()}
 			</p>
 		</div>
 	</section>
 
 	<section class="sec sec-light">
 		<div class="wrap legal-wide">
-			<h2 use:reveal>Aus der Praxis für die Praxis</h2>
+			<h2 use:reveal>{m.ueber_praxis_h2()}</h2>
 			<p class="muted" use:reveal={{ delay: 0.05 }}>
-				Hinter PadelIndex steht Alec Hahn, Entwickler und Teil des Familienunternehmens Sportcenter
-				Hahn GmbH.
+				{m.ueber_praxis_p1()}
 			</p>
 			<p class="muted" use:reveal={{ delay: 0.1 }}>
-				Die Familie Hahn beschäftigt sich seit Jahrzehnten mit dem Betrieb und der Entwicklung von
-				Sportanlagen. Das Sportcenter Hahn verbindet Sport, Vereinsleben und professionelle
-				Sportinfrastruktur und bietet damit einen direkten Einblick in die Bedürfnisse von Spielern
-				und Vereinen.
+				{m.ueber_praxis_p2()}
 			</p>
 			<p class="muted" use:reveal={{ delay: 0.15 }}>
-				Padel ist dabei für uns mehr als nur ein weiterer Trendsport. Die Dynamik, die Community und
-				das schnelle Wachstum des Sports in Deutschland bieten enormes Potenzial — aber auch die
-				Frage, wie man das eigene Level über Vereinsgrenzen hinweg überhaupt vergleichen kann. Mit
-				PadelIndex möchten wir genau das lösen: ein Rating, das nachvollziehbar ist und mit jedem
-				Match mitwächst.
+				{m.ueber_praxis_p3()}
 			</p>
 		</div>
 	</section>
 
 	<section class="sec">
 		<div class="wrap legal-wide">
-			<h2 use:reveal>Unser Anspruch</h2>
+			<h2 use:reveal>{m.ueber_anspruch_h2()}</h2>
 			<p class="muted" use:reveal={{ delay: 0.05 }}>
-				Wir möchten kein kompliziertes Rating-System schaffen, sondern eines, dem man vertraut.
+				{m.ueber_anspruch_p1()}
 			</p>
 			<p class="claim-line" use:reveal={{ delay: 0.08 }}>
-				Spielen. Bestätigen. Wissen, wo du stehst.
+				{m.ueber_claim_line1()}
 			</p>
 			<ul class="values" use:reveal={{ delay: 0.12 }}>
 				<li>
-					<b>Nachvollziehbarkeit</b> — jede Änderung deines Levels ist erklärt, keine Blackbox.
+					<b>{m.ueber_value_nachvollziehbarkeit_b()}</b> — {m.ueber_value_nachvollziehbarkeit_t()}
 				</li>
-				<li><b>Bestätigung</b> — ein Ergebnis zählt erst, wenn das Gegnerteam zustimmt.</li>
-				<li><b>Transparenz</b> — derselbe Code im Rating-Simulator wie im echten Betrieb.</li>
-				<li><b>Community</b> — ein Rating lebt von Spielern und Vereinen, die mitmachen.</li>
-				<li><b>Wachstum</b> — wir wachsen mit jedem Verein, der dazukommt.</li>
+				<li><b>{m.ueber_value_bestaetigung_b()}</b> — {m.ueber_value_bestaetigung_t()}</li>
+				<li><b>{m.ueber_value_transparenz_b()}</b> — {m.ueber_value_transparenz_t()}</li>
+				<li><b>{m.ueber_value_community_b()}</b> — {m.ueber_value_community_t()}</li>
+				<li><b>{m.ueber_value_wachstum_b()}</b> — {m.ueber_value_wachstum_t()}</li>
 			</ul>
 		</div>
 	</section>
 
 	<section class="sec sec-light">
 		<div class="wrap legal-wide">
-			<h2 use:reveal>Gemeinsam für Padel</h2>
+			<h2 use:reveal>{m.ueber_gemeinsam_h2()}</h2>
 			<p class="muted" use:reveal={{ delay: 0.05 }}>
-				Padel wächst in Deutschland rasant. Gleichzeitig hat kaum ein Verein eine verlässliche
-				Möglichkeit, das Level seiner Mitglieder über die eigene Anlage hinaus einzuordnen. Genau
-				hier setzt PadelIndex an.
+				{m.ueber_gemeinsam_p1()}
 			</p>
 			<p class="muted" use:reveal={{ delay: 0.1 }}>
-				Wir starten mit einem Pilotverein im Oberland (STC Oberland) und wollen von dort aus wachsen
-				— Verein für Verein, Match für Match.
+				{m.ueber_gemeinsam_p2()}
 			</p>
 			<p class="muted" use:reveal={{ delay: 0.14 }}>
-				Wenn du einen Verein vertrittst, der mitmachen möchte, einen Fehler in deinem Profil findest
-				oder eine Idee für die Plattform hast, freuen wir uns über dein Feedback an
+				{m.ueber_gemeinsam_p3_pre()}
 				<a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a>.
 			</p>
 			<p class="claim-line" use:reveal={{ delay: 0.18 }}>
-				Padel wächst. Wir machen dein Level sichtbar.
+				{m.ueber_claim_line2()}
 			</p>
 		</div>
 	</section>
