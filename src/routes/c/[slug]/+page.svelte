@@ -2,13 +2,18 @@
 	import { page } from '$app/state';
 	import ClubLeaderboard from '$lib/components/ClubLeaderboard.svelte';
 	import RatingLegend from '$lib/components/RatingLegend.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import { jsonLd } from '$lib/jsonld';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	const clubName = $derived(data.board?.club.name ?? 'Verein');
+	const clubName = $derived(data.board?.club.name ?? m.club_default_name());
 	const clubUrl = $derived(`https://padelindex.de/c/${page.params.slug}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
 
 	const breadcrumbs = $derived(
 		jsonLd({
@@ -29,7 +34,7 @@
 		return jsonLd({
 			'@context': 'https://schema.org',
 			'@type': 'ItemList',
-			name: `${clubName} — Level-Ranking`,
+			name: m.club_og_title({ clubName }),
 			itemListElement: data.board.players.map((p) => ({
 				'@type': 'ListItem',
 				position: p.rank,
@@ -38,41 +43,44 @@
 			}))
 		});
 	});
-	const description = $derived(
-		`Öffentliches Level-Ranking von ${clubName} auf PadelIndex — aus bestätigten Matches, mit Sicherheitsgrad je Spieler.`
-	);
+	const description = $derived(m.club_meta_description({ clubName }));
 	// Vereinsseiten sind indexierbar und werden verlinkt, deshalb eine
 	// eigene Canonical-URL statt der Startseiten-Angabe. Ab Seite 2 zeigt
 	// jede Seite auf sich selbst statt auf Seite 1 — die Spielerlisten
 	// unterscheiden sich wirklich, eine Weiterleitung des Canonical auf
 	// Seite 1 würde Google die hinteren Seiten faktisch verstecken.
 	const canonical = $derived.by(() => {
-		const base = `https://padelindex.de/c/${page.params.slug}`;
+		const base = `https://padelindex.de${page.url.pathname}`;
 		const current = data.board?.page ?? 1;
 		return current > 1 ? `${base}?page=${current}` : base;
 	});
 </script>
 
 <svelte:head>
-	<title>{clubName} — Level-Ranking | PadelIndex</title>
+	<title>{m.club_title({ clubName })}</title>
 	<meta name="description" content={description} />
 	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	{#if data.board && data.board.page > 1}
 		<link
 			rel="prev"
-			href="https://padelindex.de/c/{page.params.slug}{data.board.page - 1 > 1
+			href="https://padelindex.de{localizeHref(`/c/${page.params.slug}`)}{data.board.page - 1 > 1
 				? `?page=${data.board.page - 1}`
 				: ''}"
 		/>
 	{/if}
 	{#if data.board && data.board.page < data.board.totalPages}
-		<link rel="next" href="https://padelindex.de/c/{page.params.slug}?page={data.board.page + 1}" />
+		<link
+			rel="next"
+			href="https://padelindex.de{localizeHref(`/c/${page.params.slug}`)}?page={data.board.page +
+				1}"
+		/>
 	{/if}
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
-	<meta property="og:title" content="{clubName} — Level-Ranking" />
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.club_og_title({ clubName })} />
 	<meta property="og:description" content={description} />
 	<meta name="theme-color" content="#0B1E26" />
 	{@html `<script type="application/ld+json">${breadcrumbs}</script>`}
@@ -83,22 +91,21 @@
 
 <nav class="nav">
 	<div class="wrap nav-in">
-		<a class="brand" href="/" aria-label="PadelIndex Startseite">
+		<a class="brand" href={localizeHref('/')} aria-label={m.nav_brand_aria()}>
 			<img src="/logo.svg" width="30" height="30" alt="" />
 			<span>Padel<b>Index</b></span>
 		</a>
-		<a class="btn btn-primary" href="/#anmelden">Platz sichern</a>
+		<a class="btn btn-primary" href={localizeHref('/#anmelden')}>{m.nav_cta()}</a>
 	</div>
 </nav>
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 720px">
 		<div class="sec-head">
-			<span class="eyebrow">Vereinsranking</span>
-			<h2>{data.board?.club.name ?? 'Verein'}</h2>
+			<span class="eyebrow">{m.club_eyebrow()}</span>
+			<h2>{data.board?.club.name ?? m.club_default_name()}</h2>
 			<p class="muted">
-				Öffentliche Rangliste aus bestätigten Matches. Der Ring neben der Zahl zeigt, wie sicher der
-				Wert ist.
+				{m.club_intro_p()}
 			</p>
 			<div style="margin-top: 14px">
 				<RatingLegend />
@@ -108,30 +115,36 @@
 			<ClubLeaderboard board={data.board} unavailable={data.unavailable} />
 		</div>
 		{#if data.board && data.board.totalPages > 1}
-			<nav class="pager" aria-label="Seiten">
+			<nav class="pager" aria-label={m.club_pager_aria()}>
 				{#if data.board.page > 1}
-					<a class="pager-btn" href="?page={data.board.page - 1}">← Vorherige</a>
+					<a class="pager-btn" href="?page={data.board.page - 1}">{m.club_prev()}</a>
 				{:else}
-					<span class="pager-btn disabled">← Vorherige</span>
+					<span class="pager-btn disabled">{m.club_prev()}</span>
 				{/if}
 				<span class="pager-status">
-					Seite {data.board.page} von {data.board.totalPages} · {data.board.total} Spieler
+					{m.club_pager_status({
+						page: data.board.page,
+						totalPages: data.board.totalPages,
+						total: data.board.total
+					})}
 				</span>
 				{#if data.board.page < data.board.totalPages}
-					<a class="pager-btn" href="?page={data.board.page + 1}">Nächste →</a>
+					<a class="pager-btn" href="?page={data.board.page + 1}">{m.club_next()}</a>
 				{:else}
-					<span class="pager-btn disabled">Nächste →</span>
+					<span class="pager-btn disabled">{m.club_next()}</span>
 				{/if}
 			</nav>
 		{/if}
 		{#if data.board}
 			<p class="claim-cta">
-				Du stehst in der Ligatabelle?
-				<a href="/c/{data.board.club.slug}/beanspruchen">Profil beanspruchen</a>
+				{m.club_claim_cta_pre()}
+				<a href={localizeHref(`/c/${data.board.club.slug}/beanspruchen`)}
+					>{m.club_claim_cta_link()}</a
+				>
 			</p>
 			<p class="claim-cta muted-cta">
-				Dein Verein ist noch nicht dabei?
-				<a href="/#anmelden">Für deinen Verein eintragen</a>
+				{m.club_join_cta_pre()}
+				<a href={localizeHref('/#anmelden')}>{m.club_join_cta_link()}</a>
 			</p>
 		{/if}
 	</div>

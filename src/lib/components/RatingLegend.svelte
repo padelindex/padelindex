@@ -8,16 +8,20 @@
 	title-Attribut (wie bisher bei der Sicherheit-Prozentzahl) leistet
 	das nicht — es erscheint nicht bei Tastaturfokus und nie auf Touch.
 -->
+<script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+</script>
+
 <details class="rlegend">
-	<summary>Was bedeuten Level und Sicherheit?</summary>
+	<summary>{m.rl_summary()}</summary>
 	<div class="rlegend-body">
 		<p>
-			<strong>Level</strong> ist eine Zahl von 0 bis 7, berechnet aus bestätigten Matches. Je höher,
-			desto stärker das eingeschätzte Spielniveau.
+			<strong>{m.rl_level_label()}</strong>
+			{m.rl_level_text()}
 		</p>
 		<p>
-			<strong>Sicherheit</strong> zeigt, wie zuverlässig der Wert ist. Mit wenigen Matches ist sie
-			niedrig und das Level kann noch stark springen — mit mehr bestätigten Ergebnissen steigt sie.
+			<strong>{m.rl_confidence_label()}</strong>
+			{m.rl_confidence_text()}
 		</p>
 	</div>
 </details>
