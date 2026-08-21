@@ -235,6 +235,7 @@
 			<div class="action-row">
 				{#if data.club}
 					<a class="btn btn-primary" href="/c/{data.club.slug}/match/neu">Match melden</a>
+					<a class="btn btn-ghost-light" href="/c/{data.club.slug}/roulette">Padel Roulette</a>
 				{/if}
 				{#if data.player.claimStatus === 'claimed'}
 					<a class="btn btn-ghost-light" href="/p/{data.player.handle}">Mein öffentliches Profil</a>

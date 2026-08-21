@@ -30,6 +30,7 @@ import {
 } from '$lib/server/club-members';
 import { cancelPendingMatch, loadClubPendingMatches } from '$lib/server/matches';
 import { updateClubSettings } from '$lib/server/club-settings';
+import { createSlot, cancelSlot, loadSlotsForAdmin } from '$lib/server/roulette';
 
 type AdminClub = {
 	id: string;
@@ -76,13 +77,14 @@ export const load: PageServerLoad = async ({ params, locals, url, platform }) =>
 	const club = await requireClubAdmin(locals, params.slug, url);
 	const admin = supabaseAdmin(platform);
 
-	const [rewards, members, pendingMatches] = await Promise.all([
+	const [rewards, members, pendingMatches, rouletteSlots] = await Promise.all([
 		loadRewardCatalogForAdmin(admin, club.id),
 		loadClubMembers(admin, club.id),
-		loadClubPendingMatches(admin, club.id)
+		loadClubPendingMatches(admin, club.id),
+		loadSlotsForAdmin(admin, club.id)
 	]);
 
-	return { club, rewards, members, pendingMatches };
+	return { club, rewards, members, pendingMatches, rouletteSlots };
 };
 
 export const actions: Actions = {
@@ -213,5 +215,41 @@ export const actions: Actions = {
 		});
 		if (!result.ok) return { settingsError: result.message };
 		return { settingsSaved: true };
+	},
+
+	createRouletteSlot: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		if (!locals.player) return { rouletteError: 'Nicht angemeldet.' };
+		const form = await request.formData();
+		const dateRaw = String(form.get('startsAtDate') ?? '');
+		const timeRaw = String(form.get('startsAtTime') ?? '');
+		const durationMin = Number(form.get('durationMin') ?? 90);
+		const court = String(form.get('court') ?? '').trim() || null;
+		const info = String(form.get('info') ?? '').trim() || null;
+
+		if (!dateRaw || !timeRaw) return { rouletteError: 'Datum und Uhrzeit sind Pflicht.' };
+		const startsAt = new Date(`${dateRaw}T${timeRaw}:00`);
+		if (Number.isNaN(startsAt.getTime()) || startsAt.getTime() < Date.now()) {
+			return { rouletteError: 'Der Termin muss in der Zukunft liegen.' };
+		}
+
+		const result = await createSlot(supabaseAdmin(platform), club.id, locals.player.id, {
+			startsAt: startsAt.toISOString(),
+			durationMin,
+			court,
+			info
+		});
+		if (!result.ok) return { rouletteError: result.message };
+		return { rouletteSaved: true };
+	},
+
+	cancelRouletteSlot: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const slotId = String(form.get('slotId') ?? '');
+		if (!slotId) return { rouletteError: 'Ungültige Anfrage.' };
+
+		await cancelSlot(supabaseAdmin(platform), slotId, club.id);
+		return { rouletteSaved: true };
 	}
 };

@@ -108,7 +108,7 @@ export async function rejectClaim(
 	return { ok: true };
 }
 
-async function isClubMember(admin: SupabaseClient, clubId: string, playerId: string): Promise<boolean> {
+export async function isClubMember(admin: SupabaseClient, clubId: string, playerId: string): Promise<boolean> {
 	const { data } = await admin
 		.from('club_memberships')
 		.select('club_id')
