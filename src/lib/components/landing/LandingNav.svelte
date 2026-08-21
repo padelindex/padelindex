@@ -10,6 +10,8 @@
 	// sonst bliebe bei ausgeblendetem Ticker eine leere Lücke stehen.
 
 	import HeaderTicker from '$lib/components/HeaderTicker.svelte';
+	import { m } from '$lib/paraglide/messages.js';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	let { links, brandHref = '/' }: { links: { href: string; label: string }[]; brandHref?: string } =
 		$props();
@@ -18,13 +20,21 @@
 	const close = () => (menuOpen = false);
 
 	let tickerVisible = $state(false);
+
+	// brandHref kommt entweder als seitenrelativer Pfad (Standard "/") oder
+	// als Anker auf der aktuellen Seite selbst (Homepage übergibt "#top") —
+	// nur der Pfad-Fall braucht localizeHref(), ein reiner Anker bleibt
+	// unangetastet.
+	const localizedBrandHref = $derived(
+		brandHref.startsWith('#') ? brandHref : localizeHref(brandHref)
+	);
 </script>
 
 <HeaderTicker onVisibleChange={(visible) => (tickerVisible = visible)} />
 
 <nav class="nav" style="top: {tickerVisible ? '34px' : '0'}">
 	<div class="wrap nav-in">
-		<a class="brand" href={brandHref} aria-label="PadelIndex Startseite">
+		<a class="brand" href={localizedBrandHref} aria-label={m.nav_brand_aria()}>
 			<svg viewBox="0 0 40 40" aria-hidden="true">
 				<circle
 					cx="20"
@@ -55,14 +65,14 @@
 		</div>
 
 		<div class="nav-right">
-			<a class="nav-login" href="/anmelden">Anmelden</a>
-			<a class="btn btn-primary nav-cta" href="/#anmelden">Platz sichern</a>
+			<a class="nav-login" href={localizeHref('/anmelden')}>{m.nav_login()}</a>
+			<a class="btn btn-primary nav-cta" href={localizeHref('/#anmelden')}>{m.nav_cta()}</a>
 			<button
 				class="nav-burger"
 				type="button"
 				aria-expanded={menuOpen}
 				aria-controls="nav-panel"
-				aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
+				aria-label={menuOpen ? m.nav_menu_close() : m.nav_menu_open()}
 				onclick={() => (menuOpen = !menuOpen)}
 			>
 				<span class:x={menuOpen}></span>
@@ -76,8 +86,10 @@
 				{#each links as item (item.href)}
 					<a href={item.href} onclick={close}>{item.label}</a>
 				{/each}
-				<a href="/anmelden" onclick={close}>Anmelden</a>
-				<a class="btn btn-primary" href="/#anmelden" onclick={close}>Platz sichern</a>
+				<a href={localizeHref('/anmelden')} onclick={close}>{m.nav_login()}</a>
+				<a class="btn btn-primary" href={localizeHref('/#anmelden')} onclick={close}
+					>{m.nav_cta()}</a
+				>
 			</div>
 		</div>
 	{/if}

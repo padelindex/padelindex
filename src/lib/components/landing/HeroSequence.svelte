@@ -17,16 +17,23 @@
 
 	import { sequence, prefersReducedMotion } from '$lib/landing/motion';
 	import { whenVisible } from '$lib/landing/reveal';
+	import { m } from '$lib/paraglide/messages.js';
 	import AnimatedNumber from './AnimatedNumber.svelte';
 
-	const TEAM_YOU = [
-		{ label: 'Du', rating: 4.41, after: 4.68, delta: 0.27 },
-		{ label: 'Partner', rating: 4.35, after: 4.59, delta: 0.24 }
-	];
-	const TEAM_OPP = [
-		{ label: 'Gegner', rating: 4.78, after: 4.6, delta: -0.18 },
-		{ label: 'Gegner', rating: 4.71, after: 4.51, delta: -0.2 }
-	];
+	const TEAM_YOU = $derived([
+		{ label: m.hseq_you(), rating: 4.41, after: 4.68, delta: 0.27 },
+		{ label: m.hseq_partner(), rating: 4.35, after: 4.59, delta: 0.24 }
+	]);
+	const TEAM_OPP = $derived([
+		{ label: m.hseq_opponent(), rating: 4.78, after: 4.6, delta: -0.18 },
+		{ label: m.hseq_opponent(), rating: 4.71, after: 4.51, delta: -0.2 }
+	]);
+	const CONFIRM_NAMES = $derived([
+		m.hseq_you(),
+		m.hseq_partner(),
+		m.hseq_opponent(),
+		m.hseq_opponent()
+	]);
 	const SETS = [
 		{ a: 6, b: 4 },
 		{ a: 6, b: 3 }
@@ -38,12 +45,12 @@
 	let started = $state(false);
 	let stop: (() => void) | undefined;
 
-	const STAGE_LABEL = [
-		'Match gespielt',
-		'Ergebnis eingetragen',
-		'Vom Gegnerteam bestätigt',
-		'Rating aktualisiert'
-	];
+	const STAGE_LABEL = $derived([
+		m.hseq_stage_played(),
+		m.hseq_stage_result(),
+		m.hseq_stage_confirmed(),
+		m.hseq_stage_rated()
+	]);
 
 	function play() {
 		stop?.();
@@ -78,14 +85,14 @@
 
 <div class="hseq" use:whenVisible={{ onVisible: start, threshold: 0.35 }} data-step={step}>
 	<div class="hseq-top">
-		<span class="hseq-kicker">Ein Match, wie es zählt</span>
+		<span class="hseq-kicker">{m.hseq_kicker()}</span>
 		<span class="hseq-stage num" aria-live="polite">{STAGE_LABEL[step]}</span>
 	</div>
 
 	<!-- Aufstellung -->
 	<div class="hseq-teams">
 		<div class="hseq-team" class:win={step >= 1}>
-			<span class="hseq-tlabel">Dein Team</span>
+			<span class="hseq-tlabel">{m.hseq_your_team()}</span>
 			{#each TEAM_YOU as p, i (p.label)}
 				<div class="hseq-p" class:hseq-me={i === 0}>
 					<span class="hseq-nm">{p.label}</span>
@@ -115,7 +122,7 @@
 		</div>
 
 		<div class="hseq-team" class:lose={step >= 1}>
-			<span class="hseq-tlabel">Gegnerteam</span>
+			<span class="hseq-tlabel">{m.hseq_opposing_team()}</span>
 			{#each TEAM_OPP as p, i (i)}
 				<div class="hseq-p">
 					<span class="hseq-nm">{p.label}</span>
@@ -128,10 +135,10 @@
 	<!-- Bestätigung: vier Spieler, vier Haken -->
 	<div class="hseq-confirm" class:on={step >= 2}>
 		<span class="hseq-clabel">
-			{step >= 3 ? 'Bestätigt' : 'Bestätigung'}
+			{step >= 3 ? m.hseq_confirmed() : m.hseq_confirmation()}
 		</span>
 		<div class="hseq-checks">
-			{#each ['Du', 'Partner', 'Gegner', 'Gegner'] as name, i (i)}
+			{#each CONFIRM_NAMES as name, i (i)}
 				<span class="hseq-check" class:ok={confirmed > i}>
 					<svg viewBox="0 0 16 16" aria-hidden="true">
 						<path d="M3.5 8.5l3 3 6-7" />
@@ -145,7 +152,7 @@
 	<!-- Ergebnis der Rechnung -->
 	<div class="hseq-out" class:on={step >= 3}>
 		<div>
-			<span class="hseq-olabel">Dein Level</span>
+			<span class="hseq-olabel">{m.hseq_your_level()}</span>
 			<div class="hseq-oval">
 				<span class="num hseq-old">4.41</span>
 				<svg class="hseq-arrow" viewBox="0 0 24 12" aria-hidden="true">
@@ -165,14 +172,13 @@
 
 	<div class="hseq-foot">
 		<p class="hseq-note">
-			Gerechnet mit dem Modell, das auch produktiv läuft — Gegnerstärke, Satzverlauf und wie gut das
-			System dich schon kennt.
+			{m.hseq_note()}
 		</p>
 		<button class="hseq-replay" type="button" onclick={play}>
 			<svg viewBox="0 0 16 16" aria-hidden="true">
 				<path d="M13.5 8a5.5 5.5 0 11-1.6-3.9M13.5 1.5V5H10" />
 			</svg>
-			Nochmal
+			{m.hseq_replay()}
 		</button>
 	</div>
 </div>

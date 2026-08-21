@@ -31,3 +31,10 @@ export function hreflangLinksFor(pathname: string): HreflangLink[] {
 
 	return [...perLocale, { hreflang: 'x-default', href: defaultHref }];
 }
+
+const OG_LOCALES: Record<Locale, string> = { de: 'de_DE', en: 'en_US', es: 'es_ES' };
+
+/** og:locale erwartet language_TERRITORY (Facebook-Konvention), nicht den bloßen Sprachcode. */
+export function ogLocaleFor(locale: Locale): string {
+	return OG_LOCALES[locale];
+}

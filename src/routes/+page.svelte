@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { reveal } from '$lib/landing/reveal';
 	import HeroSequence from '$lib/components/landing/HeroSequence.svelte';
 	import PartnerProblem from '$lib/components/landing/PartnerProblem.svelte';
@@ -6,8 +7,10 @@
 	import SignupForm from '$lib/components/landing/SignupForm.svelte';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
 	import { m } from '$lib/paraglide/messages.js';
-	import { localizeHref } from '$lib/paraglide/runtime';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -18,24 +21,22 @@
 		{ href: '#tokens', label: m.nav_tokens() },
 		{ href: localizeHref('/vereine'), label: m.nav_fuer_vereine() }
 	]);
+
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
 </script>
 
 <svelte:head>
-	<title>PadelIndex — Dein Level. Belegt, nicht behauptet.</title>
-	<meta
-		name="description"
-		content="PadelIndex ist die unabhängige Rangliste für Padel-Amateure. Bayes'sches Rating für Doppel, Bestätigung durch das Gegnerteam, vereinsübergreifend. Probier im Match-Simulator aus, wie sich dein Wert verändert."
-	/>
-	<link rel="canonical" href="https://padelindex.de/" />
+	<title>{m.home_meta_title()}</title>
+	<meta name="description" content={m.home_meta_description()} />
+	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://padelindex.de/" />
+	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
-	<meta property="og:title" content="PadelIndex — Dein Level. Belegt, nicht behauptet." />
-	<meta
-		property="og:description"
-		content="Rating für Padel-Doppel aus bestätigten Matches: Gegnerstärke, Satzverlauf und Sicherheit statt Selbsteinschätzung."
-	/>
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.home_meta_title()} />
+	<meta property="og:description" content={m.home_og_description()} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>
@@ -52,19 +53,19 @@
 		</div>
 		<div class="wrap hero-in">
 			<div>
-				<span class="eyebrow" use:reveal>Rangliste für Padel-Amateure</span>
+				<span class="eyebrow" use:reveal>{m.home_hero_eyebrow()}</span>
 				<h1 use:reveal={{ delay: 0.06 }}>
-					Dein Level.<br /><em>Belegt,</em><br />nicht behauptet.
+					{m.home_hero_h1_line1()}<br /><em>{m.home_hero_h1_emphasis()}</em><br
+					/>{m.home_hero_h1_line2()}
 				</h1>
 				<p class="hero-sub" use:reveal={{ delay: 0.12 }}>
-					PadelIndex misst, wie stark du wirklich spielst — über Vereinsgrenzen hinweg, aus
-					bestätigten Ergebnissen, mit einem Modell, das für Doppel gebaut ist statt für Schach.
+					{m.home_hero_sub()}
 				</p>
 				<div class="hero-cta" use:reveal={{ delay: 0.18 }}>
-					<a class="btn btn-primary" href="#anmelden">Mein Level herausfinden</a>
-					<a class="btn btn-ghost" href="/rating">Erst mal ausprobieren</a>
+					<a class="btn btn-primary" href="#anmelden">{m.home_hero_cta_primary()}</a>
+					<a class="btn btn-ghost" href={localizeHref('/rating')}>{m.home_hero_cta_secondary()}</a>
 				</div>
-				<p class="hero-note" use:reveal={{ delay: 0.24 }}>Pilotverein: STC Oberland</p>
+				<p class="hero-note" use:reveal={{ delay: 0.24 }}>{m.home_hero_note()}</p>
 			</div>
 
 			<div use:reveal={{ delay: 0.1 }}>
@@ -77,12 +78,10 @@
 	<section class="sec" id="problem" style="background:var(--night-2)">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Das Problem</span>
-				<h2 use:reveal={{ delay: 0.05 }}>Fast jeder kennt sein Level nur ungefähr.</h2>
+				<span class="eyebrow" use:reveal>{m.home_problem_eyebrow()}</span>
+				<h2 use:reveal={{ delay: 0.05 }}>{m.home_problem_h2()}</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
-					Level werden geschätzt, in Fragebögen angeklickt oder pro Verein anders vergeben. Sobald
-					du woanders spielst, gilt die Zahl nichts mehr. Der häufigste Einwand lässt sich aber
-					nachrechnen — hier ist er.
+					{m.home_problem_p()}
 				</p>
 			</div>
 
@@ -92,27 +91,24 @@
 
 			<div class="gripes">
 				<article class="gripe" use:reveal>
-					<span class="tag">Stillstand</span>
-					<p class="q">„Ich bin klar besser geworden — die Zahl bewegt sich trotzdem nicht."</p>
+					<span class="tag">{m.home_gripe1_tag()}</span>
+					<p class="q">{m.home_gripe1_q()}</p>
 					<p class="a">
-						Bei PadelIndex bewegt sich dein Wert nach jedem bestätigten Match, und du siehst,
-						welcher Anteil davon aus Gegnerstärke, Satzverlauf und Serie kommt.
+						{m.home_gripe1_a()}
 					</p>
 				</article>
 				<article class="gripe" use:reveal={{ delay: 0.07 }}>
-					<span class="tag">Aufgeblähte Werte</span>
-					<p class="q">„Der spielt nur in seiner Runde und steht plötzlich ganz oben."</p>
+					<span class="tag">{m.home_gripe2_tag()}</span>
+					<p class="q">{m.home_gripe2_q()}</p>
 					<p class="a">
-						Jedes Ergebnis braucht die Bestätigung des Gegnerteams. Ergebnisse ohne Gegenüber zählen
-						nicht — erfundene Matches also auch nicht.
+						{m.home_gripe2_a()}
 					</p>
 				</article>
 				<article class="gripe" use:reveal={{ delay: 0.14 }}>
-					<span class="tag">Blackbox</span>
-					<p class="q">„6:1, 6:2 gewonnen, Wert steigt um nichts. Verstehe ich nicht."</p>
+					<span class="tag">{m.home_gripe3_tag()}</span>
+					<p class="q">{m.home_gripe3_q()}</p>
 					<p class="a">
-						Deshalb legen wir die Rechnung offen: nach jedem Match steht da, was sich verändert hat
-						und warum. Auch dann, wenn die Zahl nicht gefällt.
+						{m.home_gripe3_a()}
 					</p>
 				</article>
 			</div>
@@ -123,20 +119,18 @@
 	<section class="sec sec-light" id="rechnen">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>So rechnet es</span>
-				<h2 use:reveal={{ delay: 0.05 }}>Ein Match verändert dein Level.</h2>
+				<span class="eyebrow" use:reveal>{m.home_rating_eyebrow()}</span>
+				<h2 use:reveal={{ delay: 0.05 }}>{m.home_rating_h2()}</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
-					Kein Fragebogen, kein geschätzter Wert: PadelIndex rechnet aus Gegnerstärke, Satzverlauf
-					und Bestätigung durch das Gegnerteam — mit demselben Code, der auch produktiv die Ratings
-					vergibt. Im Rating-Simulator kannst du selbst dran drehen.
+					{m.home_rating_p()}
 				</p>
 				<a
 					class="btn btn-primary"
-					href="/rating"
+					href={localizeHref('/rating')}
 					use:reveal={{ delay: 0.15 }}
 					style="margin-top:28px; display:inline-flex"
 				>
-					Rechenweg &amp; Simulator ansehen
+					{m.home_rating_cta()}
 				</a>
 			</div>
 		</div>
@@ -146,11 +140,10 @@
 	<section class="sec" id="tokens">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Index Tokens</span>
-				<h2 use:reveal={{ delay: 0.05 }}>Spielen zahlt sich aus. Wörtlich.</h2>
+				<span class="eyebrow" use:reveal>{m.home_tokens_eyebrow()}</span>
+				<h2 use:reveal={{ delay: 0.05 }}>{m.home_tokens_h2()}</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
-					Für jedes bestätigte Match bekommst du Tokens. Einlösen kannst du sie bei deinem Verein —
-					gegen Trainerstunden, Ausrüstung, Startgebühren. Wie Bonusmeilen, nur für Padel.
+					{m.home_tokens_p()}
 				</p>
 			</div>
 
@@ -164,22 +157,20 @@
 	<section class="sec sec-light" id="vereine">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Für Vereine</span>
-				<h2 use:reveal={{ delay: 0.05 }}>Die Rangliste läuft auf eurer Seite.</h2>
+				<span class="eyebrow" use:reveal>{m.home_vereine_eyebrow()}</span>
+				<h2 use:reveal={{ delay: 0.05 }}>{m.home_vereine_h2()}</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
-					Ab hier geht es nicht mehr um dein eigenes Level, sondern um deinen Verein — falls du
-					gerade nur als Spieler:in hier bist, ist <a href="#anmelden"
-						>der Platz auf der Warteliste</a
-					> weiter oben schon alles, was du brauchst. Für Vereine: eine Zeile Code, und das Ranking steht
-					auf eurer Website, in euren Farben, ohne Plugin-Chaos.
+					{m.home_vereine_p_pre()}
+					<a href="#anmelden">{m.home_vereine_link()}</a>
+					{m.home_vereine_p_post()}
 				</p>
 				<a
 					class="btn btn-primary"
-					href="/vereine"
+					href={localizeHref('/vereine')}
 					use:reveal={{ delay: 0.15 }}
 					style="margin-top:28px; display:inline-flex"
 				>
-					Für Vereine ansehen
+					{m.home_vereine_cta()}
 				</a>
 			</div>
 		</div>
@@ -187,27 +178,25 @@
 
 	<!-- ============================ LIGA TEASER ============================ -->
 	<!-- Bewusst als konkretes Beispiel, nicht als "PadelIndex bietet jetzt
-     Liga-Hosting als Produkt für jeden Verein" — das Box-Ligen-Format ist
-     technisch generisch gebaut, aber aktuell gibt es genau eine Liga bei
-     einem Verein. Ehrlich als Pilot framen statt Verfügbarkeit zu
-     behaupten, die es noch nicht gibt. -->
+	     Liga-Hosting als Produkt für jeden Verein" — das Box-Ligen-Format ist
+	     technisch generisch gebaut, aber aktuell gibt es genau eine Liga bei
+	     einem Verein. Ehrlich als Pilot framen statt Verfügbarkeit zu
+	     behaupten, die es noch nicht gibt. -->
 	<section class="sec" id="liga">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Liga</span>
-				<h2 use:reveal={{ delay: 0.05 }}>Auch echte Vereinsligen laufen auf PadelIndex.</h2>
+				<span class="eyebrow" use:reveal>{m.home_liga_eyebrow()}</span>
+				<h2 use:reveal={{ delay: 0.05 }}>{m.home_liga_h2()}</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
-					Die BÁVARO PADEL LEAGUE beim STC Oberland spielt in 4er-Boxen mit rotierenden
-					Doppelpartnern, eigener Box-Tabelle und Auf-/Abstieg — als eigenständiges Ranking neben
-					dem allgemeinen PadelIndex-Level. Ergebnisse fließen zusätzlich ins Index-Rating ein.
+					{m.home_liga_p()}
 				</p>
 				<a
 					class="btn btn-primary"
-					href="/liga/bavaro"
+					href={localizeHref('/liga/bavaro')}
 					use:reveal={{ delay: 0.15 }}
 					style="margin-top:28px; display:inline-flex"
 				>
-					Liga-Tabelle ansehen
+					{m.home_liga_cta()}
 				</a>
 			</div>
 		</div>
@@ -217,17 +206,20 @@
 	<section class="sec sec-light" id="ratgeber">
 		<div class="wrap">
 			<div class="sec-head">
-				<span class="eyebrow" use:reveal>Ratgeber & Quiz</span>
+				<span class="eyebrow" use:reveal>{m.home_ratgeber_eyebrow()}</span>
 				<h2 use:reveal={{ delay: 0.05 }}>
-					Regeln, Ausrüstung, Technik und Taktik einfach erklärt.
+					{m.home_ratgeber_h2()}
 				</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
-					Der PadelIndex-Ratgeber erklärt alles vom ersten Aufschlag bis zur Doppel-Taktik — und im
-					Quiz mit drei Schwierigkeitsgraden testest du gleich, wie sicher du dich fühlst.
+					{m.home_ratgeber_p()}
 				</p>
 				<div class="hero-cta" use:reveal={{ delay: 0.15 }} style="margin-top:28px">
-					<a class="btn btn-primary" href="/ratgeber">Ratgeber entdecken</a>
-					<a class="btn btn-ghost-light" href="/quiz">Padel-Quiz starten</a>
+					<a class="btn btn-primary" href={localizeHref('/ratgeber')}
+						>{m.home_ratgeber_cta_primary()}</a
+					>
+					<a class="btn btn-ghost-light" href={localizeHref('/quiz')}
+						>{m.home_ratgeber_cta_secondary()}</a
+					>
 				</div>
 			</div>
 		</div>
@@ -240,11 +232,12 @@
 			></i>
 		</div>
 		<div class="wrap cta-in">
-			<span class="eyebrow" use:reveal>Pilotphase</span>
-			<h2 use:reveal={{ delay: 0.05 }}>Der erste Wert entsteht<br />mit deinem ersten Match.</h2>
+			<span class="eyebrow" use:reveal>{m.home_cta_eyebrow()}</span>
+			<h2 use:reveal={{ delay: 0.05 }}>
+				{m.home_cta_h2_line1()}<br />{m.home_cta_h2_line2()}
+			</h2>
 			<p class="muted" use:reveal={{ delay: 0.1 }} style="margin-top:22px">
-				Wir starten im Oberland. Trag dich ein, dann melden wir uns, sobald dein Club dabei ist —
-				oder wir fragen ihn für dich.
+				{m.home_cta_p()}
 			</p>
 
 			<div use:reveal={{ delay: 0.15 }}>
@@ -253,10 +246,10 @@
 
 			{#if data.board}
 				<p class="cta-alt" use:reveal={{ delay: 0.2 }}>
-					Du spielst schon beim {data.board.club.name}?
-					<a href="/c/stc-oberland/beanspruchen">Profil beanspruchen</a>
+					{m.home_cta_alt_question({ clubName: data.board.club.name })}
+					<a href="/c/stc-oberland/beanspruchen">{m.home_cta_alt_claim()}</a>
 					·
-					<a href="/c/stc-oberland">Ranking ansehen</a>
+					<a href={localizeHref('/c/stc-oberland')}>{m.home_cta_alt_ranking()}</a>
 				</p>
 			{/if}
 		</div>

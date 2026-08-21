@@ -37,4 +37,12 @@ describe('hreflangLinksFor', () => {
 		expect(byLang.en).toBe('https://padelindex.de/en/ratgeber/padel-schuhe');
 		expect(byLang.es).toBe('https://padelindex.de/es/ratgeber/padel-schuhe');
 	});
+
+	it('funktioniert auch, wenn der übergebene Pfad bereits lokalisiert ist (page.url.pathname auf /en/…)', () => {
+		const links = hreflangLinksFor('/en/rating');
+		const byLang = Object.fromEntries(links.map((l) => [l.hreflang, l.href]));
+		expect(byLang.de).toBe('https://padelindex.de/rating');
+		expect(byLang.en).toBe('https://padelindex.de/en/rating');
+		expect(byLang.es).toBe('https://padelindex.de/es/rating');
+	});
 });
