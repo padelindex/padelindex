@@ -1,14 +1,20 @@
 <script lang="ts">
 	import type { QuizDifficulty } from '$lib/quiz';
+	import { localizeHref } from '$lib/paraglide/runtime';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { difficulty, questionCount }: { difficulty: QuizDifficulty; questionCount: number } =
 		$props();
 </script>
 
-<a class="diff-card" href="/quiz/{difficulty.slug}" style="--accent: {difficulty.color}">
+<a
+	class="diff-card"
+	href={localizeHref(`/quiz/${difficulty.slug}`)}
+	style="--accent: {difficulty.color}"
+>
 	<span class="label">{difficulty.label}</span>
 	<p class="desc">{difficulty.description}</p>
-	<span class="count">{questionCount} Fragen</span>
+	<span class="count">{m.quiz_question_count({ count: questionCount })}</span>
 </a>
 
 <style>

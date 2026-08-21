@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { percentageFor, resultTierFor, shareText } from './quiz';
-import { QUIZ_RESULT_TIERS, QUIZ_DIFFICULTIES } from './quiz-data';
+import { resultTiersFor, difficultiesFor } from './quiz-data';
+
+const QUIZ_RESULT_TIERS = resultTiersFor('de');
+const QUIZ_DIFFICULTIES = difficultiesFor('de');
 
 describe('percentageFor', () => {
 	it('rechnet Prozent korrekt', () => {
@@ -40,12 +43,22 @@ describe('resultTierFor', () => {
 });
 
 describe('shareText', () => {
-	it('enthält Schwierigkeit, Punktzahl und Link', () => {
+	it('enthält Schwierigkeit, Punktzahl und Link (DE)', () => {
 		const difficulty = QUIZ_DIFFICULTIES[0];
-		const text = shareText(difficulty, 8, 10, 80);
+		const url = `https://padelindex.de/quiz/${difficulty.slug}`;
+		const text = shareText(difficulty, 8, 10, 80, url, 'de');
 		expect(text).toContain(difficulty.label);
-		expect(text).toContain('8 von 10');
+		expect(text).toContain('8');
+		expect(text).toContain('10');
 		expect(text).toContain('80 %');
-		expect(text).toContain(`/quiz/${difficulty.slug}`);
+		expect(text).toContain(url);
+	});
+
+	it('übersetzt den Text je nach übergebener locale', () => {
+		const difficulty = difficultiesFor('en')[0];
+		const url = `https://padelindex.de/en/quiz/${difficulty.slug}`;
+		const text = shareText(difficulty, 8, 10, 80, url, 'en');
+		expect(text).toContain('correctly');
+		expect(text).toContain(url);
 	});
 });

@@ -2,36 +2,47 @@
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import DifficultyCard from '$lib/components/quiz/DifficultyCard.svelte';
+	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
+	import { page } from '$app/state';
 	import { mainNav } from '$lib/landing/nav';
 	import { jsonLd } from '$lib/jsonld';
-	import { QUIZ_DIFFICULTIES, questionsFor } from '$lib/quiz-data';
+	import { difficultiesFor, questionsFor } from '$lib/quiz-data';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+	import { ogLocaleFor } from '$lib/i18n/hreflang';
 
-	const breadcrumbSchema = jsonLd({
-		'@context': 'https://schema.org',
-		'@type': 'BreadcrumbList',
-		itemListElement: [
-			{ '@type': 'ListItem', position: 1, name: 'PadelIndex', item: 'https://padelindex.de/' },
-			{ '@type': 'ListItem', position: 2, name: 'Quiz', item: 'https://padelindex.de/quiz' }
-		]
-	});
+	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
+	const difficulties = $derived(difficultiesFor(getLocale()));
+
+	const breadcrumbSchema = $derived(
+		jsonLd({
+			'@context': 'https://schema.org',
+			'@type': 'BreadcrumbList',
+			itemListElement: [
+				{ '@type': 'ListItem', position: 1, name: 'PadelIndex', item: 'https://padelindex.de/' },
+				{
+					'@type': 'ListItem',
+					position: 2,
+					name: m.quiz_breadcrumb_name(),
+					item: 'https://padelindex.de/quiz'
+				}
+			]
+		})
+	);
 </script>
 
 <svelte:head>
-	<title>Padel Quiz: Teste dein Wissen zu Regeln, Technik und Taktik — PadelIndex</title>
-	<meta
-		name="description"
-		content="Teste dein Padel-Wissen im interaktiven Quiz mit drei Schwierigkeitsgraden: Anfänger, Fortgeschritten und Experte."
-	/>
-	<link rel="canonical" href="https://padelindex.de/quiz" />
+	<title>{m.quiz_meta_title()}</title>
+	<meta name="description" content={m.quiz_meta_description()} />
+	<link rel="canonical" href={canonical} />
+	<HreflangLinks path={page.url.pathname} />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://padelindex.de/quiz" />
+	<meta property="og:url" content={canonical} />
 	<meta property="og:site_name" content="PadelIndex" />
-	<meta property="og:locale" content="de_DE" />
-	<meta property="og:title" content="Padel Quiz: Teste dein Wissen zu Regeln, Technik und Taktik" />
-	<meta
-		property="og:description"
-		content="Drei Schwierigkeitsgrade, je zehn Fragen: Teste dein Padel-Wissen und finde heraus, wo du noch dazulernen kannst."
-	/>
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.quiz_og_title()} />
+	<meta property="og:description" content={m.quiz_og_description()} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 	{@html `<script type="application/ld+json">${breadcrumbSchema}</script>`}
@@ -43,24 +54,28 @@
 	<section class="sec sec-light">
 		<div class="wrap">
 			<div class="hero">
-				<span class="eyebrow">PadelIndex Quiz</span>
-				<h1>Teste dein Padel-Wissen</h1>
+				<span class="eyebrow">{m.quiz_eyebrow()}</span>
+				<h1>{m.quiz_headline()}</h1>
 				<p class="sub">
-					Drei Schwierigkeitsgrade, je zehn Fragen mit Erklärung. Finde heraus, wie sicher du dich
-					mit Regeln, Technik und Taktik fühlst — und wo sich ein Blick in den Ratgeber lohnt.
+					{m.quiz_sub()}
 				</p>
 			</div>
 
 			<div class="grid">
-				{#each QUIZ_DIFFICULTIES as difficulty (difficulty.slug)}
-					<DifficultyCard {difficulty} questionCount={questionsFor(difficulty.slug).length} />
+				{#each difficulties as difficulty (difficulty.slug)}
+					<DifficultyCard
+						{difficulty}
+						questionCount={questionsFor(getLocale(), difficulty.slug).length}
+					/>
 				{/each}
 			</div>
 
 			<p class="footnote">
-				Lieber erst die Grundlagen auffrischen? Schau in den <a href="/ratgeber">Ratgeber</a>, oder
-				finde mit dem
-				<a href="/level-schaetzen">PadelIndex-Level-Test</a> heraus, wo du spielerisch stehst.
+				{m.quiz_footnote_pre()}
+				<a href={localizeHref('/ratgeber')}>{m.quiz_footnote_ratgeber_link()}</a
+				>{m.quiz_footnote_mid()}
+				<a href="/level-schaetzen">{m.quiz_footnote_level_link()}</a>
+				{m.quiz_footnote_post()}
 			</p>
 		</div>
 	</section>

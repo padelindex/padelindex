@@ -2,6 +2,7 @@
 	import type { QuizDifficulty, QuizResultTier } from '$lib/quiz';
 	import type { GuideArticle } from '$lib/guides';
 	import GuideCard from '../guides/GuideCard.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let {
 		difficulty,
@@ -45,7 +46,7 @@
 
 <div class="result">
 	<div class="score-ring">
-		<svg viewBox="0 0 120 120" role="img" aria-label="{percentage} Prozent richtig beantwortet">
+		<svg viewBox="0 0 120 120" role="img" aria-label={m.quiz_score_aria({ percentage })}>
 			<circle cx="60" cy="60" r={RADIUS} fill="none" stroke="var(--line-light)" stroke-width="10" />
 			<circle
 				cx="60"
@@ -70,25 +71,24 @@
 	<p class="tier-text">{tier.text}</p>
 
 	<div class="actions">
-		<a class="btn btn-primary" href="/level-schaetzen">Zum PadelIndex-Level-Test</a>
-		<button class="btn btn-ghost-light" type="button" onclick={onRestart}
-			>Quiz erneut starten</button
+		<a class="btn btn-primary" href="/level-schaetzen">{m.quiz_cta_level_test()}</a>
+		<button class="btn btn-ghost-light" type="button" onclick={onRestart}>{m.quiz_restart()}</button
 		>
 		<button class="btn btn-ghost-light" type="button" onclick={onChangeDifficulty}>
-			Anderen Schwierigkeitsgrad wählen
+			{m.quiz_change_difficulty()}
 		</button>
 	</div>
 
 	<div class="share">
 		<p>{shareTextValue}</p>
 		<button class="btn btn-ghost-light" type="button" onclick={copyShareText}>
-			{copied ? 'Kopiert!' : 'Ergebnis-Text kopieren'}
+			{copied ? m.quiz_copied() : m.quiz_copy_result()}
 		</button>
 	</div>
 
 	{#if recommendedGuides.length > 0}
 		<div class="recommendations">
-			<h3>Passende Ratgeber für dich</h3>
+			<h3>{m.quiz_recommended_guides_heading()}</h3>
 			<div class="grid">
 				{#each recommendedGuides as guide (guide.slug)}
 					<GuideCard {guide} />
