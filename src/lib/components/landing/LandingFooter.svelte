@@ -49,6 +49,7 @@
 			<a href={localizeHref('/ratgeber/padel-fuer-anfaenger')}>{m.footer_padel_fuer_anfaenger()}</a>
 			<a href={localizeHref('/faq')}>{m.footer_faq()}</a>
 			<a href={localizeHref('/ueber')}>{m.footer_ueber_uns()}</a>
+			<a href={localizeHref('/roadmap')}>{m.footer_roadmap()}</a>
 			<a href={localizeHref('/anmelden')}>{m.footer_anmelden()}</a>
 			<a href={localizeHref('/datenschutz')}>{m.footer_datenschutz()}</a>
 			<a href={localizeHref('/impressum')}>{m.footer_impressum()}</a>

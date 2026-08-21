@@ -43,7 +43,8 @@ const LOCALIZED_STATIC_PAGES = [
 // Außerhalb des i18n-Scope (internes Werkzeug ohne SEO-Wert) — bleibt
 // deutsch-only, ein einzelner <url>-Eintrag ohne hreflang-Alternates.
 const UNLOCALIZED_STATIC_PAGES = [
-	{ path: '/level-schaetzen', priority: '0.6', changefreq: 'monthly' }
+	{ path: '/level-schaetzen', priority: '0.6', changefreq: 'monthly' },
+	{ path: '/roadmap', priority: '0.4', changefreq: 'monthly' }
 ];
 
 type SitemapUrl = { loc: string; priority: string; changefreq: string; alternates?: string };
