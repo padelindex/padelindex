@@ -25,6 +25,17 @@
 	ein Klick auf "EN" tat sichtbar nichts. isLocalizable prüft das an
 	einer einzigen, nicht-Basis-Sprache (hier "en") und blendet den
 	Umschalter aus, statt drei tote Links zu zeigen.
+
+	data-sveltekit-reload auf den Sprachlinks: ohne das navigiert
+	SvelteKit client-seitig (kein echter HTTP-Request), aber Paraglides
+	getLocale() im Browser liest die Locale aus dem strategy-Array
+	(hier ['url','baseLocale']) nur zuverlässig neu ein, wenn die Seite
+	tatsächlich frisch vom Server kommt — bei einer reinen
+	History-API-Navigation blieb die zuvor aktive Sprache hängen (Klick
+	auf "EN" änderte die URL auf /en, Inhalt/#html[lang] zeigten aber
+	weiter Deutsch, bis man manuell neu lud). Ein erzwungener Full-Page-
+	Load lässt hooks.server.ts (paraglideHandle) wieder pro Request
+	laufen, so wie es dort ohnehin für SSR vorgesehen ist.
 -->
 <script lang="ts">
 	import { page } from '$app/state';
@@ -78,7 +89,9 @@
 		{#if isLocalizable}
 			<div class="foot-langs" aria-label={m.footer_sprache()}>
 				{#each languageLinks as lang (lang.locale)}
-					<a href={lang.href} lang={lang.locale} hreflang={lang.locale}>{lang.label}</a>
+					<a href={lang.href} lang={lang.locale} hreflang={lang.locale} data-sveltekit-reload
+						>{lang.label}</a
+					>
 				{/each}
 			</div>
 		{/if}
