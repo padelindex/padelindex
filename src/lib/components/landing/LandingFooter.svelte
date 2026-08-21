@@ -15,15 +15,35 @@
 	localizeHref(path, {locale}) hängt den aktuellen, DELOKALISIERTEN
 	Pfad um, damit "Englisch" auf /en/vereine landet, wenn man gerade
 	/vereine liest — nicht immer zurück auf die Startseite.
+
+	Der Footer läuft auch auf Seiten außerhalb des i18n-Scope
+	(/konto, /roadmap, /level-schaetzen, …) — für die kennt Paraglides
+	urlPatterns kein Muster, localizeHref() gibt den Pfad dann
+	unverändert zurück (siehe localizeUrl() in paraglide/runtime.js:
+	"If no match found, return the original url"). Ohne diese Prüfung
+	zeigten DE/EN/ES dort alle auf dieselbe URL wie die aktuelle Seite —
+	ein Klick auf "EN" tat sichtbar nichts. isLocalizable prüft das an
+	einer einzigen, nicht-Basis-Sprache (hier "en") und blendet den
+	Umschalter aus, statt drei tote Links zu zeigen.
 -->
 <script lang="ts">
 	import { page } from '$app/state';
 	import { m } from '$lib/paraglide/messages.js';
-	import { deLocalizeHref, localizeHref, locales, type Locale } from '$lib/paraglide/runtime';
+	import {
+		baseLocale,
+		deLocalizeHref,
+		localizeHref,
+		locales,
+		type Locale
+	} from '$lib/paraglide/runtime';
 
 	const LOCALE_LABELS: Record<Locale, string> = { de: 'DE', en: 'EN', es: 'ES' };
 
 	const currentPath = $derived(deLocalizeHref(page.url.pathname));
+	const probeLocale = locales.find((locale) => locale !== baseLocale) ?? baseLocale;
+	const isLocalizable = $derived(
+		localizeHref(currentPath, { locale: probeLocale }) !== currentPath
+	);
 	const languageLinks = $derived(
 		locales.map((locale) => ({
 			locale,
@@ -55,11 +75,13 @@
 			<a href={localizeHref('/impressum')}>{m.footer_impressum()}</a>
 			<a href="mailto:kontakt@padelindex.de">{m.footer_kontakt()}</a>
 		</div>
-		<div class="foot-langs" aria-label={m.footer_sprache()}>
-			{#each languageLinks as lang (lang.locale)}
-				<a href={lang.href} lang={lang.locale} hreflang={lang.locale}>{lang.label}</a>
-			{/each}
-		</div>
+		{#if isLocalizable}
+			<div class="foot-langs" aria-label={m.footer_sprache()}>
+				{#each languageLinks as lang (lang.locale)}
+					<a href={lang.href} lang={lang.locale} hreflang={lang.locale}>{lang.label}</a>
+				{/each}
+			</div>
+		{/if}
 	</div>
 </footer>
 
