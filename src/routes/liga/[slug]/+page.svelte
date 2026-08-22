@@ -21,7 +21,7 @@
 	import { mainNav } from '$lib/landing/nav';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
-	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { ogLocaleFor, ogImageUrl } from '$lib/i18n/hreflang';
 	import { dateLocaleFor } from '$lib/i18n/date';
 
 	let { data }: { data: PageData } = $props();
@@ -41,6 +41,7 @@
 
 	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
 	const ogLocale = $derived(ogLocaleFor(getLocale()));
+	const ogImage = $derived(ogImageUrl(getLocale()));
 
 	const dateFmt = $derived(
 		new Intl.DateTimeFormat(dateLocaleFor(getLocale()), {
@@ -64,6 +65,9 @@
 	<meta property="og:site_name" content="PadelIndex" />
 	<meta property="og:locale" content={ogLocale} />
 	<meta property="og:title" content={m.liga_og_title({ name: data.league.name })} />
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>

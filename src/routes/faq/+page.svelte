@@ -6,7 +6,7 @@
 	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import { jsonLd } from '$lib/jsonld';
 	import { mainNav } from '$lib/landing/nav';
-	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { ogLocaleFor, ogImageUrl } from '$lib/i18n/hreflang';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale } from '$lib/paraglide/runtime';
 
@@ -43,6 +43,7 @@
 
 	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
 	const ogLocale = $derived(ogLocaleFor(getLocale()));
+	const ogImage = $derived(ogImageUrl(getLocale()));
 </script>
 
 <svelte:head>
@@ -56,6 +57,9 @@
 	<meta property="og:locale" content={ogLocale} />
 	<meta property="og:title" content={m.faq_og_title()} />
 	<meta property="og:description" content={m.faq_og_description()} />
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 	{@html `<script type="application/ld+json">${faqSchema}</script>`}

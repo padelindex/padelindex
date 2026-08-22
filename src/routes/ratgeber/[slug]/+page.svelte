@@ -14,7 +14,7 @@
 	import { categoryLabels, difficultyLabels } from '$lib/guides';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
-	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { ogLocaleFor, ogImageUrl } from '$lib/i18n/hreflang';
 	import { dateLocaleFor } from '$lib/i18n/date';
 	import type { PageData } from './$types';
 
@@ -23,6 +23,7 @@
 	const guide = $derived(data.guide);
 	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
 	const ogLocale = $derived(ogLocaleFor(getLocale()));
+	const ogImage = $derived(ogImageUrl(getLocale()));
 
 	const articleSchema = $derived(
 		jsonLd({
@@ -84,6 +85,9 @@
 	<meta property="og:locale" content={ogLocale} />
 	<meta property="og:title" content={guide.metaTitle} />
 	<meta property="og:description" content={guide.metaDescription} />
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 	{@html `<script type="application/ld+json">${articleSchema}</script>`}

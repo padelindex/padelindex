@@ -200,6 +200,9 @@
 		property="og:description"
 		content="Erfahre, wie sich PadelIndex entwickelt – von der Pilotphase mit echten Spielern und Matches bis zur langfristigen Vision einer vernetzten Padel-Plattform."
 	/>
+	<meta property="og:image" content="https://padelindex.de/og/share-de.png" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 </svelte:head>

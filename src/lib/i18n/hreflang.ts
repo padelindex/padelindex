@@ -38,3 +38,16 @@ const OG_LOCALES: Record<Locale, string> = { de: 'de_DE', en: 'en_US', es: 'es_E
 export function ogLocaleFor(locale: Locale): string {
 	return OG_LOCALES[locale];
 }
+
+// Statisches Standard-Share-Bild pro Sprache (siehe scripts/generate-og-image.ts) —
+// dasselbe Bild für jede Seite, die kein eigenes dynamisches og:image hat
+// (Ausnahme: /level-schaetzen rendert sein Ergebnis selbst, lib/server/og-image.ts).
+const OG_IMAGES: Record<Locale, string> = {
+	de: `${ORIGIN}/og/share-de.png`,
+	en: `${ORIGIN}/og/share-en.png`,
+	es: `${ORIGIN}/og/share-es.png`
+};
+
+export function ogImageUrl(locale: Locale): string {
+	return OG_IMAGES[locale];
+}

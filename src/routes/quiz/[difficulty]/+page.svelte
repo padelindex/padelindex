@@ -13,7 +13,7 @@
 	import { resultTiersFor } from '$lib/quiz-data';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
-	import { ogLocaleFor } from '$lib/i18n/hreflang';
+	import { ogLocaleFor, ogImageUrl } from '$lib/i18n/hreflang';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -62,6 +62,7 @@
 	const tier = $derived(resultTierFor(resultTiersFor(getLocale()), percentage));
 	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
 	const ogLocale = $derived(ogLocaleFor(getLocale()));
+	const ogImage = $derived(ogImageUrl(getLocale()));
 	const shareTextValue = $derived(
 		shareText(data.difficulty, correctCount, total, percentage, canonical, getLocale())
 	);
@@ -95,6 +96,9 @@
 	<meta property="og:locale" content={ogLocale} />
 	<meta property="og:title" content={data.difficulty.metaTitle} />
 	<meta property="og:description" content={data.difficulty.metaDescription} />
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0B1E26" />
 	{@html `<script type="application/ld+json">${breadcrumbSchema}</script>`}
