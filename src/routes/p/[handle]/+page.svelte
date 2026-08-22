@@ -7,6 +7,7 @@
 	import { isProfileIndexable } from '$lib/seo';
 	import { jsonLd } from '$lib/jsonld';
 	import { dateLocaleFor } from '$lib/i18n/date';
+	import { ogLocaleFor, ogImageUrl } from '$lib/i18n/hreflang';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 
@@ -14,6 +15,8 @@
 
 	const indexable = $derived(isProfileIndexable(data.profile.matchesPlayed));
 	const canonical = $derived(`https://padelindex.de/p/${page.params.handle}`);
+	const ogLocale = $derived(ogLocaleFor(getLocale()));
+	const ogImage = $derived(ogImageUrl(getLocale()));
 
 	const breadcrumbs = $derived.by(() => {
 		const items = [
@@ -127,6 +130,19 @@
 		<meta name="robots" content="noindex, follow" />
 	{/if}
 	<HreflangLinks path={page.url.pathname} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={canonical} />
+	<meta property="og:site_name" content="PadelIndex" />
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:title" content={m.player_title({ name: data.profile.name })} />
+	<meta
+		property="og:description"
+		content={m.player_meta_description({ name: data.profile.name })}
+	/>
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta name="twitter:card" content="summary_large_image" />
 	{@html `<script type="application/ld+json">${breadcrumbs}</script>`}
 </svelte:head>
 
