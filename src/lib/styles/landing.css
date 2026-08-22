@@ -71,7 +71,44 @@ img,svg{display:block;max-width:100%}
 .nav-links{display:flex;align-items:center;gap:28px;font-size:14px}
 .nav-links a{text-decoration:none;color:var(--muted-dark);transition:color .2s}
 .nav-links a:hover{color:var(--chalk)}
-@media(max-width:860px){.nav-links{display:none}}
+
+.nav-right{display:flex;align-items:center;gap:14px}
+.nav-login{font-size:14px;text-decoration:none;color:var(--muted-dark);transition:color .2s}
+.nav-login:hover{color:var(--chalk)}
+
+/* Burger: nur mobil. Zwei Linien über ::before/::after, damit ein
+   einziges <span> für den X-Zustand reicht. */
+.nav-burger{
+  display:none;width:40px;height:40px;flex:none;position:relative;
+  background:transparent;border:1px solid var(--line-dark);border-radius:10px;cursor:pointer
+}
+.nav-burger span,.nav-burger span::before,.nav-burger span::after{
+  position:absolute;left:50%;width:17px;height:1.5px;background:var(--chalk);
+  border-radius:2px;transition:transform .25s,opacity .2s;content:""
+}
+.nav-burger span{top:50%;transform:translate(-50%,-50%)}
+.nav-burger span::before{left:0;transform:translateY(-5.5px)}
+.nav-burger span::after{left:0;transform:translateY(5.5px)}
+.nav-burger span.x{background:transparent}
+.nav-burger span.x::before{transform:rotate(45deg)}
+.nav-burger span.x::after{transform:rotate(-45deg)}
+
+.nav-panel{border-top:1px solid var(--line-dark);background:var(--night);padding:14px 0 20px}
+.nav-panel .wrap{display:flex;flex-direction:column;gap:2px}
+.nav-panel a{
+  text-decoration:none;color:var(--chalk);font-size:16px;padding:12px 0;
+  border-bottom:1px solid var(--line-dark)
+}
+.nav-panel a:last-child{border-bottom:0;margin-top:14px;align-self:flex-start}
+
+@media(max-width:900px){
+  .nav-links,.nav-login{display:none}
+  .nav-burger{display:block}
+  /* .nav-in davorgesetzt: .btn{display:inline-flex} steht weiter unten in
+     dieser Datei und wuerde sonst bei gleicher Spezifitaet gewinnen. */
+  .nav-in .nav-cta{display:none}
+}
+@media(min-width:901px){.nav-panel{display:none}}
 
 .btn{
   display:inline-flex;align-items:center;gap:9px;
@@ -83,15 +120,25 @@ img,svg{display:block;max-width:100%}
 .btn-primary:hover{background:#1BBBA9;transform:translateY(-1px)}
 .btn-ghost{border-color:var(--line-dark);color:var(--chalk);background:transparent}
 .btn-ghost:hover{border-color:var(--court);color:var(--court)}
-.btn:focus-visible,a:focus-visible,input:focus-visible,button:focus-visible{
+/* Für Ghost-Buttons auf hellem Untergrund (.sec-light) — .btn-ghost ist für
+   den dunklen Hero/Nav-Kontext gebaut, --chalk (fast weiß) verschwindet auf
+   weiß fast komplett. */
+.btn-ghost-light{border-color:var(--line-light);color:var(--ink);background:transparent}
+.btn-ghost-light:hover{border-color:var(--court);color:var(--court-deep)}
+.btn:focus-visible,a:focus-visible,input:focus-visible,button:focus-visible,summary:focus-visible{
   outline:2px solid var(--court);outline-offset:3px
 }
+/* .btn hatte bisher gar keinen :disabled-Zustand — ein deaktivierter Button
+   (z.B. "nicht genug Tokens") sah optisch identisch zu einem aktiven aus.
+   Live an den Prämien-Buttons auf /konto gefunden. */
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-primary:disabled:hover{background:var(--court)}
 
 /* ============================================================
    Hero — die Thesis: ein Rating ist keine Zahl, sondern eine
    Verteilung, die sich mit jedem Match zusammenzieht.
    ============================================================ */
-.hero{position:relative;padding:clamp(64px,10vh,120px) 0 clamp(56px,8vh,96px);overflow:hidden}
+.hero{position:relative;padding:clamp(48px,7vh,88px) 0 clamp(56px,8vh,96px);overflow:hidden}
 .hero::after{
   content:"";position:absolute;left:50%;top:-30%;width:120vw;height:90vh;
   transform:translateX(-50%);pointer-events:none;
@@ -101,7 +148,9 @@ img,svg{display:block;max-width:100%}
 @media(max-width:960px){.hero-in{grid-template-columns:1fr;gap:44px}}
 
 .hero h1{
-  font-size:clamp(42px,6.6vw,90px);margin:22px 0 0;
+  /* Bewusst kleiner als das reine Schauwert-Maximum: bei 90px rutschte der
+     primaere CTA auf 1440x900 unter die Falz. */
+  font-size:clamp(38px,5.2vw,72px);margin:20px 0 0;
   font-weight:600;
 }
 .hero h1 em{
@@ -113,40 +162,6 @@ img,svg{display:block;max-width:100%}
 .hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
 .hero-note{margin-top:18px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--muted-dark);text-transform:uppercase}
 
-/* Rating-Panel: Glaswand-Optik, weil Padel an Glas gespielt wird */
-.panel{
-  position:relative;border-radius:20px;padding:clamp(22px,2.4vw,30px);
-  background:linear-gradient(168deg,rgba(239,242,237,.075),rgba(239,242,237,.02));
-  border:1px solid var(--line-dark);
-  box-shadow:0 30px 70px -30px rgba(0,0,0,.7);
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-}
-.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-.panel-head .who{font-size:14px;font-weight:600}
-.panel-head .club{font-size:12.5px;color:var(--muted-dark);margin-top:2px}
-
-.score-row{display:flex;align-items:center;gap:16px;margin-top:6px}
-.score{font-family:var(--mono);font-size:clamp(44px,5.6vw,66px);font-weight:500;letter-spacing:-.045em;line-height:1}
-.ring{width:56px;height:56px;flex:none}
-.ring circle{fill:none;stroke-width:3.4}
-.ring .track{stroke:var(--line-dark)}
-.ring .fill{stroke:var(--court);stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
-.ring-label{position:absolute;font-family:var(--mono);font-size:10.5px}
-
-.curve-box{margin-top:6px;position:relative}
-.curve-box svg{width:100%;height:auto;display:block;overflow:visible}
-.curve-fill{fill:url(#curveGrad)}
-.curve-stroke{fill:none;stroke:var(--court);stroke-width:2.2;stroke-linejoin:round}
-.curve-axis{stroke:var(--line-dark);stroke-width:1}
-.curve-tick{font-family:var(--mono);font-size:10px;fill:var(--muted-dark)}
-.curve-peak{stroke:var(--sand);stroke-width:1;stroke-dasharray:3 4;opacity:.75}
-
-.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line-dark)}
-.readout dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-dark)}
-.readout dd{margin:5px 0 0;font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums}
-
-.slider{margin-top:22px}
-.slider label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-dark)}
 input[type=range]{
   -webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin-top:6px;cursor:grab
 }
@@ -165,10 +180,20 @@ input[type=range]::-moz-range-thumb{
    ============================================================ */
 section{position:relative}
 .sec{padding:clamp(72px,11vh,132px) 0}
-.sec-light{background:var(--chalk);color:var(--ink)}
-.sec-light .eyebrow{color:var(--court-deep)}
-.sec-light .muted{color:var(--muted-light)}
+.sec-light,.sec-light-alt{background:var(--chalk);color:var(--ink)}
+/* Zweiter heller Ton, damit zwei helle Abschnitte nacheinander nicht
+   ineinanderlaufen. */
+.sec-light-alt{background:var(--chalk-2)}
+.sec-light .eyebrow,.sec-light-alt .eyebrow{color:var(--court-deep)}
+.sec-light .muted,.sec-light-alt .muted{color:var(--muted-light)}
 .muted{color:var(--muted-dark)}
+
+/* Nur für Screenreader — sichtbare Labels sind der Normalfall, das hier
+   ist für Felder, deren Beschriftung visuell im Platzhalter steckt. */
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0
+}
 
 .sec-head{max-width:62ch}
 .sec-head h2{font-size:clamp(30px,4.1vw,54px);margin:18px 0 0}
@@ -185,9 +210,13 @@ section{position:relative}
 .factors{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(18px,2.4vw,34px);margin-top:54px}
 @media(max-width:860px){.factors{grid-template-columns:1fr}}
 .factor{padding-top:22px;border-top:2px solid var(--court-deep)}
-.factor h3{font-size:22px;margin-bottom:12px}
+.factor h2,.factor h3{font-size:22px;margin-bottom:12px}
 .factor p{font-size:14.5px}
 .factor .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--court-deep);display:block;margin-bottom:16px}
+
+.rechnen-cta{margin-top:44px;padding-top:28px;border-top:1px solid var(--line-light);font-size:15px;color:var(--muted-light);text-align:center}
+.rechnen-cta a{margin-left:8px;color:var(--court-deep);font-weight:600;text-decoration:none;white-space:nowrap}
+.rechnen-cta a:hover{text-decoration:underline}
 
 /* Vergleich */
 .cmp{width:100%;border-collapse:collapse;margin-top:48px;font-size:14.5px}
@@ -207,31 +236,19 @@ section{position:relative}
   .cmp td::before{content:attr(data-l);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-light);display:block}
 }
 
-/* Tokens */
-.tokens{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,4vw,64px);align-items:start;margin-top:52px}
-@media(max-width:860px){.tokens{grid-template-columns:1fr}}
-.ledger{border:1px solid var(--line-dark);border-radius:16px;overflow:hidden}
-.ledger-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line-dark);font-size:14px}
-.ledger-row:last-child{border-bottom:0}
-.ledger-row .why{color:var(--muted-dark);font-size:12.5px;margin-top:2px}
-.ledger-row .amt{font-family:var(--mono);font-size:15px;color:var(--court);white-space:nowrap}
-.ledger-row.out .amt{color:var(--sand)}
-.ledger-head{background:rgba(239,242,237,.045);font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-dark)}
-.rules{list-style:none;padding:0;margin:26px 0 0}
-.rules li{position:relative;padding-left:26px;margin-bottom:14px;font-size:14.5px;color:var(--muted-dark)}
-.rules li::before{content:"";position:absolute;left:0;top:9px;width:11px;height:11px;border:2px solid var(--court);border-radius:50%}
-.rules li b{color:var(--chalk);font-weight:600}
-
-/* Widget-Demo */
-.widget-demo{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,4vw,60px);align-items:center;margin-top:52px}
-@media(max-width:860px){.widget-demo{grid-template-columns:1fr}}
+/* Vereins-Rangliste (ClubLeaderboard.svelte, Vereinsseite) */
 .lb{background:#FBFBF9;border:1px solid var(--line-light);border-radius:12px;overflow:hidden;box-shadow:0 20px 50px -26px rgba(11,30,38,.28)}
 .lb-head{display:flex;justify-content:space-between;align-items:baseline;padding:14px 16px;border-bottom:1px solid var(--line-light)}
 .lb-head .n{font-size:14.5px;font-weight:600}
 .lb-head .e{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-light)}
 .lb ol{list-style:none;margin:0;padding:0}
-.lb li{display:grid;grid-template-columns:2.2ch 1fr auto;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line-light)}
+.lb li{border-bottom:1px solid var(--line-light)}
 .lb li:last-child{border-bottom:0}
+/* .row statt li selbst: der Profil-Link (a) und sein compact-Fallback
+   (span, im eingebetteten Widget) brauchen dasselbe Grid-Layout, egal
+   welches Element svelte:element daraus macht. */
+.lb .row{display:grid;grid-template-columns:2.2ch 1fr auto;align-items:center;gap:12px;padding:11px 16px;text-decoration:none;color:inherit}
+a.row:hover{background:rgba(15,110,92,.05)}
 .lb .r{font-family:var(--mono);font-size:12.5px;color:var(--muted-light);text-align:right}
 .lb .nm{font-size:14px;font-weight:500;color:var(--ink)}
 .lb .mt{font-size:11.5px;color:var(--muted-light)}
@@ -243,24 +260,23 @@ section{position:relative}
 .lb .mini .t{stroke:var(--line-light)}
 .lb .mini .f{stroke:var(--court-deep);stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
 .lb-foot{display:flex;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--line-light);font-size:11px;color:var(--muted-light)}
-.snippet{
-  margin-top:24px;background:var(--night);color:var(--chalk);border-radius:12px;padding:18px;
-  font-family:var(--mono);font-size:12.5px;line-height:1.7;overflow-x:auto;border:1px solid var(--line-dark)
-}
-.snippet .t{color:var(--court)}
-.snippet .at{color:var(--sand)}
-
 /* Tarife */
 .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:44px;background:var(--line-light);border:1px solid var(--line-light);border-radius:14px;overflow:hidden}
 @media(max-width:800px){.tiers{grid-template-columns:1fr}}
 .tier{background:var(--chalk-2);padding:26px 22px}
 .tier.hl{background:#fff}
-.tier h4{font-size:19px}
+.tier h2,.tier h3{font-size:19px}
 .tier .lvl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--court-deep);display:block;margin-bottom:14px}
 .tier ul{list-style:none;padding:0;margin:16px 0 0;font-size:13.5px;color:var(--muted-light)}
 .tier li{padding:7px 0 7px 20px;position:relative;border-bottom:1px solid var(--line-light)}
 .tier li:last-child{border-bottom:0}
 .tier li::before{content:"";position:absolute;left:0;top:14px;width:8px;height:2px;background:var(--court-deep)}
+
+.trial-banner{margin-top:32px;padding:14px 20px;border-radius:100px;background:rgba(15,110,92,.08);border:1px solid rgba(15,110,92,.2);color:var(--court-deep);font-size:14px;font-weight:600;text-align:center}
+
+.demo-block{margin-top:56px;padding-top:40px;border-top:1px solid var(--line-light)}
+.demo-block h2,.demo-block h3{font-size:24px}
+.demo-block > .muted{margin-top:10px;margin-bottom:20px}
 
 /* CTA */
 .cta{position:relative;padding:clamp(80px,13vh,150px) 0;overflow:hidden;text-align:center}
@@ -278,11 +294,17 @@ section{position:relative}
 }
 .signup input::placeholder{color:var(--muted-dark)}
 .signup-msg{margin-top:16px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;min-height:1.4em;color:var(--court)}
+.signup input:disabled{opacity:.6}
+.cta-alt{margin-top:26px;font-size:13.5px;color:var(--muted-dark)}
+.cta-alt a{color:var(--court);text-decoration:none;padding:8px 2px;display:inline-block;border-bottom:1px solid color-mix(in srgb,var(--court) 40%,transparent)}
+.cta-alt a:hover{border-bottom-color:var(--court)}
 
 footer{border-top:1px solid var(--line-dark);padding:38px 0}
 .foot-in{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--muted-dark)}
-.foot-links{display:flex;gap:22px}
-.foot-links a{text-decoration:none}
+.foot-links{display:flex;gap:10px;flex-wrap:wrap}
+/* Padding statt reiner Textzeile: sonst sind die Links auf dem Handy
+   nur ~20px hoch und kaum zu treffen. */
+.foot-links a{text-decoration:none;padding:10px 6px;display:inline-block}
 .foot-links a:hover{color:var(--chalk)}
 
 /* ============================================================

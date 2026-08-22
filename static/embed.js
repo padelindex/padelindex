@@ -17,6 +17,13 @@
 (() => {
   'use strict';
 
+  // Reines Debugging/Support-Hilfsmittel ("welche Version läuft bei
+  // diesem Verein?") — hat keine Funktion im Skript selbst. Bei jeder
+  // inhaltlichen Änderung hochzählen, siehe docs/embed-integration.md
+  // (dort auch der aktuelle SRI-Hash, der nach jeder Änderung neu
+  // berechnet werden muss).
+  const EMBED_VERSION = '1.0.0';
+
   const API_DEFAULT = 'https://padelindex.de/api/v1';
   const SIGMA_MAX = 25 / 3; // Startunsicherheit -> confidence 0
 
@@ -336,6 +343,8 @@
       `);
     }
   }
+
+  Leaderboard.version = EMBED_VERSION;
 
   if (!customElements.get('padelindex-leaderboard')) {
     customElements.define('padelindex-leaderboard', Leaderboard);

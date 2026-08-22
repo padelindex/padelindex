@@ -1,0 +1,127 @@
+// Sitemap als Endpunkt statt statischer Datei: die Vereins- und
+// Spielerseiten kommen aus der Datenbank und sollen mitwachsen, ohne
+// dass jemand daran denkt.
+//
+// Aufgenommen wird nur, was auch indexiert werden darf — /konto,
+// /anmelden, /embed und die Beanspruchen-Seiten tragen noindex und
+// bleiben deshalb draußen. /impressum und /datenschutz ebenfalls: die
+// tragen seit Block 0 selbst noindex (siehe dort), ein noindex-Ziel in
+// der Sitemap zu listen sendet Google widersprüchliche Signale.
+
+import type { RequestHandler } from './$types';
+import { supabaseAnon } from '$lib/server/supabase';
+import { MIN_MATCHES_FOR_INDEXING } from '$lib/seo';
+import { GUIDES_DE as GUIDES } from '$lib/content/guides/de';
+import { QUIZ_DIFFICULTIES_DE as QUIZ_DIFFICULTIES } from '$lib/content/quiz/de';
+import { locales, localizeUrl } from '$lib/paraglide/runtime';
+import { hreflangLinksFor } from '$lib/i18n/hreflang';
+
+const ORIGIN = 'https://padelindex.de';
+
+// In den i18n-Scope (/en, /es) fallende Seiten — bekommen drei
+// <url>-Einträge (de/en/es) mit vollständigem hreflang-Alternate-Block.
+const LOCALIZED_STATIC_PAGES = [
+	{ path: '/', priority: '1.0', changefreq: 'weekly' },
+	{ path: '/rating', priority: '0.8', changefreq: 'monthly' },
+	{ path: '/vereine', priority: '0.8', changefreq: 'monthly' },
+	{ path: '/faq', priority: '0.6', changefreq: 'monthly' },
+	{ path: '/ueber', priority: '0.5', changefreq: 'yearly' },
+	{ path: '/karte', priority: '0.7', changefreq: 'weekly' },
+	{ path: '/ratgeber', priority: '0.8', changefreq: 'weekly' },
+	{ path: '/quiz', priority: '0.6', changefreq: 'monthly' },
+	// Statische Evergreen-Inhalte, lokal in content/guides/quiz gepflegt
+	// — kein DB-Zugriff nötig, deshalb direkt hier statt im try/catch
+	// unten. Slugs sind über alle drei Sprachen identisch.
+	...GUIDES.map((g) => ({ path: `/ratgeber/${g.slug}`, priority: '0.7', changefreq: 'monthly' })),
+	...QUIZ_DIFFICULTIES.map((d) => ({
+		path: `/quiz/${d.slug}`,
+		priority: '0.6',
+		changefreq: 'monthly'
+	}))
+];
+
+// Außerhalb des i18n-Scope (internes Werkzeug ohne SEO-Wert) — bleibt
+// deutsch-only, ein einzelner <url>-Eintrag ohne hreflang-Alternates.
+const UNLOCALIZED_STATIC_PAGES = [
+	{ path: '/level-schaetzen', priority: '0.6', changefreq: 'monthly' },
+	{ path: '/roadmap', priority: '0.4', changefreq: 'monthly' }
+];
+
+type SitemapUrl = { loc: string; priority: string; changefreq: string; alternates?: string };
+
+function localizedEntries(path: string, priority: string, changefreq: string): SitemapUrl[] {
+	const alternates = hreflangLinksFor(path)
+		.map((a) => `\t\t<xhtml:link rel="alternate" hreflang="${a.hreflang}" href="${a.href}"/>`)
+		.join('\n');
+	return locales.map((locale) => ({
+		loc: localizeUrl(new URL(path, ORIGIN), { locale }).href,
+		priority,
+		changefreq,
+		alternates
+	}));
+}
+
+export const GET: RequestHandler = async ({ platform, setHeaders }) => {
+	const urls: SitemapUrl[] = [
+		...LOCALIZED_STATIC_PAGES.flatMap((p) => localizedEntries(p.path, p.priority, p.changefreq)),
+		...UNLOCALIZED_STATIC_PAGES.map((p) => ({
+			loc: ORIGIN + p.path,
+			priority: p.priority,
+			changefreq: p.changefreq
+		}))
+	];
+
+	try {
+		const sb = supabaseAnon(platform);
+		if (sb) {
+			// Vereinsseiten sind öffentlich und lohnen sich im Index.
+			const { data: clubs } = await sb.from('clubs').select('slug').limit(500);
+			for (const club of clubs ?? []) {
+				urls.push(...localizedEntries(`/c/${club.slug}`, '0.8', 'daily'));
+			}
+
+			// Ligaseiten sind ein eigenes öffentliches Produkt (0016).
+			// Entwürfe bleiben draußen, die RLS-Policy filtert sie ohnehin.
+			const { data: leagues } = await sb
+				.from('leagues')
+				.select('slug')
+				.neq('status', 'draft')
+				.limit(200);
+			for (const league of leagues ?? []) {
+				urls.push(...localizedEntries(`/liga/${league.slug}`, '0.7', 'weekly'));
+			}
+
+			// Spielerprofile erst ab genug bestätigten Matches (lib/seo.ts) —
+			// club_leaderboard ist die einzige für anon lesbare Projektion auf
+			// players, players selbst ist seit 0005 für anon gesperrt.
+			const { data: players } = await sb
+				.from('club_leaderboard')
+				.select('handle, matches')
+				.gte('matches', MIN_MATCHES_FOR_INDEXING)
+				.limit(2000);
+			for (const p of players ?? []) {
+				urls.push(...localizedEntries(`/p/${p.handle}`, '0.5', 'weekly'));
+			}
+		}
+	} catch {
+		// Ohne Datenbank bleibt die Sitemap eben kürzer, statt zu scheitern.
+	}
+
+	const body = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${urls
+	.map(
+		(u) =>
+			`\t<url>\n\t\t<loc>${u.loc}</loc>\n${u.alternates ? u.alternates + '\n' : ''}\t\t<changefreq>${u.changefreq}</changefreq>\n\t\t<priority>${u.priority}</priority>\n\t</url>`
+	)
+	.join('\n')}
+</urlset>
+`;
+
+	setHeaders({
+		'content-type': 'application/xml',
+		'cache-control': 'public, max-age=3600'
+	});
+
+	return new Response(body);
+};

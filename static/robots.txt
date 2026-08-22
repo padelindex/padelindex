@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Persönliche und transaktionale Seiten gehören nicht in den Index.
+# Die Seiten selbst tragen zusätzlich ein noindex-Meta-Tag.
+Disallow: /konto
+Disallow: /anmelden
+Disallow: /auth/
+Disallow: /embed/
+Disallow: /api/
+Disallow: /profil-entfernen
+Disallow: /warteliste
+
+Sitemap: https://padelindex.de/sitemap.xml

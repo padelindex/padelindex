@@ -1,0 +1,21 @@
+<!doctype html>
+<!--
+  Kein echter Seiteninhalt: PadelIndex ist eine serverseitig gerenderte
+  SvelteKit-App mit Login-Sessions, Formularen und Live-Daten — kein
+  statischer Build, den man in eine App bündeln könnte. Capacitor lädt
+  laut `server.url` in capacitor.config.ts direkt https://padelindex.de,
+  dieselbe Website läuft nativ in der WebView. Diese Datei existiert nur,
+  weil Capacitor zwingend ein `webDir` mit Inhalt verlangt (siehe
+  offizielle Doku, Abschnitt "Loading a remote URL") — sie wird beim
+  normalen Start nie angezeigt, nur falls das Netz beim allerersten
+  Öffnen der App noch nicht bereitsteht.
+-->
+<html lang="de">
+	<head>
+		<meta charset="utf-8" />
+		<title>PadelIndex</title>
+	</head>
+	<body>
+		<p>Verbinde mit padelindex.de …</p>
+	</body>
+</html>

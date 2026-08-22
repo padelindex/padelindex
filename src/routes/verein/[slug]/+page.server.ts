@@ -1,0 +1,255 @@
+// ============================================================
+// PadelIndex — Vereins-Admin: Prämien pflegen
+// ============================================================
+//
+// Nur für Admins des jeweiligen Vereins (club_admins, siehe
+// 0009_club_admin.sql). isClubAdmin() wird bewusst im load UND in JEDER
+// einzelnen Action erneut geprüft — der Slug in der URL ist
+// Nutzereingabe, ein POST kann direkt gegen jeden beliebigen
+// Vereins-Slug abgesetzt werden, unabhängig davon, was das UI anzeigt.
+
+import { error, redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
+import { supabaseAdmin } from '$lib/server/supabase';
+import { isClubAdmin } from '$lib/server/club-admin';
+import {
+	createReward,
+	loadRewardCatalogForAdmin,
+	setRewardActive,
+	updateReward,
+	type RewardInput
+} from '$lib/server/rewards';
+import {
+	addExistingPlayerToClub,
+	addUnclaimedMember,
+	approveClaim,
+	loadClubMembers,
+	rejectClaim,
+	removeMemberFromClub,
+	searchClaimablePlayersNotInClub
+} from '$lib/server/club-members';
+import { cancelPendingMatch, loadClubPendingMatches } from '$lib/server/matches';
+import { updateClubSettings } from '$lib/server/club-settings';
+import { createSlot, cancelSlot, loadSlotsForAdmin } from '$lib/server/roulette';
+
+type AdminClub = {
+	id: string;
+	slug: string;
+	name: string;
+	accent: string | null;
+	latitude: number | null;
+	longitude: number | null;
+};
+
+async function requireClubAdmin(locals: App.Locals, slug: string, url: URL): Promise<AdminClub> {
+	if (!locals.player || !locals.supabase) {
+		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
+	}
+
+	const { data: club } = await locals.supabase
+		.from('clubs')
+		.select('id, slug, name, accent, latitude, longitude')
+		.eq('slug', slug)
+		.maybeSingle();
+	if (!club) throw error(404, 'Verein nicht gefunden');
+
+	const admin = await isClubAdmin(locals.supabase, club.id, locals.player.id);
+	if (!admin) throw error(403, 'Kein Admin-Zugriff auf diesen Verein.');
+
+	// numeric-Spalten kommen über PostgREST als String — hier einmalig
+	// koerziert, damit alle Aufrufer mit echten number|null arbeiten.
+	return {
+		...club,
+		latitude: club.latitude === null ? null : Number(club.latitude),
+		longitude: club.longitude === null ? null : Number(club.longitude)
+	};
+}
+
+function readRewardForm(form: FormData): RewardInput {
+	return {
+		title: String(form.get('title') ?? ''),
+		description: String(form.get('description') ?? ''),
+		cost: Number(form.get('cost'))
+	};
+}
+
+export const load: PageServerLoad = async ({ params, locals, url, platform }) => {
+	const club = await requireClubAdmin(locals, params.slug, url);
+	const admin = supabaseAdmin(platform);
+
+	const [rewards, members, pendingMatches, rouletteSlots] = await Promise.all([
+		loadRewardCatalogForAdmin(admin, club.id),
+		loadClubMembers(admin, club.id),
+		loadClubPendingMatches(admin, club.id),
+		loadSlotsForAdmin(admin, club.id)
+	]);
+
+	return { club, rewards, members, pendingMatches, rouletteSlots };
+};
+
+export const actions: Actions = {
+	create: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+
+		const result = await createReward(supabaseAdmin(platform), club.id, readRewardForm(form));
+		if (!result.ok) return { rewardError: result.message };
+		return { rewardSaved: true };
+	},
+
+	update: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const rewardId = String(form.get('rewardId') ?? '');
+		if (!rewardId) return { rewardError: 'Ungültige Anfrage.' };
+
+		const result = await updateReward(
+			supabaseAdmin(platform),
+			club.id,
+			rewardId,
+			readRewardForm(form)
+		);
+		if (!result.ok) return { rewardError: result.message };
+		return { rewardSaved: true };
+	},
+
+	toggleActive: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const rewardId = String(form.get('rewardId') ?? '');
+		const active = form.get('active') === 'true';
+		if (!rewardId) return { rewardError: 'Ungültige Anfrage.' };
+
+		const result = await setRewardActive(supabaseAdmin(platform), club.id, rewardId, active);
+		if (!result.ok) return { rewardError: result.message };
+		return { rewardSaved: true };
+	},
+
+	searchMembers: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const query = String(form.get('query') ?? '');
+
+		const results = await searchClaimablePlayersNotInClub(supabaseAdmin(platform), club.id, query);
+		return { searchQuery: query, searchResults: results };
+	},
+
+	addExisting: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const playerId = String(form.get('playerId') ?? '');
+		if (!playerId) return { memberError: 'Ungültige Anfrage.' };
+
+		const result = await addExistingPlayerToClub(supabaseAdmin(platform), club.id, playerId);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	addUnclaimed: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const displayName = String(form.get('displayName') ?? '');
+
+		const result = await addUnclaimedMember(supabaseAdmin(platform), club.id, displayName);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	removeMember: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const playerId = String(form.get('playerId') ?? '');
+		if (!playerId) return { memberError: 'Ungültige Anfrage.' };
+
+		const result = await removeMemberFromClub(supabaseAdmin(platform), club.id, playerId);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	approveClaim: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const playerId = String(form.get('playerId') ?? '');
+		if (!playerId || !locals.player) return { memberError: 'Ungültige Anfrage.' };
+
+		const result = await approveClaim(supabaseAdmin(platform), club.id, playerId, locals.player.id);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	rejectClaim: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const playerId = String(form.get('playerId') ?? '');
+		if (!playerId) return { memberError: 'Ungültige Anfrage.' };
+
+		const result = await rejectClaim(supabaseAdmin(platform), club.id, playerId);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	cancelMatch: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const matchId = String(form.get('matchId') ?? '');
+		if (!matchId) return { matchError: 'Ungültige Anfrage.' };
+
+		const result = await cancelPendingMatch(supabaseAdmin(platform), club.id, matchId);
+		if (!result.ok) return { matchError: result.message };
+		return { matchCancelled: true };
+	},
+
+	updateSettings: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const name = String(form.get('name') ?? '');
+		const accent = String(form.get('accent') ?? '');
+		const latitudeRaw = String(form.get('latitude') ?? '').trim();
+		const longitudeRaw = String(form.get('longitude') ?? '').trim();
+
+		const result = await updateClubSettings(supabaseAdmin(platform), club.id, {
+			name,
+			accent,
+			latitude: latitudeRaw === '' ? null : Number(latitudeRaw),
+			longitude: longitudeRaw === '' ? null : Number(longitudeRaw)
+		});
+		if (!result.ok) return { settingsError: result.message };
+		return { settingsSaved: true };
+	},
+
+	createRouletteSlot: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		if (!locals.player) return { rouletteError: 'Nicht angemeldet.' };
+		const form = await request.formData();
+		const dateRaw = String(form.get('startsAtDate') ?? '');
+		const timeRaw = String(form.get('startsAtTime') ?? '');
+		const durationMin = Number(form.get('durationMin') ?? 90);
+		const court = String(form.get('court') ?? '').trim() || null;
+		const info = String(form.get('info') ?? '').trim() || null;
+
+		if (!dateRaw || !timeRaw) return { rouletteError: 'Datum und Uhrzeit sind Pflicht.' };
+		const startsAt = new Date(`${dateRaw}T${timeRaw}:00`);
+		if (Number.isNaN(startsAt.getTime()) || startsAt.getTime() < Date.now()) {
+			return { rouletteError: 'Der Termin muss in der Zukunft liegen.' };
+		}
+
+		const result = await createSlot(supabaseAdmin(platform), club.id, locals.player.id, {
+			startsAt: startsAt.toISOString(),
+			durationMin,
+			court,
+			info
+		});
+		if (!result.ok) return { rouletteError: result.message };
+		return { rouletteSaved: true };
+	},
+
+	cancelRouletteSlot: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		const form = await request.formData();
+		const slotId = String(form.get('slotId') ?? '');
+		if (!slotId) return { rouletteError: 'Ungültige Anfrage.' };
+
+		await cancelSlot(supabaseAdmin(platform), slotId, club.id);
+		return { rouletteSaved: true };
+	}
+};

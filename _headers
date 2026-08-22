@@ -1,0 +1,6 @@
+# embed.js ist über eine stabile URL eingebunden (kein Content-Hash im
+# Dateinamen, siehe docs/embed-integration.md) — deshalb moderates statt
+# "immutable" Caching: 1 Stunde beim Browser, 1 Tag am Edge, danach im
+# Hintergrund neu geladen (stale-while-revalidate) statt hart zu blockieren.
+/embed.js
+  Cache-Control: public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400

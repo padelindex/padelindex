@@ -1,10 +1,16 @@
+<script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+	import { localizeHref } from '$lib/paraglide/runtime';
+</script>
+
 <svelte:head>
-	<title>Datenschutz — PadelIndex</title>
+	<title>{m.ds_meta_title()}</title>
+	<meta name="robots" content="noindex, follow" />
 </svelte:head>
 
 <nav class="nav">
 	<div class="wrap nav-in">
-		<a class="brand" href="/">
+		<a class="brand" href={localizeHref('/')}>
 			<img src="/logo.svg" width="30" height="30" alt="" />
 			<span>Padel<b>Index</b></span>
 		</a>
@@ -12,12 +18,135 @@
 </nav>
 
 <section class="sec">
-	<div class="wrap" style="max-width: 72ch">
-		<span class="eyebrow">Rechtliches</span>
-		<h2 style="margin-top: 18px">Datenschutz</h2>
-		<p class="muted" style="margin-top: 20px">
-			Dieser Text wird ergänzt, sobald Hosting und Supabase feststehen. Bis dahin gilt: die Waitlist
-			speichert nur die angegebene E-Mail-Adresse, um dich zum Pilotstart zu benachrichtigen.
+	<div class="wrap legal" style="max-width: 72ch">
+		<span class="eyebrow">{m.legal_eyebrow()}</span>
+		<h2 style="margin-top: 18px">{m.ds_h2()}</h2>
+
+		<h3>{m.ds_h3_1()}</h3>
+		<p>
+			Alec Hahn<br />
+			Geltingerstrasse 12<br />
+			82515 Wolfratshausen<br />
+			{m.ds_address_country()}<br />
+			E-Mail: <a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a>
+		</p>
+
+		<h3>{m.ds_h3_2()}</h3>
+		<p>
+			{m.ds_p2()}
+		</p>
+
+		<h3>{m.ds_h3_3()}</h3>
+		<p>
+			{m.ds_p3()}
+		</p>
+
+		<h3>{m.ds_h3_4()}</h3>
+		<p>{m.ds_p4_intro()}</p>
+		<p>
+			<b>Supabase</b>
+			{m.ds_p4_supabase_desc()}
+			<!--
+			  TODO (Formulierungsvorschlag, bitte prüfen und ergänzen sobald bekannt):
+			  "Serverstandort: [Region aus den Supabase-Projekteinstellungen einsetzen,
+			  z. B. EU Central (Frankfurt)]. Mit Supabase besteht ein
+			  Auftragsverarbeitungsvertrag (AVV) nach Art. 28 DSGVO: [Ja/Nein — falls noch
+			  nicht abgeschlossen, über das Supabase-Dashboard unter Project Settings →
+			  Legal Documents nachholen]."
+			-->
+			{m.ds_p4_supabase_status()}
+		</p>
+		<p>
+			<b>Cloudflare</b>
+			{m.ds_p4_cloudflare_desc()}
+			<!--
+			  TODO (Formulierungsvorschlag): "Cloudflare ist ein US-Anbieter mit
+			  Serverstandorten weltweit (Edge-Netzwerk); die konkrete Verarbeitung für diese
+			  Website läuft über [Region/Vertragsgrundlage aus dem Cloudflare-Vertrag
+			  einsetzen]. Mit Cloudflare besteht ein Auftragsverarbeitungsvertrag inkl.
+			  Standardvertragsklauseln für Datenübermittlungen in die USA."
+			-->
+			{m.ds_p4_cloudflare_status()}
+		</p>
+		<p>
+			<b>Resend</b>
+			{m.ds_p4_resend_desc()}
+			<!--
+			  TODO (Formulierungsvorschlag): "Mit Resend besteht ein Auftragsverarbeitungsvertrag
+			  nach Art. 28 DSGVO: [Ja/Nein — Stand prüfen]."
+			-->
+		</p>
+
+		<h3>{m.ds_h3_5()}</h3>
+		<p>
+			{m.ds_p5_pre()}
+			<a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a>
+			{m.ds_p5_post()}
+		</p>
+
+		<h3>{m.ds_h3_6()}</h3>
+		<p>
+			{m.ds_p6()}
+		</p>
+
+		<h3>{m.ds_h3_7()}</h3>
+		<p>
+			{m.ds_p7_1()}
+		</p>
+		<p>
+			{m.ds_p7_2_pre()} <b>{m.ds_p7_2_bold()}</b>
+			{m.ds_p7_2_post()}
+		</p>
+		<p>
+			{m.ds_p7_3_pre()} <b>{m.ds_p7_3_bold()}</b>
+			{m.ds_p7_3_post()}
+		</p>
+
+		<h3>{m.ds_h3_8()}</h3>
+		<p>
+			{m.ds_p8()}
+		</p>
+
+		<h3>{m.ds_h3_9()}</h3>
+		<p>
+			{m.ds_p9()}
+		</p>
+
+		<h3>{m.ds_h3_10()}</h3>
+		<p>{m.ds_p10_intro()}</p>
+		<p>
+			{m.ds_p10_1_pre()}
+			<a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a>.
+		</p>
+		<p>
+			{m.ds_p10_2()}
+		</p>
+
+		<h3>{m.ds_h3_11()}</h3>
+		<p>
+			{m.ds_p11()}
 		</p>
 	</div>
 </section>
+
+<style>
+	.legal {
+		margin-top: 20px;
+	}
+	.legal h3 {
+		font-size: 18px;
+		margin-top: 40px;
+		margin-bottom: 12px;
+	}
+	.legal h3:first-of-type {
+		margin-top: 28px;
+	}
+	.legal p {
+		color: var(--muted-dark);
+		margin-bottom: 0;
+	}
+	.legal a {
+		color: inherit;
+		text-decoration: underline;
+	}
+</style>

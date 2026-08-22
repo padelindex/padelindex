@@ -13,6 +13,7 @@ import {
   type PlayerState,
   type SetScore
 } from '$lib/server/rating/rating';
+import { completeChallengesForMatch } from '$lib/server/challenges';
 
 // WICHTIG: service_role key nur serverseitig. Niemals im Client-Bundle!
 export function adminClient(url: string, serviceRoleKey: string): SupabaseClient {
@@ -92,7 +93,14 @@ export async function applyRatingForMatch(sb: SupabaseClient, matchId: string) {
   });
   if (rpcErr) throw rpcErr;
 
-  return { applied: true, results, grants };
+  // 6. Falls dieses Match als Ergebnis einer Challenge gemeldet wurde:
+  // Challenge jetzt abschließen — erst hier ist das Ergebnis bestätigt und
+  // gewertet. Damit gibt sie ihren Challenge-Platz wieder frei (siehe
+  // getOpenChallengesForMatch in challenges.ts). Best-effort: ein Fehler
+  // darf das bereits angewandte Rating nicht nachträglich kippen.
+  const completedChallenges = await completeChallengesForMatch(sb, matchId);
+
+  return { applied: true, results, grants, completedChallenges };
 }
 
 // ------------------------------------------------------------
