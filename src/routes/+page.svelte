@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>PadelIndex — Dein Level. Belegt, nicht behauptet.</title>
+	<title>PadelIndex — Das Ranking, das dein Spiel wirklich kennt.</title>
 	<meta
 		name="description"
 		content="PadelIndex ist die unabhängige Rangliste für Padel-Amateure. Bayes'sches Rating für Doppel, Gegner-Bestätigung, vereinsübergreifend. Dein Level zählt überall, wo du spielst."
@@ -48,7 +48,7 @@
   <div class="wrap hero-in">
     <div>
       <span class="eyebrow rv">Rangliste für Padel-Amateure</span>
-      <h1 class="rv" style="transition-delay:.06s">Dein Level.<br><em>Belegt,</em><br>nicht behauptet.</h1>
+      <h1 class="rv" style="transition-delay:.06s">Das Ranking,<br>das dein Spiel<br><em>wirklich kennt.</em></h1>
       <p class="hero-sub rv" style="transition-delay:.12s">
         PadelIndex misst, wie stark du wirklich spielst — über Vereinsgrenzen hinweg,
         aus bestätigten Ergebnissen, mit einem Modell, das für Doppel gebaut ist
