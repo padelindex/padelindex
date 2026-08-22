@@ -179,10 +179,13 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+# Angehoben von 6 auf 8 für die klassische Registrierung (E-Mail/Passwort,
+# siehe supabase/migrations/0019_password_auth.sql) — 6 war der Platzhalter
+# aus der reinen Magic-Link-Ära, in der nie ein Passwort vergeben wurde.
+minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
-password_requirements = ""
+password_requirements = "lower_upper_letters_digits"
 
 # Configure passkey sign-ins.
 # [auth.passkey]
@@ -223,7 +226,13 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+# Auf true für die klassische Registrierung (0019_password_auth.sql) —
+# Magic-Link-Logins sind davon unberührt: das Klicken des Links IST dort
+# schon die Bestätigung, verifyOtp() setzt email_confirmed_at ohnehin.
+# WICHTIG: config.toml gilt nur für die lokale Supabase-CLI. Im LIVE-Projekt
+# muss dieselbe Einstellung zusätzlich manuell im Dashboard gesetzt werden
+# (Authentication → Sign In / Providers → Email → "Confirm email"), siehe README.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.

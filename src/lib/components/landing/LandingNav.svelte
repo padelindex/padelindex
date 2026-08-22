@@ -65,7 +65,7 @@
 		</div>
 
 		<div class="nav-right">
-			<a class="nav-login" href={localizeHref('/anmelden')}>{m.nav_login()}</a>
+			<a class="nav-login" href={localizeHref('/login')}>{m.nav_login()}</a>
 			<a class="btn btn-primary nav-cta" href={localizeHref('/#anmelden')}>{m.nav_cta()}</a>
 			<button
 				class="nav-burger"
@@ -86,7 +86,7 @@
 				{#each links as item (item.href)}
 					<a href={item.href} onclick={close}>{item.label}</a>
 				{/each}
-				<a href={localizeHref('/anmelden')} onclick={close}>{m.nav_login()}</a>
+				<a href={localizeHref('/login')} onclick={close}>{m.nav_login()}</a>
 				<a class="btn btn-primary" href={localizeHref('/#anmelden')} onclick={close}
 					>{m.nav_cta()}</a
 				>
