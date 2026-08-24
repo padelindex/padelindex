@@ -19,7 +19,7 @@
 	import { reveal } from '$lib/landing/reveal';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
-	import { mainNav } from '$lib/landing/nav';
+	import { mainNav, ctaHref } from '$lib/landing/nav';
 	import {
 		LEVEL_QUESTIONS,
 		estimateLevel,
@@ -27,6 +27,8 @@
 		levelBand,
 		parseLevelParam
 	} from '$lib/level-estimator';
+
+	const cta = $derived(ctaHref(page.data.loggedIn));
 
 	let sharedLevel = $derived(parseLevelParam(page.url.searchParams.get('level')));
 	let ownResult = $state<number | null>(null);
@@ -155,7 +157,7 @@
 					/>
 
 					<div class="result-actions">
-						<a class="btn btn-primary" href="/#anmelden">Platz auf der Warteliste sichern</a>
+						<a class="btn btn-primary" href={cta}>Jetzt registrieren</a>
 						<button class="btn btn-ghost-light" type="button" onclick={share}>
 							{copyState === 'copied' ? 'Link kopiert' : 'Ergebnis teilen'}
 						</button>

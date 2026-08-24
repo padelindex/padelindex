@@ -227,7 +227,7 @@
 		{:else if !data.viewer}
 			<p class="anon-cta">
 				{m.player_anon_cta_pre()}
-				<a href={localizeHref('/#anmelden')}>{m.nav_cta()}</a>
+				<a href={localizeHref('/registrieren')}>{m.nav_cta()}</a>
 			</p>
 		{/if}
 

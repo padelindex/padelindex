@@ -16,7 +16,7 @@
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
-	import { mainNav } from '$lib/landing/nav';
+	import { mainNav, ctaHref } from '$lib/landing/nav';
 	import { ogLocaleFor, ogImageUrl } from '$lib/i18n/hreflang';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
@@ -24,6 +24,7 @@
 	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
 	const ogLocale = $derived(ogLocaleFor(getLocale()));
 	const ogImage = $derived(ogImageUrl(getLocale()));
+	const cta = $derived(ctaHref(page.data.loggedIn));
 </script>
 
 <svelte:head>
@@ -88,7 +89,7 @@
 
 			<p class="rechnen-cta" use:reveal={{ delay: 0.18 }}>
 				{m.rating_cta1_pre()}
-				<a href={localizeHref('/#anmelden')}>{m.rating_cta1_link()}</a>
+				<a href={cta}>{m.rating_cta1_link()}</a>
 			</p>
 			<p class="rechnen-cta" use:reveal={{ delay: 0.22 }}>
 				{m.rating_cta2_pre()}

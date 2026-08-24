@@ -8,10 +8,11 @@
 import type { LayoutServerLoad } from './$types';
 import { readAppEnv, readCfBeaconToken } from '$lib/server/env';
 
-export const load: LayoutServerLoad = ({ platform }) => {
+export const load: LayoutServerLoad = ({ platform, locals }) => {
 	const env = readAppEnv(platform);
 	return {
 		supabaseConfig: env ? { url: env.supabaseUrl, anonKey: env.supabaseAnonKey } : null,
-		cfBeaconToken: readCfBeaconToken(platform)
+		cfBeaconToken: readCfBeaconToken(platform),
+		loggedIn: Boolean(locals.user)
 	};
 };

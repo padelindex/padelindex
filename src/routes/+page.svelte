@@ -11,10 +11,10 @@
 	import HeroSequence from '$lib/components/landing/HeroSequence.svelte';
 	import PartnerProblem from '$lib/components/landing/PartnerProblem.svelte';
 	import TokenFlow from '$lib/components/landing/TokenFlow.svelte';
-	import SignupForm from '$lib/components/landing/SignupForm.svelte';
 	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
+	import { mainNav, ctaHref } from '$lib/landing/nav';
 	import { ogLocaleFor, ogImageUrl } from '$lib/i18n/hreflang';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
@@ -22,12 +22,9 @@
 
 	let { data }: { data: PageData } = $props();
 
-	const NAV = $derived([
-		{ href: '#problem', label: m.nav_warum() },
-		{ href: localizeHref('/rating'), label: m.nav_rating() },
-		{ href: '#tokens', label: m.nav_tokens() },
-		{ href: localizeHref('/vereine'), label: m.nav_fuer_vereine() }
-	]);
+	const loggedIn = $derived(page.data.loggedIn);
+	const cta = $derived(ctaHref(loggedIn));
+	const levelCta = $derived(localizeHref(loggedIn ? '/spieler/mein-profil' : '/registrieren'));
 
 	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
 	const ogLocale = $derived(ogLocaleFor(getLocale()));
@@ -53,7 +50,7 @@
 </svelte:head>
 
 <!-- ============================ NAV ============================ -->
-<LandingNav links={NAV} brandHref="#top" />
+<LandingNav links={mainNav()} brandHref="#top" />
 
 <main>
 	<!-- ============================ HERO ============================ -->
@@ -73,7 +70,7 @@
 					{m.home_hero_sub()}
 				</p>
 				<div class="hero-cta" use:reveal={{ delay: 0.18 }}>
-					<a class="btn btn-primary" href="#anmelden">{m.home_hero_cta_primary()}</a>
+					<a class="btn btn-primary" href={levelCta}>{m.home_hero_cta_primary()}</a>
 					<a class="btn btn-ghost" href={localizeHref('/rating')}>{m.home_hero_cta_secondary()}</a>
 				</div>
 				<p class="hero-note" use:reveal={{ delay: 0.24 }}>{m.home_hero_note()}</p>
@@ -172,7 +169,7 @@
 				<h2 use:reveal={{ delay: 0.05 }}>{m.home_vereine_h2()}</h2>
 				<p class="muted" use:reveal={{ delay: 0.1 }}>
 					{m.home_vereine_p_pre()}
-					<a href="#anmelden">{m.home_vereine_link()}</a>
+					<a href={cta}>{m.home_vereine_link()}</a>
 					{m.home_vereine_p_post()}
 				</p>
 				<a
@@ -251,9 +248,14 @@
 				{m.home_cta_p()}
 			</p>
 
-			<div use:reveal={{ delay: 0.15 }}>
-				<SignupForm />
-			</div>
+			<a
+				class="btn btn-primary"
+				href={cta}
+				use:reveal={{ delay: 0.15 }}
+				style="margin-top:28px; display:inline-flex"
+			>
+				{m.nav_cta()}
+			</a>
 
 			{#if data.board}
 				<p class="cta-alt" use:reveal={{ delay: 0.2 }}>
