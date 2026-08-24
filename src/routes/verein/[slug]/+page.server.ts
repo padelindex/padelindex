@@ -26,8 +26,12 @@ import {
 	loadClubMembers,
 	rejectClaim,
 	removeMemberFromClub,
-	searchClaimablePlayersNotInClub
+	searchClaimablePlayersNotInClub,
+	setInitialIndex
 } from '$lib/server/club-members';
+import type { SkillTier } from '$lib/rating-core';
+
+const SKILL_TIERS: SkillTier[] = ['beginner', 'intermediate', 'advanced'];
 import { cancelPendingMatch, loadClubPendingMatches } from '$lib/server/matches';
 import { updateClubSettings } from '$lib/server/club-settings';
 import { createSlot, cancelSlot, loadSlotsForAdmin } from '$lib/server/roulette';
@@ -147,10 +151,42 @@ export const actions: Actions = {
 
 	addUnclaimed: async ({ request, params, locals, url, platform }) => {
 		const club = await requireClubAdmin(locals, params.slug, url);
+		if (!locals.player) return { memberError: 'Nicht angemeldet.' };
 		const form = await request.formData();
 		const displayName = String(form.get('displayName') ?? '');
+		const skillTierRaw = String(form.get('skillTier') ?? '');
+		const skillTier = SKILL_TIERS.includes(skillTierRaw as SkillTier)
+			? (skillTierRaw as SkillTier)
+			: undefined;
 
-		const result = await addUnclaimedMember(supabaseAdmin(platform), club.id, displayName);
+		const result = await addUnclaimedMember(
+			supabaseAdmin(platform),
+			club.id,
+			displayName,
+			skillTier,
+			locals.player.id
+		);
+		if (!result.ok) return { memberError: result.message };
+		return { memberSaved: true };
+	},
+
+	setInitialIndex: async ({ request, params, locals, url, platform }) => {
+		const club = await requireClubAdmin(locals, params.slug, url);
+		if (!locals.player) return { memberError: 'Nicht angemeldet.' };
+		const form = await request.formData();
+		const playerId = String(form.get('playerId') ?? '');
+		const skillTier = String(form.get('skillTier') ?? '') as SkillTier;
+		if (!playerId || !SKILL_TIERS.includes(skillTier)) {
+			return { memberError: 'Ungültige Anfrage.' };
+		}
+
+		const result = await setInitialIndex(
+			supabaseAdmin(platform),
+			club.id,
+			playerId,
+			skillTier,
+			locals.player.id
+		);
 		if (!result.ok) return { memberError: result.message };
 		return { memberSaved: true };
 	},

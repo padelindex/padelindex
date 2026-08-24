@@ -10,6 +10,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatPlayerName } from '$lib/claim-match';
+import type { SkillTier } from '$lib/rating-core';
 
 export type ClubMember = {
 	id: string;
@@ -20,6 +21,10 @@ export type ClubMember = {
 	awaitingReview: boolean;
 	rating: number;
 	matchesPlayed: number;
+	initialIndexSet: boolean;
+	initialIndexTier: SkillTier | null;
+	/** true = 0 Matches gespielt, "Skill-Level setzen" ist noch möglich (siehe external_seed_locked). */
+	calibratable: boolean;
 };
 
 type MemberRow = {
@@ -30,12 +35,17 @@ type MemberRow = {
 	show_full_name: boolean;
 	rating: number;
 	matches_played: number;
+	initial_index_set: boolean;
+	initial_index_tier: SkillTier | null;
+	external_seed_locked: boolean;
 };
 
 export async function loadClubMembers(admin: SupabaseClient, clubId: string): Promise<ClubMember[]> {
 	const { data, error } = await admin
 		.from('club_memberships')
-		.select('players!inner(id, handle, display_name, claim_status, show_full_name, rating, matches_played)')
+		.select(
+			'players!inner(id, handle, display_name, claim_status, show_full_name, rating, matches_played, initial_index_set, initial_index_tier, external_seed_locked)'
+		)
 		.eq('club_id', clubId);
 
 	if (error || !data) return [];
@@ -49,9 +59,44 @@ export async function loadClubMembers(admin: SupabaseClient, clubId: string): Pr
 			claimed: p.claim_status === 'claimed',
 			awaitingReview: p.claim_status === 'awaiting_review',
 			rating: Number(p.rating),
-			matchesPlayed: p.matches_played
+			matchesPlayed: p.matches_played,
+			initialIndexSet: p.initial_index_set,
+			initialIndexTier: p.initial_index_tier,
+			calibratable: !p.external_seed_locked
 		}))
 		.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+/**
+ * Setzt den Startwert (mu/sigma) eines Mitglieds anhand einer Skill-Stufe.
+ * Autorisierung wie überall in dieser Datei: isClubAdmin() beim Aufrufer,
+ * VOR diesem Call. isClubMember() hier zusätzlich geprüft (gleiche
+ * Begründung wie bei approveClaim/rejectClaim), damit ein Admin nicht
+ * per direktem POST einen fremden Spieler außerhalb seines Vereins
+ * kalibrieren kann. Die eigentliche "0 Matches"-Grenze erzwingt die
+ * DB-Funktion selbst (external_seed_locked, siehe
+ * 0020_initial_index_calibration.sql) — hier nur eine freundliche
+ * Fehlermeldung statt der rohen Postgres-Exception, falls es schnell
+ * fehlschlagen soll, ohne den Roundtrip abzuwarten.
+ */
+export async function setInitialIndex(
+	admin: SupabaseClient,
+	clubId: string,
+	playerId: string,
+	skillTier: SkillTier,
+	adminPlayerId: string
+): Promise<MemberWriteResult> {
+	const isMember = await isClubMember(admin, clubId, playerId);
+	if (!isMember) return { ok: false, message: 'Nicht Mitglied dieses Vereins.' };
+
+	const { error } = await admin.rpc('admin_set_initial_index', {
+		p_player_id: playerId,
+		p_skill_tier: skillTier,
+		p_admin_id: adminPlayerId
+	});
+
+	if (error) return { ok: false, message: error.message };
+	return { ok: true };
 }
 
 /**
@@ -187,21 +232,42 @@ export async function addExistingPlayerToClub(
 	return { ok: true };
 }
 
+/**
+ * initialSkillTier ist optional: Kalibrierung kann direkt bei der Anlage
+ * des Schatten-Profils passieren (ein Roundtrip) oder später per
+ * setInitialIndex() nachgeholt werden (siehe "Skill-Level setzen" für
+ * unkalibrierte Mitglieder). adminPlayerId wird nur für den Audit-Eintrag
+ * gebraucht, falls initialSkillTier gesetzt ist.
+ */
 export async function addUnclaimedMember(
 	admin: SupabaseClient,
 	clubId: string,
-	displayName: string
+	displayName: string,
+	initialSkillTier?: SkillTier,
+	adminPlayerId?: string
 ): Promise<MemberWriteResult> {
 	const name = displayName.trim();
 	if (!name) return { ok: false, message: 'Name darf nicht leer sein.' };
 	if (name.length > 120) return { ok: false, message: 'Name ist zu lang.' };
 
-	const { error } = await admin.rpc('admin_add_unclaimed_member', {
+	const { data, error } = await admin.rpc('admin_add_unclaimed_member', {
 		p_club_id: clubId,
 		p_display_name: name
 	});
 
 	if (error) return { ok: false, message: error.message };
+
+	if (initialSkillTier && adminPlayerId && data) {
+		const calibration = await setInitialIndex(
+			admin,
+			clubId,
+			data as string,
+			initialSkillTier,
+			adminPlayerId
+		);
+		if (!calibration.ok) return calibration;
+	}
+
 	return { ok: true };
 }
 
