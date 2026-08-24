@@ -65,6 +65,12 @@
 		return reasonLabel[entry.reason] ?? entry.reason;
 	}
 
+	const skillTierLabel: Record<string, string> = {
+		beginner: 'Anfänger',
+		intermediate: 'Fortgeschritten',
+		advanced: 'Turnierspieler'
+	};
+
 	function historyDetail(entry: PageData['history'][number]) {
 		if (entry.reason === 'seed') {
 			const { league_rank, league_size, league, season } = entry.factors;
@@ -72,6 +78,10 @@
 				return `Ligaposition #${league_rank} von ${league_size}${league ? ` · ${league}` : ''}${season ? ` ${season}` : ''}`;
 			}
 			return 'Startwert aus dem Fragebogen';
+		}
+		if (entry.reason === 'manual_adjust' && entry.factors.skillTier) {
+			const label = skillTierLabel[entry.factors.skillTier] ?? entry.factors.skillTier;
+			return `Startwert vom Vereins-Admin gesetzt: ${label}`;
 		}
 		if (entry.reason === 'match' && typeof entry.factors.opponentAvgRating === 'number') {
 			return `Gegner-Ø ${entry.factors.opponentAvgRating.toFixed(2)}`;
