@@ -19,6 +19,10 @@ declare global {
 			/** Aus der URL erkannte Sprache (Paraglide, siehe hooks.server.ts). 'de' außerhalb der lokalisierten Routen. */
 			locale: 'de' | 'en' | 'es';
 		}
+		interface PageData {
+			/** Ob ein Auth-User eingeloggt ist (siehe root +layout.server.ts) — steuert die CTA-Ziele in LandingNav & Co. */
+			loggedIn: boolean;
+		}
 		interface Platform {
 			env: {
 				PUBLIC_SUPABASE_URL?: string;

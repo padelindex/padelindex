@@ -14,13 +14,14 @@
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import type { PageData } from './$types';
-	import { mainNav } from '$lib/landing/nav';
+	import { mainNav, ctaHref } from '$lib/landing/nav';
 	import { ogLocaleFor, ogImageUrl } from '$lib/i18n/hreflang';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 
 	let { data }: { data: PageData } = $props();
 
+	const cta = $derived(ctaHref(page.data.loggedIn));
 	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
 	const ogLocale = $derived(ogLocaleFor(getLocale()));
 	const ogImage = $derived(ogImageUrl(getLocale()));
@@ -109,7 +110,7 @@
 
 			<p class="claim-cta">
 				{m.vereine_claim_cta_pre()}
-				<a href={localizeHref('/#anmelden')}>{m.vereine_claim_cta_link()}</a>
+				<a href={cta}>{m.vereine_claim_cta_link()}</a>
 			</p>
 		</div>
 	</section>

@@ -5,6 +5,7 @@
 	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import { jsonLd } from '$lib/jsonld';
 	import { ogLocaleFor, ogImageUrl } from '$lib/i18n/hreflang';
+	import { ctaHref } from '$lib/landing/nav';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 	import type { PageData } from './$types';
@@ -13,6 +14,7 @@
 
 	const clubName = $derived(data.board?.club.name ?? m.club_default_name());
 	const clubUrl = $derived(`https://padelindex.de/c/${page.params.slug}`);
+	const cta = $derived(ctaHref(page.data.loggedIn));
 	const ogLocale = $derived(ogLocaleFor(getLocale()));
 	const ogImage = $derived(ogImageUrl(getLocale()));
 
@@ -100,7 +102,7 @@
 			<img src="/logo.svg" width="30" height="30" alt="" />
 			<span>Padel<b>Index</b></span>
 		</a>
-		<a class="btn btn-primary" href={localizeHref('/#anmelden')}>{m.nav_cta()}</a>
+		<a class="btn btn-primary" href={cta}>{m.nav_cta()}</a>
 	</div>
 </nav>
 

@@ -15,6 +15,15 @@
 import { m } from '$lib/paraglide/messages.js';
 import { localizeHref } from '$lib/paraglide/runtime';
 
+// Ziel des "Platz sichern"-CTAs (Nav-Button, Rating-Seite, Vereinsseiten):
+// wer schon ein Konto hat, will spielen (Spieler finden), alle anderen
+// erst mal eins anlegen. Ersetzt die frühere Warteliste (E-Mail-Eintrag),
+// die auf `/registrieren` — direkte Kontoerstellung — nicht mehr gebraucht
+// wird.
+export function ctaHref(loggedIn: boolean): string {
+	return localizeHref(loggedIn ? '/spieler-finden' : '/registrieren');
+}
+
 export function mainNav(): { href: string; label: string }[] {
 	return [
 		{ href: localizeHref('/#problem'), label: m.nav_warum() },
