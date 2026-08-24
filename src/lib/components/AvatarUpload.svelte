@@ -6,13 +6,20 @@
 	// hängen (siehe supabase/migrations/0020_avatar_upload.sql) — ein
 	// Server-Roundtrip würde hier nichts zusätzlich absichern.
 	//
+	// Vor dem Upload wird clientseitig komprimiert (compressImage(), Canvas
+	// + toBlob(), siehe image-compression.ts) — Handyfotos kommen oft mit
+	// 5-15MB rein, hochgeladen wird nur das auf max. 1024px verkleinerte,
+	// auf ~500KB komprimierte Ergebnis. Deshalb keine strenge Größenprüfung
+	// mehr auf die Originaldatei, nur eine großzügige Obergrenze gegen
+	// pathologische Uploads.
+	//
 	// Fester Dateiname pro User ({userId}/profile.<ext>) plus Cache-Busting
-	// über ?v=timestamp in der gespeicherten URL. Wechselt jemand das
-	// Dateiformat (z.B. erst .jpg, dann .png hochgeladen), bliebe sonst die
-	// alte Datei unter anderer Extension liegen — das Aufräumen danach
-	// entfernt das best-effort, ohne den Upload selbst davon abhängig zu
-	// machen.
+	// über ?v=timestamp in der gespeicherten URL. compressImage() kodiert
+	// abhängig von der Browser-Unterstützung mal WebP, mal JPEG — das
+	// Aufräumen danach entfernt die jeweils andere, dadurch verwaiste Datei
+	// best-effort, ohne den Upload selbst davon abhängig zu machen.
 	import { createBrowserSupabase } from '$lib/supabase-browser';
+	import { compressImage } from '$lib/image-compression';
 	import AvatarCircle from './AvatarCircle.svelte';
 
 	let {
@@ -29,16 +36,20 @@
 		size?: number;
 	} = $props();
 
-	const MAX_BYTES = 2 * 1024 * 1024;
-	const EXT_BY_TYPE: Record<string, string> = {
-		'image/jpeg': 'jpg',
-		'image/png': 'png',
-		'image/webp': 'webp'
-	};
+	const MAX_INPUT_BYTES = 25 * 1024 * 1024;
 
 	let fileInput: HTMLInputElement | undefined = $state();
-	let uploading = $state(false);
+	let stage = $state<'idle' | 'compressing' | 'uploading'>('idle');
 	let error = $state('');
+
+	const busy = $derived(stage !== 'idle');
+	const statusLabel = $derived(
+		stage === 'compressing'
+			? 'Bild wird optimiert…'
+			: stage === 'uploading'
+				? 'Wird hochgeladen…'
+				: 'Foto ändern'
+	);
 
 	function pick() {
 		error = '';
@@ -53,13 +64,12 @@
 		if (!file) return;
 		error = '';
 
-		const ext = EXT_BY_TYPE[file.type];
-		if (!ext) {
-			error = 'Bitte ein JPG-, PNG- oder WebP-Bild auswählen.';
+		if (!file.type.startsWith('image/')) {
+			error = 'Bitte eine Bilddatei auswählen.';
 			return;
 		}
-		if (file.size > MAX_BYTES) {
-			error = 'Datei zu groß — maximal 2 MB.';
+		if (file.size > MAX_INPUT_BYTES) {
+			error = 'Datei zu groß — maximal 25 MB.';
 			return;
 		}
 		if (!supabaseConfig) {
@@ -67,14 +77,17 @@
 			return;
 		}
 
-		uploading = true;
 		try {
+			stage = 'compressing';
+			const { blob, ext } = await compressImage(file);
+
+			stage = 'uploading';
 			const supabase = createBrowserSupabase(supabaseConfig.url, supabaseConfig.anonKey);
 			const path = `${userId}/profile.${ext}`;
 
 			const { error: uploadError } = await supabase.storage
 				.from('avatars')
-				.upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
+				.upload(path, blob, { upsert: true, contentType: blob.type, cacheControl: '3600' });
 			if (uploadError) {
 				error = 'Upload fehlgeschlagen — bitte erneut versuchen.';
 				return;
@@ -109,10 +122,13 @@
 			}
 
 			avatarUrl = bustedUrl;
-		} catch {
-			error = 'Upload fehlgeschlagen — bitte erneut versuchen.';
+		} catch (e) {
+			error =
+				e instanceof Error && e.message === 'decode-failed'
+					? 'Bild konnte nicht gelesen werden — bitte ein anderes Foto wählen.'
+					: 'Upload fehlgeschlagen — bitte erneut versuchen.';
 		} finally {
-			uploading = false;
+			stage = 'idle';
 		}
 	}
 </script>
@@ -122,26 +138,21 @@
 		type="button"
 		class="avatar-btn"
 		onclick={pick}
-		disabled={uploading}
+		disabled={busy}
 		aria-label="Profilbild ändern"
 		style="--size: {size}px"
 	>
 		<AvatarCircle {avatarUrl} name={displayName} {size} />
-		{#if uploading}
+		{#if busy}
 			<span class="spinner" aria-hidden="true"></span>
 		{/if}
 	</button>
 
 	<div class="avatar-meta">
-		<button
-			type="button"
-			class="btn btn-ghost-light avatar-cta"
-			onclick={pick}
-			disabled={uploading}
-		>
-			{uploading ? 'Wird hochgeladen…' : 'Foto ändern'}
+		<button type="button" class="btn btn-ghost-light avatar-cta" onclick={pick} disabled={busy}>
+			{statusLabel}
 		</button>
-		<p class="avatar-hint">JPG, PNG oder WebP, max. 2 MB.</p>
+		<p class="avatar-hint">Jedes Foto geht — wird automatisch auf max. 500 KB komprimiert.</p>
 		{#if error}
 			<p class="avatar-error" role="alert">{error}</p>
 		{/if}
