@@ -20,6 +20,7 @@ import { computeFormCurve, computePreferredPartners } from '$lib/profile-stats';
 import { computeBadges, longestStreak } from '$lib/badges';
 import { loadClubRanking } from '$lib/server/challenges';
 import { isRankChallengeable } from '$lib/challenge-rules';
+import { loadH2HStats } from '$lib/server/h2h';
 
 export const load: PageServerLoad = async ({ params, locals, platform }) => {
 	const admin = supabaseAdmin(platform);
@@ -75,6 +76,15 @@ export const load: PageServerLoad = async ({ params, locals, platform }) => {
 		}
 	}
 
+	// get_h2h_stats (0020) läuft über den Sessions-Client, nicht den Admin-
+	// Client: die Funktion ist SECURITY INVOKER, RLS auf matches/
+	// match_participants/match_sets bindet das Ergebnis an die eingeloggte
+	// Person (viewer). Nur für fremde Profile, nur wenn eine Session steht.
+	const h2h =
+		viewer && !isOwnProfile && locals.supabase
+			? await loadH2HStats(locals.supabase, viewer.id, profile.id)
+			: null;
+
 	return {
 		profile,
 		club,
@@ -84,6 +94,7 @@ export const load: PageServerLoad = async ({ params, locals, platform }) => {
 		badges,
 		tournamentMatches,
 		longestStreakEver: longestStreak(chronological),
-		viewer: viewer ? { isLoggedIn: true, isOwnProfile, challengeable } : null
+		viewer: viewer ? { isLoggedIn: true, isOwnProfile, challengeable } : null,
+		h2h
 	};
 };
