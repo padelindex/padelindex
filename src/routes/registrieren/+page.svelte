@@ -44,6 +44,10 @@
 				Falls diese Adresse noch kein Konto hat, kommt jetzt eine E-Mail mit einem Bestätigungslink
 				an. Erst nach der Bestätigung kannst du dich anmelden.
 			</p>
+			<p class="note">
+				Danach kannst du in deinem Profil festlegen, wann du Zeit zum Spielen hast — damit dich
+				andere Spieler finden können.
+			</p>
 		{:else}
 			<form
 				method="POST"

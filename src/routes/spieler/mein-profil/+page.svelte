@@ -103,6 +103,29 @@
 			</div>
 		</div>
 
+		<div class="card" class:nudge={data.availabilityCount === 0}>
+			<h3 class="card-title">Spielzeiten</h3>
+			{#if data.availabilityCount === 0}
+				<p class="muted" style="font-size: 14px">
+					Trag ein, wann du Zeit zum Spielen hast — andere Spieler mit passenden Zeiten können
+					dich dann über „Spieler finden" anschreiben. Optional, aber ohne Zeiten findet dich
+					niemand.
+				</p>
+				<a class="btn btn-primary" href="/spielzeiten" style="margin-top: 14px">
+					Spielzeiten festlegen
+				</a>
+			{:else}
+				<p class="muted" style="font-size: 14px">
+					{data.availabilityCount}
+					{data.availabilityCount === 1 ? 'Zeit ist' : 'Zeiten sind'} hinterlegt.
+				</p>
+				<div class="action-row">
+					<a class="btn btn-ghost-light" href="/spielzeiten">Bearbeiten</a>
+					<a class="btn btn-ghost-light" href="/spieler-finden">Spieler finden</a>
+				</div>
+			{/if}
+		</div>
+
 		<form method="POST" action="?/logout" class="logout-row">
 			<button class="btn btn-ghost-light" type="submit">Abmelden</button>
 		</form>
@@ -122,6 +145,11 @@
 		border: 1px solid var(--line-light, rgba(0, 0, 0, 0.1));
 		border-radius: 18px;
 		background: rgba(255, 255, 255, 0.6);
+	}
+
+	.card.nudge {
+		border-color: rgba(180, 113, 26, 0.3);
+		background: rgba(180, 113, 26, 0.06);
 	}
 
 	.card-title {

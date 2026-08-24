@@ -133,3 +133,30 @@ export function validateAvailability(input: AvailabilityInput): ValidationResult
 export function weekdayOfDate(isoDate: string): number {
 	return (new Date(`${isoDate}T12:00:00Z`).getUTCDay() + 6) % 7;
 }
+
+// ------------------------------------------------------------
+// Badges ("Di Abend", "Sa Vormittag") — für die Spielerliste
+// ------------------------------------------------------------
+
+export const WEEKDAY_SHORT_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as const;
+
+export type DayPart = 'Vormittag' | 'Nachmittag' | 'Abend';
+
+/** Grobe Tageszeit nach Startuhrzeit — reicht für eine Badge, keine exakte Uhrzeit. */
+export function dayPartOf(startTime: string): DayPart {
+	const start = toMinutes(startTime);
+	if (start < 12 * 60) return 'Vormittag';
+	if (start < 17 * 60) return 'Nachmittag';
+	return 'Abend';
+}
+
+/** "Di Abend" / "Sa Vormittag" — Wochentag (wiederkehrend oder aus Datum abgeleitet) + Tageszeit. */
+export function formatAvailabilityBadge(a: {
+	weekday: number | null;
+	specificDate: string | null;
+	startTime: string;
+}): string {
+	const weekday = a.specificDate ? weekdayOfDate(a.specificDate) : a.weekday;
+	const dayLabel = weekday !== null ? WEEKDAY_SHORT_LABELS[weekday] : '';
+	return [dayLabel, dayPartOf(a.startTime)].filter(Boolean).join(' ');
+}

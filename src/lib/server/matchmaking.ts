@@ -4,21 +4,25 @@
 // Ablauf bewusst zweistufig, damit das Scoring nicht auf der ganzen
 // Spielertabelle läuft:
 //
-//   1. VORFILTER in SQL — nur Spieler mit aktiver Verfügbarkeit am
-//      gleichen Wochentag wie mindestens einer meiner eigenen Slots.
-//      Damit fällt der Großteil sofort weg, bevor irgendetwas gerechnet wird.
-//   2. SCORING in TypeScript (lib/matchmaking.ts) — nur noch auf dieser
-//      kleinen Menge, dafür mit allen Kriterien.
+//   1. VORFILTER in SQL — jeder mit aktiver Verfügbarkeit kommt grundsätzlich
+//      in Frage; habe ich selbst Zeiten, wird zusätzlich auf meine eigenen
+//      Wochentage vorgefiltert (reine Optimierung).
+//   2. SCORING in TypeScript (lib/matchmaking.ts) — nur wenn ich selbst
+//      mindestens einen aktiven Slot habe (mySlots.length > 0). Ohne eigene
+//      Zeiten gibt es kein Scoring, aber trotzdem die volle Liste: "kein
+//      Voraussetzungs-Zeitplan, um andere mit Zeiten zu sehen" ist die
+//      Kernanforderung dieses Features, siehe canScore unten.
 //
 // Fremde Verfügbarkeiten sind per RLS NICHT direkt lesbar (siehe 0013):
-// Der Query läuft über service_role und gibt nach außen ausschließlich
-// aggregierte Vorschläge zurück — nie den Wochenplan einer anderen Person
-// und niemals Kontaktdaten. Genau deshalb liegt das hier serverseitig und
-// nicht als offene Tabelle im Client.
+// Der Query läuft über service_role. Nach außen geht bewusst nicht der volle
+// Wochenplan, sondern nur grobe Badges (Wochentag + Vormittag/Nachmittag/
+// Abend, siehe formatAvailabilityBadge) und — bei Scoring — der eine Slot mit
+// der besten Überschneidung. Nie Kontaktdaten, nie die exakte Uhrzeit fremder
+// Slots.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatPlayerName } from '$lib/claim-match';
-import { weekdayOfDate, type AvailabilityMatchType } from '$lib/availability';
+import { formatAvailabilityBadge, weekdayOfDate, type AvailabilityMatchType } from '$lib/availability';
 import {
 	MIN_DISPLAY_SCORE,
 	calculateMatchmakingScore,
@@ -45,9 +49,16 @@ export type MatchSuggestion = {
 	rating: number;
 	matchesPlayed: number;
 	clubName: string | null;
-	score: number;
-	quality: MatchQuality;
+	/**
+	 * null, solange ich selbst keine (zum Filter passenden) Zeiten habe — dann
+	 * gibt es nichts zu bewerten, nur eine schlichte Liste (siehe
+	 * getMatchSuggestionsForPlayer).
+	 */
+	score: number | null;
+	quality: MatchQuality | null;
 	reasons: string[];
+	/** Alle aktiven Zeiten des Kandidaten als Badges ("Di Abend") — unabhängig vom Scoring. */
+	availabilityBadges: string[];
 	/** Der Slot des Kandidaten, der die beste Überschneidung erzeugt hat — als Vorschlag fürs Anfrageformular. */
 	suggestedSlot: {
 		weekday: number | null;
@@ -131,37 +142,52 @@ export async function getMatchSuggestionsForPlayer(
 	const today = new Date().toISOString().slice(0, 10);
 
 	// --- 1. Eigene aktive Slots -------------------------------------------
+	// hasOwnAvailability entscheidet NUR "gibt es überhaupt eigene Zeiten"
+	// (unabhängig vom Wochentagfilter) — sonst würde ein Filter auf einen
+	// Tag ohne eigenen Slot fälschlich so aussehen, als hätte man gar keine
+	// Zeiten hinterlegt. mySlots (für Scoring/Vorfilter) wird zusätzlich
+	// vom Filter eingeschränkt.
 	const { data: mineRaw } = await admin
 		.from('player_availabilities')
 		.select(AVAILABILITY_COLUMNS)
 		.eq('player_id', playerId)
 		.eq('status', 'active');
 
-	const mySlots = ((mineRaw ?? []) as RawAvailability[])
+	const myAllSlots = ((mineRaw ?? []) as RawAvailability[])
 		.map((r) => toScoringSlot(r, today))
-		.filter((s): s is ScoringSlot => s !== null)
-		.filter((s) => filters.weekday === null || filters.weekday === undefined || s.weekday === filters.weekday);
+		.filter((s): s is ScoringSlot => s !== null);
+	const hasOwnAvailability = myAllSlots.length > 0;
 
-	if (mySlots.length === 0) {
-		return { suggestions: [], hasOwnAvailability: false };
-	}
+	const mySlots = myAllSlots.filter(
+		(s) => filters.weekday === null || filters.weekday === undefined || s.weekday === filters.weekday
+	);
 
-	// --- 2. Vorfilter: nur passende Wochentage ----------------------------
-	const myWeekdays = [...new Set(mySlots.map((s) => s.weekday).filter((w): w is number => w !== null))];
-
+	// --- 2. Kandidaten: alle mit aktiven Zeiten ----------------------------
+	// Ohne eigene Zeiten gibt es kein Scoring, aber die Kernanforderung bleibt:
+	// jeder mit hinterlegten Zeiten soll trotzdem auftauchen (siehe unten,
+	// Abschnitt 5) — deshalb wird der Kandidatenpool NIE an das eigene Fehlen
+	// von Zeiten geknüpft.
 	let candidateQuery = admin
 		.from('player_availabilities')
 		.select(AVAILABILITY_COLUMNS)
 		.eq('status', 'active')
 		.neq('player_id', playerId);
 
-	if (myWeekdays.length > 0) candidateQuery = candidateQuery.in('weekday', myWeekdays);
+	if (filters.weekday !== null && filters.weekday !== undefined) {
+		candidateQuery = candidateQuery.eq('weekday', filters.weekday);
+	} else if (mySlots.length > 0) {
+		// Reine Optimierung, wenn kein expliziter Filter gesetzt ist: nur
+		// Kandidaten laden, die theoretisch an einem meiner Wochentage
+		// passen könnten. Ohne eigene Slots entfällt das (dann zählt jeder).
+		const myWeekdays = [...new Set(mySlots.map((s) => s.weekday).filter((w): w is number => w !== null))];
+		if (myWeekdays.length > 0) candidateQuery = candidateQuery.in('weekday', myWeekdays);
+	}
 	if (filters.clubId) candidateQuery = candidateQuery.eq('club_id', filters.clubId);
 	if (filters.matchType) candidateQuery = candidateQuery.eq('match_type', filters.matchType);
 
 	const { data: candidateRaw } = await candidateQuery;
 	const candidateRows = (candidateRaw ?? []) as RawAvailability[];
-	if (candidateRows.length === 0) return { suggestions: [], hasOwnAvailability: true };
+	if (candidateRows.length === 0) return { suggestions: [], hasOwnAvailability };
 
 	// --- 3. Ausgeblendete/blockierte Spieler ------------------------------
 	const { data: dismissals } = await admin
@@ -173,7 +199,7 @@ export async function getMatchSuggestionsForPlayer(
 	const candidateIds = [...new Set(candidateRows.map((r) => r.player_id))].filter(
 		(id) => !hidden.has(id)
 	);
-	if (candidateIds.length === 0) return { suggestions: [], hasOwnAvailability: true };
+	if (candidateIds.length === 0) return { suggestions: [], hasOwnAvailability };
 
 	// --- 4. Spielerdaten + Vereinszugehörigkeit + Historie -----------------
 	const [{ data: playersRaw }, { data: memberships }, { data: myMembership }, { data: myPlayerRaw }] =
@@ -204,7 +230,11 @@ export async function getMatchSuggestionsForPlayer(
 				.maybeSingle()
 		]);
 
-	if (!myPlayerRaw) return { suggestions: [], hasOwnAvailability: true };
+	// myPlayerRaw fehlt praktisch nie (locals.player existiert ja bereits),
+	// aber ohne eigene Zeilen lässt sich kein Scoring rechnen — dann eben
+	// ohne, statt die ganze Liste zu verweigern.
+	const myPlayer = myPlayerRaw as RawPlayer | null;
+	const canScore = hasOwnAvailability && mySlots.length > 0 && myPlayer !== null;
 
 	type MembershipRow = {
 		player_id: string;
@@ -221,20 +251,21 @@ export async function getMatchSuggestionsForPlayer(
 		clubs: { latitude: number | null; longitude: number | null } | null;
 	} | null;
 
-	const myPlayer = myPlayerRaw as RawPlayer;
-	const meScoring: ScoringPlayer = {
-		rating: Number(myPlayer.rating),
-		matchesPlayed: myPlayer.matches_played,
-		clubId: myClub?.club_id ?? null,
-		latitude: myClub?.clubs?.latitude ?? null,
-		longitude: myClub?.clubs?.longitude ?? null,
-		profileCompleteness: profileCompleteness(myPlayer),
-		lastMatchAt: myPlayer.last_match_at
-	};
+	const meScoring: ScoringPlayer | null = myPlayer
+		? {
+				rating: Number(myPlayer.rating),
+				matchesPlayed: myPlayer.matches_played,
+				clubId: myClub?.club_id ?? null,
+				latitude: myClub?.clubs?.latitude ?? null,
+				longitude: myClub?.clubs?.longitude ?? null,
+				profileCompleteness: profileCompleteness(myPlayer),
+				lastMatchAt: myPlayer.last_match_at
+			}
+		: null;
 
-	const togetherCount = await countMatchesTogether(admin, playerId, candidateIds);
+	const togetherCount = canScore ? await countMatchesTogether(admin, playerId, candidateIds) : new Map<string, number>();
 
-	// --- 5. Scoring --------------------------------------------------------
+	// --- 5. Badges + (falls möglich) Scoring -------------------------------
 	const slotsByPlayer = new Map<string, ScoringSlot[]>();
 	for (const row of candidateRows) {
 		const slot = toScoringSlot(row, today);
@@ -254,6 +285,32 @@ export async function getMatchSuggestionsForPlayer(
 
 		const membership = clubByPlayer.get(row.id);
 		const theirSlots = slotsByPlayer.get(row.id) ?? [];
+		if (theirSlots.length === 0) continue;
+
+		// Badges für die Kartenansicht — auf eindeutige Kombinationen reduziert,
+		// damit fünf Slots am selben Abend nicht fünf identische Badges ergeben.
+		const availabilityBadges = [...new Set(theirSlots.map((s) => formatAvailabilityBadge(s)))];
+
+		if (!canScore || !meScoring) {
+			// Kein Scoring möglich — einfache Liste ohne Bewertung, aber MIT
+			// den Zeiten des Kandidaten, damit man die Überschneidung selbst
+			// sehen kann. Das ist die Kernanforderung: keiner mit Zeiten fehlt
+			// nur, weil ich selbst noch keine eingetragen habe.
+			suggestions.push({
+				playerId: row.id,
+				handle: row.handle,
+				name: formatPlayerName(row.display_name, row.claim_status, row.show_full_name),
+				rating,
+				matchesPlayed: row.matches_played,
+				clubName: membership?.clubs?.name ?? null,
+				score: null,
+				quality: null,
+				reasons: [],
+				availabilityBadges,
+				suggestedSlot: null
+			});
+			continue;
+		}
 
 		const candidateScoring: ScoringPlayer = {
 			rating,
@@ -296,6 +353,7 @@ export async function getMatchSuggestionsForPlayer(
 			score: result.score,
 			quality: result.quality,
 			reasons: result.reasons,
+			availabilityBadges,
 			suggestedSlot: best
 				? {
 						weekday: best.weekday,
@@ -309,10 +367,18 @@ export async function getMatchSuggestionsForPlayer(
 		});
 	}
 
-	suggestions.sort((a, b) => b.score - a.score);
+	// Mit Scoring: beste Überschneidung zuerst (bestehendes Verhalten). Ohne
+	// eigene Zeiten: einfache, stabile Reihenfolge nach Namen — das ist die
+	// "einfache Umsetzung ohne Overlap-Scoring".
+	if (canScore) {
+		suggestions.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+	} else {
+		suggestions.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+	}
+
 	return {
 		suggestions: suggestions.slice(0, filters.limit ?? DEFAULT_SUGGESTION_LIMIT),
-		hasOwnAvailability: true
+		hasOwnAvailability
 	};
 }
 
