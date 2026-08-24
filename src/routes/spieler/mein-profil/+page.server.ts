@@ -24,7 +24,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const { data, error } = await locals.supabase
 		.from('players')
 		.select(
-			'first_name, last_name, birth_date, club_name, display_name, handle, rating, matches_played, is_provisional, claim_status'
+			'first_name, last_name, birth_date, club_name, display_name, handle, rating, matches_played, is_provisional, claim_status, avatar_url'
 		)
 		.eq('id', locals.player.id)
 		.maybeSingle();
@@ -45,7 +45,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			rating: Number(data.rating),
 			matchesPlayed: data.matches_played,
 			isProvisional: data.is_provisional,
-			claimStatus: data.claim_status
+			claimStatus: data.claim_status,
+			avatarUrl: data.avatar_url
 		}
 	};
 };

@@ -36,6 +36,7 @@ export type PublicProfile = {
 	preferredSide: PreferredSide | null;
 	gender: Gender | null;
 	selfAssessedLevel: number | null;
+	avatarUrl: string | null;
 };
 
 /** null = nicht gefunden ODER profile_public=false — Aufrufer soll das nicht unterscheiden (404 in beiden Fällen). */
@@ -46,7 +47,7 @@ export async function loadPublicProfile(
 	const { data, error: err } = await admin
 		.from('players')
 		.select(
-			'id, handle, display_name, claim_status, show_full_name, rating, sigma, matches_played, is_provisional, profile_public, city, playing_hand, preferred_side, gender, self_assessed_level'
+			'id, handle, display_name, claim_status, show_full_name, rating, sigma, matches_played, is_provisional, profile_public, city, playing_hand, preferred_side, gender, self_assessed_level, avatar_url'
 		)
 		.eq('handle', handle)
 		.maybeSingle();
@@ -71,7 +72,8 @@ export async function loadPublicProfile(
 		playingHand: data.playing_hand,
 		preferredSide: data.preferred_side,
 		gender: data.gender,
-		selfAssessedLevel: data.self_assessed_level === null ? null : Number(data.self_assessed_level)
+		selfAssessedLevel: data.self_assessed_level === null ? null : Number(data.self_assessed_level),
+		avatarUrl: data.avatar_url
 	};
 }
 

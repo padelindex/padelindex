@@ -1,14 +1,19 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import { createBrowserSupabase, readMagicLinkTokensFromHash } from '$lib/supabase-browser';
 	import { abbreviateName } from '$lib/claim-match';
 	import { parseLevelParam } from '$lib/level-estimator';
+	import AvatarUpload from '$lib/components/AvatarUpload.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// Nur der Startwert wird übernommen — AvatarUpload aktualisiert das
+	// danach selbst über bind:avatarUrl, kein fortlaufender Sync mit data.
+	let avatarUrl = $state(untrack(() => data.player?.avatarUrl ?? null));
 
 	// Kommt jemand vom Level-Schätzer (?levelschaetzung=X), füllen wir das
 	// Feld nur vor, wenn noch keine eigene Selbsteinschätzung gespeichert
@@ -24,7 +29,8 @@
 	// abzuschicken — der Klick auf "Auf die Warteliste" bleibt eine
 	// bewusste Handlung.
 	const highlightLeague = $derived(
-		data.league?.slug === page.url.searchParams.get('join_league') && data.leagueRegistration === null
+		data.league?.slug === page.url.searchParams.get('join_league') &&
+			data.leagueRegistration === null
 	);
 
 	let emailBusy = $state(false);
@@ -34,7 +40,10 @@
 
 	const unreadCount = $derived(data.notifications.filter((n) => n.readAt === null).length);
 
-	const claimLabel: Record<'unclaimed' | 'pending' | 'awaiting_review' | 'claimed' | 'rejected', string> = {
+	const claimLabel: Record<
+		'unclaimed' | 'pending' | 'awaiting_review' | 'claimed' | 'rejected',
+		string
+	> = {
 		unclaimed: 'Nicht beansprucht',
 		pending: 'Wird geprüft',
 		awaiting_review: 'Wartet auf Freigabe',
@@ -192,8 +201,8 @@
 				<h2>Angemeldet</h2>
 				<p class="muted">
 					Eingeloggt als {data.email}, aber kein Spielerprofil verknüpft. Falls du zuletzt versucht
-					hast, ein Profil zu beanspruchen: dein Verein hat die Anfrage möglicherweise abgelehnt
-					(z. B. weil der Name nicht eindeutig zugeordnet werden konnte) — wende dich an deine
+					hast, ein Profil zu beanspruchen: dein Verein hat die Anfrage möglicherweise abgelehnt (z.
+					B. weil der Name nicht eindeutig zugeordnet werden konnte) — wende dich an deine
 					Vereinsleitung. Falls das hier unerwartet ist, melde dich bei uns.
 				</p>
 			</div>
@@ -203,6 +212,15 @@
 				<h2>{data.player.displayName}</h2>
 				<p class="muted">{data.email}</p>
 			</div>
+
+			{#if data.userId}
+				<AvatarUpload
+					userId={data.userId}
+					displayName={data.player.displayName}
+					bind:avatarUrl
+					supabaseConfig={data.supabaseConfig}
+				/>
+			{/if}
 
 			{#if data.player.claimStatus === 'awaiting_review'}
 				<p class="notice" role="status">
@@ -336,7 +354,8 @@
 							Du stehst auf der Warteliste — sobald ein Platz frei wird, meldet sich dein Verein.
 						</p>
 						<form method="POST" action="?/leaveLeague" use:enhance>
-							<button class="btn btn-ghost-light" type="submit">Von der Warteliste austragen</button>
+							<button class="btn btn-ghost-light" type="submit">Von der Warteliste austragen</button
+							>
 						</form>
 					{:else if data.leagueRegistration === 'left'}
 						<p class="muted" style="font-size: 13px">Du hattest die Liga verlassen.</p>
@@ -477,7 +496,9 @@
 						<p class="err">{form.redeemError}</p>
 					{/if}
 					{#if form?.redeemed}
-						<p class="ok" style="font-size: 13px; margin-top: 12px">Eingelöst — dein Verein meldet sich.</p>
+						<p class="ok" style="font-size: 13px; margin-top: 12px">
+							Eingelöst — dein Verein meldet sich.
+						</p>
 					{/if}
 				</div>
 			{/if}
@@ -536,21 +557,29 @@
 					<label class="field-label" for="playingHand">Spielhand</label>
 					<select id="playingHand" name="playingHand">
 						<option value="" selected={data.player.playingHand === null}>Keine Angabe</option>
-						<option value="rechts" selected={data.player.playingHand === 'rechts'}>Rechtshänder</option>
-						<option value="links" selected={data.player.playingHand === 'links'}>Linkshänder</option>
+						<option value="rechts" selected={data.player.playingHand === 'rechts'}
+							>Rechtshänder</option
+						>
+						<option value="links" selected={data.player.playingHand === 'links'}>Linkshänder</option
+						>
 					</select>
 
 					<label class="field-label" for="preferredSide">Bevorzugte Seite</label>
 					<select id="preferredSide" name="preferredSide">
 						<option value="" selected={data.player.preferredSide === null}>Keine Angabe</option>
-						<option value="rechts" selected={data.player.preferredSide === 'rechts'}>Rechte Seite</option>
-						<option value="links" selected={data.player.preferredSide === 'links'}>Linke Seite</option>
+						<option value="rechts" selected={data.player.preferredSide === 'rechts'}
+							>Rechte Seite</option
+						>
+						<option value="links" selected={data.player.preferredSide === 'links'}
+							>Linke Seite</option
+						>
 					</select>
 
 					<label class="field-label" for="gender">Geschlecht</label>
 					<select id="gender" name="gender">
 						<option value="" selected={data.player.gender === null}>Keine Angabe</option>
-						<option value="maennlich" selected={data.player.gender === 'maennlich'}>Männlich</option>
+						<option value="maennlich" selected={data.player.gender === 'maennlich'}>Männlich</option
+						>
 						<option value="weiblich" selected={data.player.gender === 'weiblich'}>Weiblich</option>
 						<option value="divers" selected={data.player.gender === 'divers'}>Divers</option>
 					</select>

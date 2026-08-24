@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import AvatarCircle from '$lib/components/AvatarCircle.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -44,9 +45,12 @@
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 640px">
-		<div class="sec-head">
-			<span class="eyebrow">Mein Profil</span>
-			<h2>{fullName}</h2>
+		<div class="sec-head profile-head">
+			<AvatarCircle avatarUrl={data.profile.avatarUrl} name={fullName} size={64} />
+			<div>
+				<span class="eyebrow">Mein Profil</span>
+				<h2>{fullName}</h2>
+			</div>
 		</div>
 
 		<div class="card">
@@ -106,6 +110,12 @@
 </section>
 
 <style>
+	.profile-head {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
+
 	.card {
 		margin-top: 24px;
 		padding: 22px;
