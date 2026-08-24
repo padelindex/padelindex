@@ -15,19 +15,23 @@
 
 import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { getPlayerAvailabilities } from '$lib/server/availabilities';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.player || !locals.supabase || !locals.user) {
 		throw redirect(303, `/login?next=${encodeURIComponent(url.pathname)}`);
 	}
 
-	const { data, error } = await locals.supabase
-		.from('players')
-		.select(
-			'first_name, last_name, birth_date, club_name, display_name, handle, rating, matches_played, is_provisional, claim_status, avatar_url'
-		)
-		.eq('id', locals.player.id)
-		.maybeSingle();
+	const [{ data, error }, availabilities] = await Promise.all([
+		locals.supabase
+			.from('players')
+			.select(
+				'first_name, last_name, birth_date, club_name, display_name, handle, rating, matches_played, is_provisional, claim_status, avatar_url'
+			)
+			.eq('id', locals.player.id)
+			.maybeSingle(),
+		getPlayerAvailabilities(locals.supabase, locals.player.id)
+	]);
 
 	if (error || !data) {
 		throw redirect(303, '/login');
@@ -47,7 +51,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			isProvisional: data.is_provisional,
 			claimStatus: data.claim_status,
 			avatarUrl: data.avatar_url
-		}
+		},
+		availabilityCount: availabilities.filter((a) => a.status === 'active').length
 	};
 };
 

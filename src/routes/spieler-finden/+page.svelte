@@ -25,6 +25,16 @@
 		const delta = (weekday - current + 7) % 7 || 7;
 		return new Date(now.getTime() + delta * 86_400_000).toISOString().slice(0, 10);
 	}
+
+	function requestDefaults(s: PageData['suggestions'][number]) {
+		return {
+			date: nextDateFor(s.suggestedSlot?.weekday ?? null, s.suggestedSlot?.specificDate ?? null),
+			startTime: s.suggestedSlot?.startTime ?? '18:00',
+			endTime: s.suggestedSlot?.endTime ?? '20:00',
+			matchType: s.suggestedSlot?.matchType ?? null,
+			clubId: s.suggestedSlot?.clubId ?? ''
+		};
+	}
 </script>
 
 <svelte:head>
@@ -48,8 +58,8 @@
 			<span class="eyebrow">Matchmaking</span>
 			<h2>Spieler finden</h2>
 			<p class="muted">
-				Vorschläge auf Basis eurer gemeinsamen freien Zeiten, Rating, Verein und gewünschtem
-				Matchtyp.
+				Alle Spieler mit hinterlegten Spielzeiten — mit deinen eigenen Zeiten zusätzlich sortiert
+				nach bester Überschneidung, Rating, Verein und gewünschtem Matchtyp.
 			</p>
 		</div>
 
@@ -67,197 +77,215 @@
 		{/if}
 
 		{#if !data.hasOwnAvailability}
-			<div class="card empty-card">
-				<h3 class="card-title">Noch keine Spielzeiten</h3>
+			<div class="card hint-card">
+				<h3 class="card-title">Noch keine eigenen Spielzeiten</h3>
 				<p class="muted" style="font-size: 14px">
-					Das Matchmaking braucht deine freien Zeiten, um überhaupt jemanden vorschlagen zu können.
+					Du siehst trotzdem alle Spieler mit hinterlegten Zeiten weiter unten — nur die
+					Sortierung nach bester Überschneidung fehlt ohne deine eigenen Zeiten.
 				</p>
 				<a class="btn btn-primary" href="/spielzeiten" style="margin-top: 14px">Spielzeiten anlegen</a>
 			</div>
-		{:else}
-			<form method="GET" class="card filters">
-				<h3 class="card-title">Filter</h3>
-				<div class="filter-grid">
-					<div>
-						<label for="f-weekday">Wochentag</label>
-						<select id="f-weekday" name="weekday">
-							<option value="">Alle</option>
-							{#each WEEKDAY_LABELS as label, i (label)}
-								<option value={String(i)} selected={data.filters.weekday === i}>{label}</option>
-							{/each}
-						</select>
-					</div>
-					<div>
-						<label for="f-type">Matchtyp</label>
-						<select id="f-type" name="matchType">
-							<option value="">Alle</option>
-							{#each AVAILABILITY_MATCH_TYPES as t (t)}
-								<option value={t} selected={data.filters.matchType === t}>
-									{AVAILABILITY_MATCH_TYPE_LABELS[t]}
-								</option>
-							{/each}
-						</select>
-					</div>
-					<div>
-						<label for="f-min">Rating ab</label>
-						<input id="f-min" type="number" name="minRating" min="0" max="7" step="0.1" value={data.filters.minRating ?? ''} />
-					</div>
-					<div>
-						<label for="f-max">Rating bis</label>
-						<input id="f-max" type="number" name="maxRating" min="0" max="7" step="0.1" value={data.filters.maxRating ?? ''} />
-					</div>
+		{/if}
+
+		<form method="GET" class="card filters">
+			<h3 class="card-title">Filter</h3>
+			<div class="filter-grid">
+				<div>
+					<label for="f-weekday">Wochentag</label>
+					<select id="f-weekday" name="weekday">
+						<option value="">Alle</option>
+						{#each WEEKDAY_LABELS as label, i (label)}
+							<option value={String(i)} selected={data.filters.weekday === i}>{label}</option>
+						{/each}
+					</select>
 				</div>
-				{#if data.club}
-					<label class="check">
-						<input type="checkbox" name="clubId" value={data.club.id} checked={data.filters.clubId === data.club.id} />
-						Nur {data.club.name}
-					</label>
-				{/if}
+				<div>
+					<label for="f-type">Matchtyp</label>
+					<select id="f-type" name="matchType">
+						<option value="">Alle</option>
+						{#each AVAILABILITY_MATCH_TYPES as t (t)}
+							<option value={t} selected={data.filters.matchType === t}>
+								{AVAILABILITY_MATCH_TYPE_LABELS[t]}
+							</option>
+						{/each}
+					</select>
+				</div>
+				<div>
+					<label for="f-min">Rating ab</label>
+					<input id="f-min" type="number" name="minRating" min="0" max="7" step="0.1" value={data.filters.minRating ?? ''} />
+				</div>
+				<div>
+					<label for="f-max">Rating bis</label>
+					<input id="f-max" type="number" name="maxRating" min="0" max="7" step="0.1" value={data.filters.maxRating ?? ''} />
+				</div>
+			</div>
+			{#if data.club}
+				<label class="check">
+					<input type="checkbox" name="clubId" value={data.club.id} checked={data.filters.clubId === data.club.id} />
+					Nur {data.club.name}
+				</label>
+			{/if}
+			{#if data.hasOwnAvailability}
 				<label class="check">
 					<input type="checkbox" name="includeWeak" value="true" checked={data.filters.includeWeak} />
 					Auch schwächere Übereinstimmungen zeigen
 				</label>
-				<button class="btn btn-primary" type="submit" style="margin-top: 14px">Filtern</button>
-			</form>
+			{/if}
+			<button class="btn btn-primary" type="submit" style="margin-top: 14px">Filtern</button>
+		</form>
 
-			{#if data.suggestions.length === 0}
-				<div class="card empty-card">
-					<h3 class="card-title">Keine Vorschläge</h3>
-					<p class="muted" style="font-size: 14px">
+		{#if data.suggestions.length === 0}
+			<div class="card empty-card">
+				<h3 class="card-title">Keine Spieler gefunden</h3>
+				<p class="muted" style="font-size: 14px">
+					{#if data.hasOwnAvailability}
 						Aktuell überschneiden sich deine Zeiten mit niemandem. Trage mehr Zeitfenster ein oder
 						lockere die Filter.
-					</p>
-				</div>
-			{:else}
-				<ul class="suggestions">
-					{#each data.suggestions as s (s.playerId)}
-						<li class="card suggestion">
-							<div class="s-head">
-								<div>
-									<a class="s-name" href="/p/{s.handle}">{s.name}</a>
-									<span class="s-meta">
-										Rating {s.rating.toFixed(2)} · {s.matchesPlayed} Matches
-										{#if s.clubName}· {s.clubName}{/if}
-									</span>
-								</div>
+					{:else}
+						Aktuell hat niemand passende Spielzeiten hinterlegt. Versuch es mit anderen Filtern.
+					{/if}
+				</p>
+			</div>
+		{:else}
+			<ul class="suggestions">
+				{#each data.suggestions as s (s.playerId)}
+					<li class="card suggestion">
+						<div class="s-head">
+							<div>
+								<a class="s-name" href="/p/{s.handle}">{s.name}</a>
+								<span class="s-meta">
+									Rating {s.rating.toFixed(2)} · {s.matchesPlayed} Matches
+									{#if s.clubName}· {s.clubName}{/if}
+								</span>
+							</div>
+							{#if s.score !== null && s.quality !== null}
 								<div class="s-score" data-quality={s.quality}>
 									<span class="s-score-value num">{s.score}</span>
 									<span class="s-score-label">{MATCH_QUALITY_LABELS[s.quality]}</span>
 								</div>
-							</div>
-
-							{#if s.reasons.length > 0}
-								<ul class="reasons">
-									{#each s.reasons as reason (reason)}
-										<li>{reason}</li>
-									{/each}
-								</ul>
 							{/if}
+						</div>
 
-							{#if requestingId === s.playerId}
+						{#if s.availabilityBadges.length > 0}
+							<ul class="badges">
+								{#each s.availabilityBadges as badge (badge)}
+									<li class="badge">{badge}</li>
+								{/each}
+							</ul>
+						{/if}
+
+						{#if s.reasons.length > 0}
+							<ul class="reasons">
+								{#each s.reasons as reason (reason)}
+									<li>{reason}</li>
+								{/each}
+							</ul>
+						{/if}
+
+						{#if requestingId === s.playerId}
+							{@const defaults = requestDefaults(s)}
+							<form
+								method="POST"
+								action="?/sendRequest"
+								class="request-form"
+								use:enhance={() => {
+									busyId = s.playerId;
+									return async ({ update }) => {
+										await update();
+										busyId = null;
+										requestingId = null;
+									};
+								}}
+							>
+								<input type="hidden" name="receiverId" value={s.playerId} />
+								<input type="hidden" name="clubId" value={defaults.clubId} />
+
+								<div class="pair">
+									<div>
+										<label for="date-{s.playerId}">Datum</label>
+										<input
+											id="date-{s.playerId}"
+											type="date"
+											name="proposedDate"
+											min={today}
+											value={defaults.date}
+											required
+										/>
+									</div>
+									<div>
+										<label for="mtype-{s.playerId}">Matchtyp</label>
+										<select id="mtype-{s.playerId}" name="matchType">
+											{#each AVAILABILITY_MATCH_TYPES as t (t)}
+												<option value={t} selected={defaults.matchType === t}>
+													{AVAILABILITY_MATCH_TYPE_LABELS[t]}
+												</option>
+											{/each}
+										</select>
+									</div>
+								</div>
+
+								<div class="pair">
+									<div>
+										<label for="start-{s.playerId}">Von</label>
+										<input
+											id="start-{s.playerId}"
+											type="time"
+											name="proposedStart"
+											value={defaults.startTime}
+											required
+										/>
+									</div>
+									<div>
+										<label for="end-{s.playerId}">Bis</label>
+										<input
+											id="end-{s.playerId}"
+											type="time"
+											name="proposedEnd"
+											value={defaults.endTime}
+											required
+										/>
+									</div>
+								</div>
+
+								<label for="msg-{s.playerId}">Nachricht (optional)</label>
+								<textarea id="msg-{s.playerId}" name="message" rows="2" maxlength="500"
+									placeholder="Kurze Nachricht…"></textarea>
+
+								<div class="s-actions">
+									<button class="btn btn-primary" type="submit" disabled={busyId === s.playerId}>
+										{busyId === s.playerId ? 'Wird gesendet…' : 'Anfrage senden'}
+									</button>
+									<button class="btn btn-ghost-light" type="button" onclick={() => (requestingId = null)}>
+										Abbrechen
+									</button>
+								</div>
+							</form>
+						{:else}
+							<div class="s-actions">
+								<button class="btn btn-primary" type="button" onclick={() => (requestingId = s.playerId)}>
+									Spielanfrage senden
+								</button>
 								<form
 									method="POST"
-									action="?/sendRequest"
-									class="request-form"
+									action="?/dismiss"
 									use:enhance={() => {
 										busyId = s.playerId;
 										return async ({ update }) => {
 											await update();
 											busyId = null;
-											requestingId = null;
 										};
 									}}
 								>
-									<input type="hidden" name="receiverId" value={s.playerId} />
-									<input type="hidden" name="clubId" value={s.suggestedSlot?.clubId ?? ''} />
-
-									<div class="pair">
-										<div>
-											<label for="date-{s.playerId}">Datum</label>
-											<input
-												id="date-{s.playerId}"
-												type="date"
-												name="proposedDate"
-												min={today}
-												value={nextDateFor(s.suggestedSlot?.weekday ?? null, s.suggestedSlot?.specificDate ?? null)}
-												required
-											/>
-										</div>
-										<div>
-											<label for="mtype-{s.playerId}">Matchtyp</label>
-											<select id="mtype-{s.playerId}" name="matchType">
-												{#each AVAILABILITY_MATCH_TYPES as t (t)}
-													<option value={t} selected={s.suggestedSlot?.matchType === t}>
-														{AVAILABILITY_MATCH_TYPE_LABELS[t]}
-													</option>
-												{/each}
-											</select>
-										</div>
-									</div>
-
-									<div class="pair">
-										<div>
-											<label for="start-{s.playerId}">Von</label>
-											<input
-												id="start-{s.playerId}"
-												type="time"
-												name="proposedStart"
-												value={s.suggestedSlot?.startTime ?? '18:00'}
-												required
-											/>
-										</div>
-										<div>
-											<label for="end-{s.playerId}">Bis</label>
-											<input
-												id="end-{s.playerId}"
-												type="time"
-												name="proposedEnd"
-												value={s.suggestedSlot?.endTime ?? '20:00'}
-												required
-											/>
-										</div>
-									</div>
-
-									<label for="msg-{s.playerId}">Nachricht (optional)</label>
-									<textarea id="msg-{s.playerId}" name="message" rows="2" maxlength="500"
-										placeholder="Kurze Nachricht…"></textarea>
-
-									<div class="s-actions">
-										<button class="btn btn-primary" type="submit" disabled={busyId === s.playerId}>
-											{busyId === s.playerId ? 'Wird gesendet…' : 'Anfrage senden'}
-										</button>
-										<button class="btn btn-ghost-light" type="button" onclick={() => (requestingId = null)}>
-											Abbrechen
-										</button>
-									</div>
-								</form>
-							{:else}
-								<div class="s-actions">
-									<button class="btn btn-primary" type="button" onclick={() => (requestingId = s.playerId)}>
-										Spielanfrage senden
+									<input type="hidden" name="playerId" value={s.playerId} />
+									<button class="btn btn-ghost-light" type="submit" disabled={busyId === s.playerId}>
+										Nicht interessiert
 									</button>
-									<form
-										method="POST"
-										action="?/dismiss"
-										use:enhance={() => {
-											busyId = s.playerId;
-											return async ({ update }) => {
-												await update();
-												busyId = null;
-											};
-										}}
-									>
-										<input type="hidden" name="playerId" value={s.playerId} />
-										<button class="btn btn-ghost-light" type="submit" disabled={busyId === s.playerId}>
-											Nicht interessiert
-										</button>
-									</form>
-								</div>
-							{/if}
-						</li>
-					{/each}
-				</ul>
-			{/if}
+								</form>
+							</div>
+						{/if}
+					</li>
+				{/each}
+			</ul>
 		{/if}
 	</div>
 </section>
@@ -285,6 +313,30 @@
 		letter-spacing: 0.04em;
 		color: var(--muted-light);
 		margin: 0 0 12px;
+	}
+
+	.hint-card {
+		text-align: left;
+		border-color: rgba(180, 113, 26, 0.3);
+		background: rgba(180, 113, 26, 0.06);
+	}
+
+	.badges {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin: 14px 0 0;
+		padding: 0;
+	}
+
+	.badge {
+		font-size: 11.5px;
+		font-weight: 600;
+		padding: 4px 10px;
+		border-radius: 100px;
+		background: rgba(15, 110, 92, 0.1);
+		color: var(--court-deep, #0f6e5c);
 	}
 
 	.empty-card {

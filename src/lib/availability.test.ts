@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
 	MAX_DISTANCE_KM,
+	dayPartOf,
+	formatAvailabilityBadge,
 	toMinutes,
 	validateAvailability,
 	weekdayOfDate,
@@ -101,5 +103,34 @@ describe('weekdayOfDate', () => {
 		expect(weekdayOfDate('2026-04-13')).toBe(0);
 		expect(weekdayOfDate('2026-04-18')).toBe(5); // Samstag
 		expect(weekdayOfDate('2026-04-19')).toBe(6); // Sonntag
+	});
+});
+
+describe('dayPartOf', () => {
+	it('ordnet Startzeiten den drei Tageszeiten zu', () => {
+		expect(dayPartOf('08:00')).toBe('Vormittag');
+		expect(dayPartOf('11:59')).toBe('Vormittag');
+		expect(dayPartOf('12:00')).toBe('Nachmittag');
+		expect(dayPartOf('16:59')).toBe('Nachmittag');
+		expect(dayPartOf('17:00')).toBe('Abend');
+		expect(dayPartOf('21:30')).toBe('Abend');
+	});
+});
+
+describe('formatAvailabilityBadge', () => {
+	it('kombiniert Wochentag und Tageszeit bei wiederkehrenden Zeiten', () => {
+		expect(
+			formatAvailabilityBadge({ weekday: 1, specificDate: null, startTime: '19:00' })
+		).toBe('Di Abend');
+		expect(
+			formatAvailabilityBadge({ weekday: 5, specificDate: null, startTime: '10:00' })
+		).toBe('Sa Vormittag');
+	});
+
+	it('leitet den Wochentag bei einmaligen Zeiten aus dem Datum ab', () => {
+		// 2026-04-18 ist ein Samstag
+		expect(
+			formatAvailabilityBadge({ weekday: null, specificDate: '2026-04-18', startTime: '09:00' })
+		).toBe('Sa Vormittag');
 	});
 });
