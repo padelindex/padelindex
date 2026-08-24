@@ -35,6 +35,33 @@ export function seedRating(selfAssessedLevel: number) {
   return { mu: Number(mu.toFixed(4)), sigma: BASE_SIGMA };
 }
 
+// ---------- Admin-Kalibrierung (Cold Start) ----------
+// Anders als seedRating() (Selbsteinschätzung, bewusst gedämpft) ist hier
+// ein Vereins-Admin die Quelle, der den Spieler persönlich kennt — der
+// Zielwert wird deshalb NICHT künstlich gesenkt. Nur zulässig, solange
+// external_seed_locked = false (0 Matches gespielt, siehe
+// 0020_initial_index_calibration.sql, die exakt dieselben Zielwerte
+// verwendet — bei Änderung hier IMMER auch dort nachziehen).
+export type SkillTier = 'beginner' | 'intermediate' | 'advanced';
+
+export const SKILL_TIER_TARGET_INDEX: Record<SkillTier, number> = {
+  beginner: 1,
+  intermediate: 3,
+  advanced: 5
+};
+
+export const SKILL_TIER_LABELS: Record<SkillTier, string> = {
+  beginner: 'Anfänger',
+  intermediate: 'Fortgeschritten',
+  advanced: 'Turnierspieler'
+};
+
+export function seedRatingForTier(tier: SkillTier) {
+  const targetDisplay = SKILL_TIER_TARGET_INDEX[tier];
+  const mu = (targetDisplay * 50.0) / 7.0 + 2 * BASE_SIGMA;
+  return { mu: Number(mu.toFixed(4)), sigma: BASE_SIGMA };
+}
+
 // ---------- Typen ----------
 export interface PlayerState {
   playerId: string;

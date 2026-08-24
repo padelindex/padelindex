@@ -18,6 +18,8 @@ export type RatingHistoryFactors = {
 	season?: string;
 	league_rank?: number | null;
 	league_size?: number;
+	skillTier?: 'beginner' | 'intermediate' | 'advanced';
+	setByAdminId?: string;
 	won?: boolean;
 	dominance?: number;
 	opponentAvgRating?: number;

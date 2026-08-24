@@ -6,9 +6,12 @@ import {
 	computeTokenGrants,
 	marginFactor,
 	seedRating,
+	seedRatingForTier,
+	SKILL_TIER_TARGET_INDEX,
 	streakFactor,
 	toDisplayRating,
-	type PlayerState
+	type PlayerState,
+	type SkillTier
 } from './rating';
 
 function player(id: string, mu = 25, sigma = BASE_SIGMA, matches = 0, streak = 0): PlayerState {
@@ -33,6 +36,24 @@ describe('seedRating', () => {
 		const seed = seedRating(4);
 		expect(seed.sigma).toBe(BASE_SIGMA);
 		expect(toDisplayRating(seed.mu, seed.sigma)).toBeLessThan(4);
+	});
+});
+
+describe('seedRatingForTier', () => {
+	it('lands exactly on the tier target on the 0–7 display scale (no dampening, unlike seedRating)', () => {
+		for (const tier of Object.keys(SKILL_TIER_TARGET_INDEX) as SkillTier[]) {
+			const seed = seedRatingForTier(tier);
+			expect(seed.sigma).toBe(BASE_SIGMA);
+			expect(toDisplayRating(seed.mu, seed.sigma)).toBeCloseTo(SKILL_TIER_TARGET_INDEX[tier], 1);
+		}
+	});
+
+	it('orders tiers the same way their target index is ordered', () => {
+		const beginner = seedRatingForTier('beginner');
+		const intermediate = seedRatingForTier('intermediate');
+		const advanced = seedRatingForTier('advanced');
+		expect(beginner.mu).toBeLessThan(intermediate.mu);
+		expect(intermediate.mu).toBeLessThan(advanced.mu);
 	});
 });
 

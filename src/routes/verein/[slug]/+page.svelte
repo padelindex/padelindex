@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { ActionData, PageData } from './$types';
+	import { SKILL_TIER_LABELS, SKILL_TIER_TARGET_INDEX, type SkillTier } from '$lib/rating-core';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	const SKILL_TIER_ORDER: SkillTier[] = ['beginner', 'intermediate', 'advanced'];
 
 	let creating = $state(false);
 	let editingId = $state<string | null>(null);
@@ -17,6 +20,7 @@
 	let addingMember = $state(false);
 	let addMode = $state<'search' | 'unclaimed'>('search');
 	let memberBusyId = $state<string | null>(null);
+	let calibratingId = $state<string | null>(null);
 	let matchBusyId = $state<string | null>(null);
 
 	let rouletteCreating = $state(false);
@@ -227,6 +231,18 @@
 						}}
 					>
 						<input name="displayName" placeholder="Name, z. B. Max Mustermann" required maxlength="120" />
+						<label for="new-member-tier" class="muted tier-label">
+							Skill-Level (optional) — für erfahrene Neuzugänge, damit das Matchmaking nicht
+							bei Anfänger-Niveau startet
+						</label>
+						<select id="new-member-tier" name="skillTier">
+							<option value="">Nicht festlegen — startet mit Standardwert</option>
+							{#each SKILL_TIER_ORDER as tier (tier)}
+								<option value={tier}>
+									{SKILL_TIER_LABELS[tier]} (Index {SKILL_TIER_TARGET_INDEX[tier].toFixed(1)})
+								</option>
+							{/each}
+						</select>
 						<button
 							class="btn btn-primary"
 							type="submit"
@@ -256,9 +272,21 @@
 								{:else if !m.claimed}
 									<span class="tag-inactive">unbeansprucht</span>
 								{/if}
+								{#if m.initialIndexTier}
+									<span class="tag-tier">kalibriert: {SKILL_TIER_LABELS[m.initialIndexTier]}</span>
+								{/if}
 							</span>
 							<span class="member-rating num">{m.rating.toFixed(2)}</span>
 							<div class="member-actions">
+								{#if m.calibratable}
+									<button
+										class="btn btn-ghost-light"
+										type="button"
+										onclick={() => (calibratingId = calibratingId === m.id ? null : m.id)}
+									>
+										{m.initialIndexSet ? 'Level ändern' : 'Level setzen'}
+									</button>
+								{/if}
 								{#if m.awaitingReview}
 									<form
 										method="POST"
@@ -310,6 +338,41 @@
 									</button>
 								</form>
 							</div>
+							{#if calibratingId === m.id}
+								<form
+									method="POST"
+									action="?/setInitialIndex"
+									class="calibrate-form"
+									use:enhance={() => {
+										memberBusyId = m.id;
+										return async ({ update }) => {
+											await update();
+											memberBusyId = null;
+											calibratingId = null;
+										};
+									}}
+								>
+									<input type="hidden" name="playerId" value={m.id} />
+									<select name="skillTier" required>
+										<option value="" disabled>Skill-Level wählen…</option>
+										{#each SKILL_TIER_ORDER as tier (tier)}
+											<option value={tier} selected={m.initialIndexTier === tier}>
+												{SKILL_TIER_LABELS[tier]} (Index {SKILL_TIER_TARGET_INDEX[tier].toFixed(1)})
+											</option>
+										{/each}
+									</select>
+									<button class="btn btn-primary" type="submit" disabled={memberBusyId === m.id}>
+										{memberBusyId === m.id ? 'Wird gespeichert…' : 'Setzen'}
+									</button>
+									<button
+										class="btn btn-ghost-light"
+										type="button"
+										onclick={() => (calibratingId = null)}
+									>
+										Abbrechen
+									</button>
+								</form>
+							{/if}
 						</li>
 					{/each}
 				</ul>
@@ -594,7 +657,8 @@
 	}
 
 	form input,
-	form textarea {
+	form textarea,
+	form select {
 		display: block;
 		width: 100%;
 		box-sizing: border-box;
@@ -682,6 +746,49 @@
 		padding: 2px 7px;
 		border-radius: 100px;
 		white-space: nowrap;
+	}
+
+	.tag-tier {
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: #3854b0;
+		background: rgba(56, 84, 176, 0.1);
+		padding: 2px 7px;
+		border-radius: 100px;
+		white-space: nowrap;
+	}
+
+	.tier-label {
+		display: block;
+		font-size: 12.5px;
+		margin: 14px 0 0;
+		line-height: 1.4;
+	}
+
+	.calibrate-form {
+		flex: 1 0 100%;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		margin-top: 4px;
+	}
+	.calibrate-form select {
+		flex: 1 1 220px;
+		width: auto;
+		margin: 0;
+		padding: 8px 12px;
+		border-radius: 100px;
+		border: 1px solid var(--line-light, rgba(0, 0, 0, 0.14));
+		background: #fff;
+		font-family: var(--body);
+		font-size: 13px;
+	}
+	.calibrate-form button {
+		padding: 8px 14px;
+		font-size: 13px;
 	}
 
 	.reward-desc {
