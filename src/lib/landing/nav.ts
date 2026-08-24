@@ -19,6 +19,8 @@ export function mainNav(): { href: string; label: string }[] {
 	return [
 		{ href: localizeHref('/#problem'), label: m.nav_warum() },
 		{ href: localizeHref('/rating'), label: m.nav_rating() },
+		{ href: localizeHref('/c/stc-oberland'), label: m.nav_rangliste() },
+		{ href: localizeHref('/spieler-finden'), label: m.nav_spieler_finden() },
 		{ href: localizeHref('/#tokens'), label: m.nav_tokens() },
 		{ href: localizeHref('/vereine'), label: m.nav_fuer_vereine() }
 	];

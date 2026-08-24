@@ -54,6 +54,9 @@
 			<p class="muted" use:reveal={{ delay: 0.05 }}>
 				{m.ueber_praxis_p1()}
 			</p>
+			<p class="muted" use:reveal={{ delay: 0.08 }}>
+				{m.ueber_praxis_p1b()}
+			</p>
 			<p class="muted" use:reveal={{ delay: 0.1 }}>
 				{m.ueber_praxis_p2()}
 			</p>
