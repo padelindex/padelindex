@@ -8,7 +8,12 @@ import { loadRewardCatalog, redeemReward } from '$lib/server/rewards';
 import { loadAdminClubs } from '$lib/server/club-admin';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { getNotifications, markAllRead } from '$lib/server/notification-store';
-import { departLeagueMember, joinLeagueWaitlist, loadLeagueForClub, loadOwnRegistration } from '$lib/server/league';
+import {
+	departLeagueMember,
+	joinLeagueWaitlist,
+	loadLeagueForClub,
+	loadOwnRegistration
+} from '$lib/server/league';
 
 export const load: PageServerLoad = async ({ locals, platform, url }) => {
 	// Hinweis aus dem Match-Melden-Flow, falls die Challenge-Verknüpfung nicht
@@ -18,6 +23,7 @@ export const load: PageServerLoad = async ({ locals, platform, url }) => {
 	if (!player || !locals.supabase) {
 		return {
 			email: locals.user?.email ?? null,
+			userId: locals.user?.id ?? null,
 			player: null,
 			history: [],
 			club: null,
@@ -54,6 +60,7 @@ export const load: PageServerLoad = async ({ locals, platform, url }) => {
 
 	return {
 		email: locals.user?.email ?? null,
+		userId: locals.user?.id ?? null,
 		player,
 		history,
 		club,

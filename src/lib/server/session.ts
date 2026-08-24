@@ -22,6 +22,7 @@ export type SessionPlayer = {
 	gender: 'maennlich' | 'weiblich' | 'divers' | null;
 	selfAssessedLevel: number | null;
 	showFullName: boolean;
+	avatarUrl: string | null;
 };
 
 export async function loadSessionPlayer(
@@ -31,7 +32,7 @@ export async function loadSessionPlayer(
 	const { data, error } = await supabase
 		.from('players')
 		.select(
-			'id, display_name, handle, rating, matches_played, claim_status, city, playing_hand, preferred_side, gender, self_assessed_level, show_full_name'
+			'id, display_name, handle, rating, matches_played, claim_status, city, playing_hand, preferred_side, gender, self_assessed_level, show_full_name, avatar_url'
 		)
 		.eq('user_id', userId)
 		.maybeSingle();
@@ -50,6 +51,7 @@ export async function loadSessionPlayer(
 		preferredSide: data.preferred_side,
 		gender: data.gender,
 		selfAssessedLevel: data.self_assessed_level === null ? null : Number(data.self_assessed_level),
-		showFullName: data.show_full_name
+		showFullName: data.show_full_name,
+		avatarUrl: data.avatar_url
 	};
 }

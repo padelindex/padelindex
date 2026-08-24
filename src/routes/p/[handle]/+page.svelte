@@ -4,6 +4,7 @@
 	import { matchTypeLabels } from '$lib/match-report';
 	import RatingLegend from '$lib/components/RatingLegend.svelte';
 	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
+	import AvatarCircle from '$lib/components/AvatarCircle.svelte';
 	import { isProfileIndexable } from '$lib/seo';
 	import { jsonLd } from '$lib/jsonld';
 	import { dateLocaleFor } from '$lib/i18n/date';
@@ -163,6 +164,7 @@
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 720px">
 		<div class="profile-head">
+			<AvatarCircle avatarUrl={data.profile.avatarUrl} name={data.profile.name} size={72} />
 			<div class="ring-wrap">
 				<svg class="ring" viewBox="0 0 48 48" aria-hidden="true">
 					<circle class="t" cx="24" cy="24" r="22"></circle>
