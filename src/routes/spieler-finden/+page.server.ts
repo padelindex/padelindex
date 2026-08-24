@@ -25,7 +25,7 @@ function numberOrNull(value: string | null): number | null {
 
 export const load: PageServerLoad = async ({ locals, url, platform }) => {
 	if (!locals.player || !locals.supabase) {
-		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
+		throw redirect(303, `/login?next=${encodeURIComponent(url.pathname)}`);
 	}
 
 	const admin = supabaseAdmin(platform);
