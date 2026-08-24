@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ params, url, platform, locals }) =>
 	if (!league) throw error(404, 'Diese Liga gibt es nicht.');
 
 	if (!locals.player) {
-		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
+		throw redirect(303, `/login?next=${encodeURIComponent(url.pathname)}`);
 	}
 	await requireBoxMember(platform, params.boxId, locals.player.id);
 

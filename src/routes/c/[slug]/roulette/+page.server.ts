@@ -12,7 +12,7 @@ import { loadOpenSlotsForClub, joinSlot, leaveSlot } from '$lib/server/roulette'
 
 export const load: PageServerLoad = async ({ params, locals, url, platform }) => {
 	if (!locals.player) {
-		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
+		throw redirect(303, `/login?next=${encodeURIComponent(url.pathname)}`);
 	}
 
 	const admin = supabaseAdmin(platform);

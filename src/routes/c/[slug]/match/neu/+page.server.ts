@@ -18,7 +18,7 @@ import { MAX_SETS, MATCH_TYPES, type MatchType } from '$lib/match-report';
 
 export const load: PageServerLoad = async ({ params, locals, url, platform }) => {
 	if (!locals.player) {
-		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
+		throw redirect(303, `/login?next=${encodeURIComponent(url.pathname)}`);
 	}
 
 	const admin = supabaseAdmin(platform);

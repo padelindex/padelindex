@@ -19,7 +19,7 @@ import {
 
 export const load: PageServerLoad = async ({ locals, url, platform }) => {
 	if (!locals.player || !locals.supabase) {
-		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
+		throw redirect(303, `/login?next=${encodeURIComponent(url.pathname)}`);
 	}
 
 	const { incoming, outgoing } = await getPlayRequests(

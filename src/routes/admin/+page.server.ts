@@ -21,7 +21,7 @@ import {
 
 function requirePlatformOwner(locals: App.Locals, platform: App.Platform | undefined, url: URL) {
 	if (!locals.user) {
-		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
+		throw redirect(303, `/login?next=${encodeURIComponent(url.pathname)}`);
 	}
 	if (!isPlatformOwner(platform, locals.user.email)) {
 		throw error(404, 'Seite nicht gefunden');

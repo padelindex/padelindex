@@ -37,7 +37,7 @@ export async function requireLeagueAdmin(
 ): Promise<League> {
 	const league = await loadLeague(supabasePublic(platform), slug);
 	if (!league) throw error(404, 'Diese Liga gibt es nicht.');
-	if (!playerId) throw redirect(303, `/anmelden?next=${encodeURIComponent(pathname)}`);
+	if (!playerId) throw redirect(303, `/login?next=${encodeURIComponent(pathname)}`);
 	if (!league.clubId) throw error(403, 'Diese Liga hat keinen Verein, der sie verwalten könnte.');
 
 	const ok = await isClubAdmin(supabaseAdmin(platform), league.clubId, playerId);

@@ -47,7 +47,7 @@ type AdminClub = {
 
 async function requireClubAdmin(locals: App.Locals, slug: string, url: URL): Promise<AdminClub> {
 	if (!locals.player || !locals.supabase) {
-		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
+		throw redirect(303, `/login?next=${encodeURIComponent(url.pathname)}`);
 	}
 
 	const { data: club } = await locals.supabase
