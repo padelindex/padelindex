@@ -3,6 +3,7 @@
 	import type { PageData } from './$types';
 	import { matchTypeLabels } from '$lib/match-report';
 	import RatingLegend from '$lib/components/RatingLegend.svelte';
+	import H2HStats from '$lib/components/H2HStats.svelte';
 	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import { isProfileIndexable } from '$lib/seo';
 	import { jsonLd } from '$lib/jsonld';
@@ -226,6 +227,10 @@
 				{m.player_anon_cta_pre()}
 				<a href={localizeHref('/#anmelden')}>{m.nav_cta()}</a>
 			</p>
+		{/if}
+
+		{#if data.h2h}
+			<H2HStats stats={data.h2h} name={data.profile.name} />
 		{/if}
 
 		{#if data.history.length === 0}
