@@ -29,11 +29,29 @@ import {
 	type PromotionProposal
 } from '$lib/league/box-americano';
 import { formatPlayerName } from '$lib/claim-match';
+import { postSystemMessage } from '$lib/server/chat';
 import {
 	notifySubstituteAssigned,
 	notifySubstituteJoined,
 	type LeagueNotifyContext
 } from '$lib/server/league-notifications';
+
+// Für die Systemnachricht "Termin wurde auf ... Uhr geändert" bei
+// playerScheduleRound/assignRoundSlot — dieselbe Kurzform wie fmtSlot()
+// auf der Box-Detailseite.
+const scheduleChatFmt = new Intl.DateTimeFormat('de-DE', {
+	day: '2-digit',
+	month: '2-digit',
+	hour: '2-digit',
+	minute: '2-digit'
+});
+
+function scheduleChatMessage(scheduledAt: string, court: string | null): string {
+	const when = scheduleChatFmt.format(new Date(scheduledAt));
+	return court
+		? `Termin wurde auf ${when} Uhr geändert (${court}).`
+		: `Termin wurde auf ${when} Uhr geändert.`;
+}
 
 export type League = {
 	id: string;
@@ -855,6 +873,14 @@ export async function assignRoundSlot(
 		})
 		.eq('id', boxMatchId);
 	if (err) return { ok: false, message: err.message };
+
+	await postSystemMessage(
+		admin,
+		'league_box_match',
+		boxMatchId,
+		scheduleChatMessage(params.scheduledAt, params.court)
+	);
+
 	return { ok: true };
 }
 
@@ -894,6 +920,14 @@ export async function playerScheduleRound(
 		})
 		.eq('id', boxMatchId);
 	if (err) return { ok: false, message: err.message };
+
+	await postSystemMessage(
+		admin,
+		'league_box_match',
+		boxMatchId,
+		scheduleChatMessage(params.scheduledAt, params.court)
+	);
+
 	return { ok: true };
 }
 

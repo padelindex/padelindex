@@ -10,6 +10,7 @@ import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { readEmailEnv } from '$lib/server/email';
+import { getUnreadThreadKeys } from '$lib/server/chat';
 import {
 	acceptPlayRequest,
 	cancelPlayRequest,
@@ -28,7 +29,16 @@ export const load: PageServerLoad = async ({ locals, url, platform }) => {
 		locals.player.id
 	);
 
-	return { incoming, outgoing };
+	// Jede Spielanfrage ist zugleich ihr eigener Chat-Thread (thread_key ==
+	// play_requests.id, siehe 0023_match_chat) — ein Request pro Person statt
+	// pro Anfrage, weil match_message_reads ohnehin nur die eigenen Zeilen
+	// hergibt (RLS).
+	const unread = await getUnreadThreadKeys(
+		locals.supabase,
+		[...incoming, ...outgoing].map((r) => r.id)
+	);
+
+	return { incoming, outgoing, myPlayerId: locals.player.id, unreadThreadIds: [...unread] };
 };
 
 export const actions: Actions = {

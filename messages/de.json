@@ -845,5 +845,21 @@
 	"venuemap_cta_text": "Betreibst du diesen Club? Werde Teil von PadelIndex.",
 	"venuemap_interest_link": "Interesse anmelden",
 	"venuemap_email_subject": "PadelIndex für {name}",
-	"karte_missing_venue_subject": "Anlage fehlt auf der Karte"
+	"karte_missing_venue_subject": "Anlage fehlt auf der Karte",
+
+	"chat_unavailable": "Chat gerade nicht verfügbar.",
+	"chat_loading": "Nachrichten werden geladen…",
+	"chat_load_error": "Nachrichten konnten nicht geladen werden.",
+	"chat_empty": "Noch keine Nachrichten — schreib die erste!",
+	"chat_send_error": "Nachricht konnte nicht gesendet werden.",
+	"chat_input_placeholder": "Nachricht schreiben…",
+	"chat_send": "Senden",
+	"chat_toggle_open": "Chat öffnen",
+	"chat_toggle_close": "Chat schließen",
+	"chat_unread_dot_label": "Neue Nachricht",
+	"chat_label_match": "Freies Spiel · {date}",
+	"chat_label_round": "Runde {n} · {when}",
+	"chat_label_round_unscheduled": "Runde {n}",
+	"chat_label_box_group": "Box-Chat · {label}",
+	"chat_label_play_request": "Spielersuche · {date}"
 }

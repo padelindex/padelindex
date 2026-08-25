@@ -845,5 +845,21 @@
 	"venuemap_cta_text": "Do you run this club? Join PadelIndex.",
 	"venuemap_interest_link": "Register interest",
 	"venuemap_email_subject": "PadelIndex for {name}",
-	"karte_missing_venue_subject": "Venue missing on the map"
+	"karte_missing_venue_subject": "Venue missing on the map",
+
+	"chat_unavailable": "Chat is currently unavailable.",
+	"chat_loading": "Loading messages…",
+	"chat_load_error": "Messages could not be loaded.",
+	"chat_empty": "No messages yet — write the first one!",
+	"chat_send_error": "Message could not be sent.",
+	"chat_input_placeholder": "Write a message…",
+	"chat_send": "Send",
+	"chat_toggle_open": "Open chat",
+	"chat_toggle_close": "Close chat",
+	"chat_unread_dot_label": "New message",
+	"chat_label_match": "Casual match · {date}",
+	"chat_label_round": "Round {n} · {when}",
+	"chat_label_round_unscheduled": "Round {n}",
+	"chat_label_box_group": "Box chat · {label}",
+	"chat_label_play_request": "Player search · {date}"
 }

@@ -2,14 +2,18 @@
 	import { enhance } from '$app/forms';
 	import { AVAILABILITY_MATCH_TYPE_LABELS } from '$lib/availability';
 	import { PLAY_REQUEST_STATUS_LABELS } from '$lib/challenge-rules';
+	import MatchChat from '$lib/components/chat/MatchChat.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let tab = $state<'incoming' | 'outgoing'>('incoming');
 	let busyId = $state<string | null>(null);
+	let openChatId = $state<string | null>(null);
 
 	const list = $derived(tab === 'incoming' ? data.incoming : data.outgoing);
+	const unreadThreadIds = $derived(new Set(data.unreadThreadIds));
 
 	function formatDate(iso: string) {
 		return new Date(`${iso}T12:00:00Z`).toLocaleDateString('de-DE', {
@@ -18,6 +22,10 @@
 			month: '2-digit',
 			year: 'numeric'
 		});
+	}
+
+	function toggleChat(requestId: string) {
+		openChatId = openChatId === requestId ? null : requestId;
 	}
 </script>
 
@@ -54,10 +62,20 @@
 		{/if}
 
 		<div class="tabs" role="tablist">
-			<button role="tab" aria-selected={tab === 'incoming'} class:on={tab === 'incoming'} onclick={() => (tab = 'incoming')}>
+			<button
+				role="tab"
+				aria-selected={tab === 'incoming'}
+				class:on={tab === 'incoming'}
+				onclick={() => (tab = 'incoming')}
+			>
 				Empfangen ({data.incoming.length})
 			</button>
-			<button role="tab" aria-selected={tab === 'outgoing'} class:on={tab === 'outgoing'} onclick={() => (tab = 'outgoing')}>
+			<button
+				role="tab"
+				aria-selected={tab === 'outgoing'}
+				class:on={tab === 'outgoing'}
+				onclick={() => (tab = 'outgoing')}
+			>
 				Gesendet ({data.outgoing.length})
 			</button>
 		</div>
@@ -85,7 +103,9 @@
 									{formatDate(r.proposedDate)} · {r.proposedStart}–{r.proposedEnd}
 								</span>
 							</div>
-							<span class="status" data-status={r.status}>{PLAY_REQUEST_STATUS_LABELS[r.status]}</span>
+							<span class="status" data-status={r.status}
+								>{PLAY_REQUEST_STATUS_LABELS[r.status]}</span
+							>
 						</div>
 
 						<p class="r-meta">
@@ -156,6 +176,30 @@
 							<p class="hint">
 								Viel Spaß! Tragt das Ergebnis danach wie gewohnt über „Match melden" ein.
 							</p>
+						{/if}
+
+						<div class="chat-toggle-row">
+							<button
+								type="button"
+								class="btn btn-ghost-light chat-toggle"
+								onclick={() => toggleChat(r.id)}
+							>
+								{openChatId === r.id ? m.chat_toggle_close() : m.chat_toggle_open()}
+								{#if unreadThreadIds.has(r.id) && openChatId !== r.id}
+									<span class="unread-dot" role="img" aria-label={m.chat_unread_dot_label()}></span>
+								{/if}
+							</button>
+						</div>
+
+						{#if openChatId === r.id}
+							<div class="chat-panel">
+								<MatchChat
+									matchId={r.id}
+									contextType="play_request"
+									myPlayerId={data.myPlayerId}
+									contextLabel={m.chat_label_play_request({ date: formatDate(r.proposedDate) })}
+								/>
+							</div>
 						{/if}
 					</li>
 				{/each}
@@ -297,5 +341,29 @@
 		margin: 14px 0 0;
 		font-size: 12.5px;
 		color: var(--court-deep, #0f6e5c);
+	}
+
+	.chat-toggle-row {
+		margin-top: 14px;
+	}
+
+	.chat-toggle {
+		padding: 7px 14px;
+		font-size: 12.5px;
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+	}
+
+	.unread-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #d64545;
+		display: inline-block;
+	}
+
+	.chat-panel {
+		margin-top: 12px;
 	}
 </style>

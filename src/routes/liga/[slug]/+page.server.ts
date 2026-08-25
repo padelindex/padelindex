@@ -14,6 +14,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { supabaseAdmin, supabasePublic } from '$lib/server/supabase';
+import { getUnreadThreadKeys } from '$lib/server/chat';
 import { loadCurrentCycle, loadLadder, loadLeague } from '$lib/server/league';
 
 export const load: PageServerLoad = async ({ params, url, platform, locals }) => {
@@ -33,5 +34,22 @@ export const load: PageServerLoad = async ({ params, url, platform, locals }) =>
 			? null
 			: (ladder.find((b) => b.lineup.some((p) => p.playerId === myPlayerId))?.id ?? null);
 
-	return { league, cycle, ladder, myBoxId, viewerLoggedIn: Boolean(locals.player) };
+	// Unread-Badge auf der eigenen Box: Gruppenchat + alle Rundenchats dieser
+	// einen Box — fremde Boxen sind für diese Person per RLS ohnehin nicht
+	// einsehbar, eine Abfrage dafür wäre verschwendet.
+	const myBox = myBoxId ? ladder.find((b) => b.id === myBoxId) : undefined;
+	const threadIds = myBox ? [myBox.id, ...myBox.rounds.map((r) => r.id)] : [];
+	const unreadThreadIds =
+		locals.supabase && threadIds.length > 0
+			? [...(await getUnreadThreadKeys(locals.supabase, threadIds))]
+			: [];
+
+	return {
+		league,
+		cycle,
+		ladder,
+		myBoxId,
+		viewerLoggedIn: Boolean(locals.player),
+		unreadThreadIds
+	};
 };

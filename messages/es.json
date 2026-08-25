@@ -845,5 +845,21 @@
 	"venuemap_cta_text": "¿Diriges este club? Únete a PadelIndex.",
 	"venuemap_interest_link": "Mostrar interés",
 	"venuemap_email_subject": "PadelIndex para {name}",
-	"karte_missing_venue_subject": "Falta una instalación en el mapa"
+	"karte_missing_venue_subject": "Falta una instalación en el mapa",
+
+	"chat_unavailable": "El chat no está disponible en este momento.",
+	"chat_loading": "Cargando mensajes…",
+	"chat_load_error": "No se pudieron cargar los mensajes.",
+	"chat_empty": "Aún no hay mensajes — ¡escribe el primero!",
+	"chat_send_error": "No se pudo enviar el mensaje.",
+	"chat_input_placeholder": "Escribe un mensaje…",
+	"chat_send": "Enviar",
+	"chat_toggle_open": "Abrir chat",
+	"chat_toggle_close": "Cerrar chat",
+	"chat_unread_dot_label": "Mensaje nuevo",
+	"chat_label_match": "Partido libre · {date}",
+	"chat_label_round": "Ronda {n} · {when}",
+	"chat_label_round_unscheduled": "Ronda {n}",
+	"chat_label_box_group": "Chat de la caja · {label}",
+	"chat_label_play_request": "Búsqueda de jugador · {date}"
 }
