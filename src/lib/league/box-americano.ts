@@ -28,6 +28,12 @@ export interface BoxLeagueConfig {
 	/** Unterste Box: kein Abstieg möglich, dafür mehr Aufsteiger. */
 	promoteBottomBox: number;
 	tiebreakers: Tiebreaker[];
+	/**
+	 * Bávaro-Regelwerk: die ersten N Wochen eines Zyklus vereinbaren die
+	 * Spieler ihre Termine selbst, danach vergibt der Admin die
+	 * restlichen offenen Runden. Siehe cyclePhase().
+	 */
+	selfServiceWeeks: number;
 }
 
 export const BOX_AMERICANO_4_DEFAULTS: BoxLeagueConfig = {
@@ -38,8 +44,54 @@ export const BOX_AMERICANO_4_DEFAULTS: BoxLeagueConfig = {
 	relegate: 1,
 	relegateTopBox: 2,
 	promoteBottomBox: 2,
-	tiebreakers: ['match_points', 'set_diff', 'game_diff']
+	tiebreakers: ['match_points', 'set_diff', 'game_diff'],
+	selfServiceWeeks: 3
 };
+
+// ------------------------------------------------------------
+// Zyklus-Phase (Termin- & Platzverwaltung)
+// ------------------------------------------------------------
+
+export type CyclePhase = 'self_service' | 'admin_assignment';
+
+/**
+ * Woche 1-3 (Default, konfigurierbar): Spieler vereinbaren Termine
+ * eigenständig. Ab Woche selfServiceWeeks+1: der Admin vergibt die
+ * restlichen offenen Runden. Reine Datumsrechnung, kein Datenbankzugriff
+ * — der Zyklus kennt sein eigenes Startdatum bereits (league_cycles).
+ */
+export function cyclePhase(
+	cycleStartDate: string,
+	selfServiceWeeks: number,
+	today: Date = new Date()
+): CyclePhase {
+	const cutoff = new Date(cycleStartDate);
+	cutoff.setUTCDate(cutoff.getUTCDate() + selfServiceWeeks * 7);
+	return today.getTime() >= cutoff.getTime() ? 'admin_assignment' : 'self_service';
+}
+
+// ------------------------------------------------------------
+// Ersatzspieler-Vorschlag (Warteliste)
+// ------------------------------------------------------------
+
+/**
+ * Sortiert eine Liste (typischerweise die Warteliste) nach Nähe zu einer
+ * Ziel-Spielstärke — der "automatische Modus" der Ersatzauswahl schlägt
+ * so den Spieler vor, dessen Rating dem der ausfallenden Person am
+ * nächsten kommt. Der manuelle Modus ist einfach dieselbe Liste ohne
+ * diese Sortierung. Generisch statt an WaitlistEntry gebunden, damit
+ * sowohl die Server-Seite (league-admin.ts) als auch die Svelte-UI
+ * (client-seitiges Neusortieren beim Auswählen) dieselbe Funktion nutzen
+ * können, ohne server-only Code ins Client-Bundle zu ziehen.
+ */
+export function sortByRatingCloseness<T extends { rating: number }>(
+	items: T[],
+	targetRating: number
+): T[] {
+	return [...items].sort(
+		(a, b) => Math.abs(a.rating - targetRating) - Math.abs(b.rating - targetRating)
+	);
+}
 
 // ------------------------------------------------------------
 // Rotation

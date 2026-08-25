@@ -7,12 +7,18 @@ import {
 	addBoxMember,
 	createBox,
 	deleteBox,
+	moveBoxMember,
 	nextLadderPosition,
 	removeBoxMember,
-	requireLeagueAdmin
+	requireLeagueAdmin,
+	swapBoxMembers
 } from '$lib/server/league-admin';
 
-async function loadCycleOr404(admin: ReturnType<typeof supabaseAdmin>, leagueId: string, cycleId: string) {
+async function loadCycleOr404(
+	admin: ReturnType<typeof supabaseAdmin>,
+	leagueId: string,
+	cycleId: string
+) {
 	const cycle = await loadCurrentCycle(admin, leagueId, cycleId);
 	if (!cycle) throw error(404, 'Diesen Zyklus gibt es in dieser Liga nicht.');
 	return cycle;
@@ -33,7 +39,14 @@ export const load: PageServerLoad = async ({ params, url, platform, locals }) =>
 
 	const availableRoster = roster.filter((p) => !assignedIds.has(p.id));
 
-	return { league, cycle, boxes, availableRoster, suggestedPosition, boxSize: league.config.boxSize };
+	return {
+		league,
+		cycle,
+		boxes,
+		availableRoster,
+		suggestedPosition,
+		boxSize: league.config.boxSize
+	};
 };
 
 export const actions: Actions = {
@@ -93,7 +106,75 @@ export const actions: Actions = {
 			return fail(400, { message: `Sitz muss zwischen 1 und ${league.config.boxSize} liegen.` });
 		}
 
-		const result = await addBoxMember(admin, boxId, { playerId, seat, role, replacesPlayerId: null });
+		const result = await addBoxMember(admin, boxId, {
+			playerId,
+			seat,
+			role,
+			replacesPlayerId: null
+		});
+		if (!result.ok) return fail(400, { message: result.message });
+		return { success: true };
+	},
+
+	/**
+	 * Ziel der Drag&Drop-Oberfläche: ein Spieler wird zwischen Boxen oder
+	 * innerhalb einer Box verschoben. fromBoxId="" heißt "kam aus dem Pool
+	 * der verfügbaren Vereinsmitglieder" (noch keiner Box zugeteilt) —
+	 * dann ist es ein reines Hinzufügen, kein Verschieben.
+	 */
+	moveMember: async ({ request, params, url, platform, locals }) => {
+		const league = await requireLeagueAdmin(platform, params.slug, locals.player?.id, url.pathname);
+		const admin = supabaseAdmin(platform);
+		await loadCycleOr404(admin, league.id, params.cycleId);
+
+		const form = await request.formData();
+		const playerId = String(form.get('playerId') ?? '');
+		const fromBoxId = String(form.get('fromBoxId') ?? '');
+		const fromSeat = Number(form.get('fromSeat') ?? '');
+		const fromRole = form.get('fromRole') === 'substitute' ? 'substitute' : 'regular';
+		const toBoxId = String(form.get('toBoxId') ?? '');
+		const toSeat = Number(form.get('toSeat') ?? '');
+		const role = form.get('role') === 'substitute' ? 'substitute' : 'regular';
+
+		if (!playerId || !toBoxId) return fail(400, { message: 'Unvollständige Angabe.' });
+		if (!Number.isInteger(toSeat) || toSeat < 1 || toSeat > league.config.boxSize) {
+			return fail(400, { message: `Sitz muss zwischen 1 und ${league.config.boxSize} liegen.` });
+		}
+
+		const result = fromBoxId
+			? await moveBoxMember(admin, {
+					playerId,
+					fromBoxId,
+					fromSeat,
+					fromRole,
+					toBoxId,
+					toSeat,
+					role
+				})
+			: await addBoxMember(admin, toBoxId, {
+					playerId,
+					seat: toSeat,
+					role,
+					replacesPlayerId: null
+				});
+
+		if (!result.ok) return fail(400, { message: result.message });
+		return { success: true };
+	},
+
+	/** Sitztausch innerhalb einer Box (Drag & Drop auf einen besetzten Sitz). */
+	swapMembers: async ({ request, params, url, platform, locals }) => {
+		const league = await requireLeagueAdmin(platform, params.slug, locals.player?.id, url.pathname);
+		const admin = supabaseAdmin(platform);
+		await loadCycleOr404(admin, league.id, params.cycleId);
+
+		const form = await request.formData();
+		const boxId = String(form.get('boxId') ?? '');
+		const playerAId = String(form.get('playerAId') ?? '');
+		const playerBId = String(form.get('playerBId') ?? '');
+		if (!boxId || !playerAId || !playerBId) return fail(400, { message: 'Unvollständige Angabe.' });
+
+		const result = await swapBoxMembers(admin, boxId, playerAId, playerBId);
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true };
 	},

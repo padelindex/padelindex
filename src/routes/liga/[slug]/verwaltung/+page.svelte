@@ -15,8 +15,15 @@
 
 	let busy = $state(false);
 
+	/** playerId -> 'up' | 'down' | 'stay' | '' (leer = Vorschlag übernehmen). */
+	let overrides = $state<Record<string, string>>({});
+
 	const warnings = $derived(data.proposal.filter((p) => p.warning));
+	const unresolvedWarnings = $derived(warnings.filter((w) => !overrides[w.playerId]));
 	const moves = $derived(data.proposal.filter((p) => p.direction !== 'stay'));
+	const effectiveMoves = $derived(
+		data.proposal.filter((p) => (overrides[p.playerId] || p.direction) !== 'stay')
+	);
 	const incompleteBoxes = $derived(data.ladder.filter((b) => !b.complete));
 	const alreadyApplied = $derived(data.proposal.some((p) => p.saved === 'applied'));
 
@@ -43,6 +50,12 @@
 				· <a href="/liga/{data.league.slug}/verwaltung/spieler">Warteliste &amp; Austritt →</a>
 			</p>
 
+			{#if data.league.clubSlug}
+				<p class="cycles-link" use:reveal={{ delay: 0.09 }}>
+					<a href="/verein/{data.league.clubSlug}">← Zum Vereinsadmin</a>
+				</p>
+			{/if}
+
 			{#if !data.cycle}
 				<p class="muted intro" use:reveal={{ delay: 0.1 }}>
 					Für diese Liga läuft gerade kein Zyklus. Leg unter „Zyklen und Boxen verwalten" einen an.
@@ -52,6 +65,31 @@
 					{data.cycle.name ?? `Zyklus ${data.cycle.ordinal}`} · {data.ladder.length} Boxen. Der Auf-/Abstieg
 					unten ist ein Vorschlag aus den Tabellen — er wird erst festgeschrieben, wenn du ihn bestätigst.
 				</p>
+
+				{#if data.tags}
+					<div class="tags" use:reveal={{ delay: 0.12 }}>
+						<a
+							class="tag"
+							href="/liga/{data.league.slug}/verwaltung/zyklen/{data.cycle.id}/ergebnisse"
+						>
+							<strong>{data.tags.openMatches}</strong> offene Spiele
+						</a>
+						{#if data.phase === 'self_service'}
+							<a
+								class="tag"
+								href="/liga/{data.league.slug}/verwaltung/zyklen/{data.cycle.id}/termine"
+							>
+								<strong>{data.tags.missingSchedule}</strong> fehlende Terminvereinbarung{data.tags
+									.missingSchedule === 1
+									? ''
+									: 'en'}
+							</a>
+						{/if}
+						<a class="tag" href="/liga/{data.league.slug}/verwaltung/spieler">
+							<strong>{data.tags.openSeats}</strong> Ersatzspieler angefordert
+						</a>
+					</div>
+				{/if}
 
 				{#if form?.message}
 					<p class="warn" role="alert">{form.message}</p>
@@ -88,22 +126,42 @@
 									<th scope="col">Bewegung</th>
 									<th scope="col" class="c-num">Ziel</th>
 									<th scope="col">Hinweis</th>
+									<th scope="col">Override</th>
 								</tr>
 							</thead>
 							<tbody>
 								{#each data.proposal as row (row.playerId)}
-									<tr class:muted-row={row.direction === 'stay'}>
+									<tr class:muted-row={row.direction === 'stay' && !overrides[row.playerId]}>
 										<td>{row.playerName}</td>
 										<td class="c-num num">{row.fromLadderPosition}</td>
 										<td class="c-num num">{row.fromRank}</td>
-										<td class="dir dir-{row.direction}">
-											<span aria-hidden="true">{arrow[row.direction]}</span>
-											{label[row.direction]}
+										<td class="dir dir-{overrides[row.playerId] || row.direction}">
+											<span aria-hidden="true"
+												>{arrow[overrides[row.playerId] || row.direction]}</span
+											>
+											{label[overrides[row.playerId] || row.direction]}
 										</td>
 										<td class="c-num num">
-											{row.direction === 'stay' ? '–' : row.toLadderPosition}
+											{(overrides[row.playerId] || row.direction) === 'stay'
+												? '–'
+												: row.toLadderPosition}
 										</td>
 										<td class="hint">{row.warning ?? ''}</td>
+										<td>
+											<select
+												name="override_{row.playerId}"
+												form="promotions-form"
+												bind:value={overrides[row.playerId]}
+												disabled={alreadyApplied}
+											>
+												<option value=""
+													>{row.warning ? '— bitte wählen —' : 'Vorschlag übernehmen'}</option
+												>
+												<option value="up">Aufstieg erzwingen</option>
+												<option value="down">Abstieg erzwingen</option>
+												<option value="stay">Bleibt erzwingen</option>
+											</select>
+										</td>
 									</tr>
 								{/each}
 							</tbody>
@@ -113,13 +171,15 @@
 					<div class="apply" use:reveal>
 						{#if alreadyApplied}
 							<p class="ok">Für diesen Zyklus ist der Auf-/Abstieg bereits festgeschrieben.</p>
-						{:else if warnings.length > 0}
-							<p class="warn">
-								{warnings.length} Einträge brauchen erst eine Entscheidung (unvollständige Box oder Punktgleichheit
-								an der Grenze). Solange sie offen sind, lässt sich nichts festschreiben.
-							</p>
 						{:else}
+							{#if unresolvedWarnings.length > 0}
+								<p class="warn">
+									{unresolvedWarnings.length} Einträge brauchen noch eine Entscheidung (Spalte „Override"
+									oben) — solange sie offen sind, lässt sich nichts festschreiben.
+								</p>
+							{/if}
 							<form
+								id="promotions-form"
 								method="POST"
 								action="?/applyPromotions"
 								use:enhance={() => {
@@ -130,8 +190,14 @@
 									};
 								}}
 							>
-								<button class="btn btn-primary" type="submit" disabled={busy}>
-									{busy ? 'Wird festgeschrieben …' : `${moves.length} Auf-/Abstiege festschreiben`}
+								<button
+									class="btn btn-primary"
+									type="submit"
+									disabled={busy || unresolvedWarnings.length > 0}
+								>
+									{busy
+										? 'Wird festgeschrieben …'
+										: `${effectiveMoves.length} Auf-/Abstiege festschreiben`}
 								</button>
 							</form>
 							<p class="muted small">
@@ -166,6 +232,28 @@
 	}
 	.intro {
 		margin-top: 14px;
+	}
+	.tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 14px;
+	}
+	.tag {
+		display: inline-block;
+		padding: 6px 12px;
+		border-radius: 100px;
+		border: 1px solid var(--line-light);
+		background: #fff;
+		font-size: 13px;
+		color: var(--muted-light);
+		text-decoration: none;
+	}
+	.tag strong {
+		color: var(--ink);
+	}
+	.tag:hover {
+		border-color: var(--court-deep, #0f6e5c);
 	}
 	.section-title {
 		margin-top: 40px;
@@ -245,6 +333,15 @@
 	.hint {
 		font-size: 12px;
 		color: #7a5300;
+	}
+	td select {
+		font-size: 12.5px;
+		padding: 5px 7px;
+		border-radius: 8px;
+		border: 1px solid var(--line-light);
+		background: #fff;
+		color: var(--ink);
+		font-family: inherit;
 	}
 
 	.apply {

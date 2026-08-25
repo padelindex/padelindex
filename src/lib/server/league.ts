@@ -16,6 +16,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
 	BOX_AMERICANO_4_DEFAULTS,
 	computeBoxStandings,
+	cyclePhase as computeCyclePhase,
 	isBoxComplete,
 	proposePromotions,
 	roundPairings,
@@ -23,14 +24,24 @@ import {
 	type BoxMatchResult,
 	type BoxMatchStatus,
 	type BoxStanding,
+	type CyclePhase,
+	type PromotionDirection,
 	type PromotionProposal
 } from '$lib/league/box-americano';
+import { formatPlayerName } from '$lib/claim-match';
+import {
+	notifySubstituteAssigned,
+	notifySubstituteJoined,
+	type LeagueNotifyContext
+} from '$lib/server/league-notifications';
 
 export type League = {
 	id: string;
 	clubId: string | null;
 	/** Name des Trägervereins — für die "hier steigst du ein"-CTA auf der Ligaseite. */
 	clubName: string | null;
+	/** Slug des Trägervereins — für den Rücksprung zwischen Vereins- und Liga-Verwaltung. */
+	clubSlug: string | null;
 	name: string;
 	slug: string;
 	format: string;
@@ -52,6 +63,8 @@ export type BoxPlayer = {
 	name: string;
 	handle: string | null;
 	role: 'regular' | 'substitute';
+	/** Für die Ersatzspieler-Vorschlagslogik (Warteliste nach Spielstärke). */
+	rating: number;
 };
 
 export type BoxRound = {
@@ -65,6 +78,17 @@ export type BoxRound = {
 	sets: { team1Games: number; team2Games: number }[];
 	/** Bestätigt im Sinne des normalen Match-Flows (48h-Frist). */
 	confirmed: boolean;
+	winnerTeam: 1 | 2 | null;
+	note: string | null;
+	isReplacement: boolean;
+	scheduledAt: string | null;
+	court: string | null;
+	/** true = vom Admin vergeben, false + scheduledAt gesetzt = Spieler haben sich selbst geeinigt. */
+	assignedByAdmin: boolean;
+	scheduledByName: string | null;
+	/** Gesetzt, wenn ein Spieler-Termin einen früheren Admin-Slot verdrängt hat (siehe 0022). */
+	previousScheduledAt: string | null;
+	previousCourt: string | null;
 };
 
 export type BoxView = {
@@ -95,24 +119,27 @@ function readConfig(raw: unknown): BoxLeagueConfig {
 		promoteBottomBox: num('promote_bottom_box', d.promoteBottomBox),
 		tiebreakers: Array.isArray(c.tiebreakers)
 			? (c.tiebreakers as BoxLeagueConfig['tiebreakers'])
-			: d.tiebreakers
+			: d.tiebreakers,
+		selfServiceWeeks: num('self_service_weeks', d.selfServiceWeeks)
 	};
 }
 
 export async function loadLeague(sb: SupabaseClient, slug: string): Promise<League | null> {
 	const { data, error: err } = await sb
 		.from('leagues')
-		.select('id, club_id, name, slug, format, config, clubs(name)')
+		.select('id, club_id, name, slug, format, config, clubs(name, slug)')
 		.eq('slug', slug)
 		.maybeSingle();
 
 	if (err) throw error(500, err.message);
 	if (!data) return null;
 
+	const club = data.clubs as unknown as { name: string; slug: string } | null;
 	return {
 		id: data.id,
 		clubId: data.club_id,
-		clubName: (data.clubs as unknown as { name: string } | null)?.name ?? null,
+		clubName: club?.name ?? null,
+		clubSlug: club?.slug ?? null,
 		name: data.name,
 		slug: data.slug,
 		format: data.format,
@@ -125,10 +152,13 @@ export async function loadLeague(sb: SupabaseClient, slug: string): Promise<Leag
  * Ein Verein kann später mehrere haben — hier bewusst nur die erste
  * aktive, mehr braucht die Profilseite aktuell nicht.
  */
-export async function loadLeagueForClub(sb: SupabaseClient, clubId: string): Promise<League | null> {
+export async function loadLeagueForClub(
+	sb: SupabaseClient,
+	clubId: string
+): Promise<League | null> {
 	const { data, error: err } = await sb
 		.from('leagues')
-		.select('id, club_id, name, slug, format, config, clubs(name)')
+		.select('id, club_id, name, slug, format, config, clubs(name, slug)')
 		.eq('club_id', clubId)
 		.eq('status', 'active')
 		.limit(1)
@@ -137,10 +167,12 @@ export async function loadLeagueForClub(sb: SupabaseClient, clubId: string): Pro
 	if (err) throw error(500, err.message);
 	if (!data) return null;
 
+	const club = data.clubs as unknown as { name: string; slug: string } | null;
 	return {
 		id: data.id,
 		clubId: data.club_id,
-		clubName: (data.clubs as unknown as { name: string } | null)?.name ?? null,
+		clubName: club?.name ?? null,
+		clubSlug: club?.slug ?? null,
 		name: data.name,
 		slug: data.slug,
 		format: data.format,
@@ -209,7 +241,10 @@ export async function joinLeagueWaitlist(
 }
 
 /** Für die Zuordnungs-UI: wer ist in diesem Zyklus schon EINER Box zugeteilt? */
-export async function listAssignedPlayerIds(admin: SupabaseClient, cycleId: string): Promise<Set<string>> {
+export async function listAssignedPlayerIds(
+	admin: SupabaseClient,
+	cycleId: string
+): Promise<Set<string>> {
 	const { data: boxes } = await admin.from('league_boxes').select('id').eq('cycle_id', cycleId);
 	const boxIds = (boxes ?? []).map((b) => b.id);
 	if (boxIds.length === 0) return new Set();
@@ -244,7 +279,9 @@ export async function departLeagueMember(
 		leagueId: string;
 		departingPlayerId: string;
 		replacementPlayerId: string | null;
-	}
+	},
+	/** Optional: löst Benachrichtigungen an Ersatz + verbleibende Box aus, wenn gesetzt. */
+	notifyCtx?: LeagueNotifyContext
 ): Promise<{ ok: true } | { ok: false; message: string }> {
 	const { data: membership } = await admin
 		.from('league_box_members')
@@ -263,7 +300,10 @@ export async function departLeagueMember(
 	if (box && params.replacementPlayerId) {
 		const assigned = await listAssignedPlayerIds(admin, box.cycleId);
 		if (assigned.has(params.replacementPlayerId)) {
-			return { ok: false, message: 'Diese Person spielt in diesem Zyklus bereits in einer anderen Box.' };
+			return {
+				ok: false,
+				message: 'Diese Person spielt in diesem Zyklus bereits in einer anderen Box.'
+			};
 		}
 
 		const { count: openRounds } = await admin
@@ -274,7 +314,8 @@ export async function departLeagueMember(
 		if (!openRounds) {
 			return {
 				ok: false,
-				message: 'Diese Box hat keine offene Runde mehr — ein Ersatz würde hier nichts mehr betreffen.'
+				message:
+					'Diese Box hat keine offene Runde mehr — ein Ersatz würde hier nichts mehr betreffen.'
 			};
 		}
 	}
@@ -315,7 +356,69 @@ export async function departLeagueMember(
 		if (activeErr) return { ok: false, message: activeErr.message };
 	}
 
+	// Benachrichtigung ist best-effort und darf den bereits erfolgreichen
+	// Sitzwechsel nicht mehr rückgängig machen — deshalb erst ganz am
+	// Ende, nach allen Schreib-Operationen, und ohne deren Fehler zu
+	// prüfen (notifySubstituteAssigned/-Joined werfen selbst nie).
+	if (box && params.replacementPlayerId && notifyCtx) {
+		await notifyAboutSubstitution(admin, notifyCtx, {
+			boxId: box.boxId,
+			replacementPlayerId: params.replacementPlayerId,
+			departingPlayerId: params.departingPlayerId
+		});
+	}
+
 	return { ok: true };
+}
+
+/** Lädt Box-Label, verbleibende Mitglieder und den Namen des Ersatzes, dann feuert beide Benachrichtigungen. */
+async function notifyAboutSubstitution(
+	admin: SupabaseClient,
+	ctx: LeagueNotifyContext,
+	params: { boxId: string; replacementPlayerId: string; departingPlayerId: string }
+): Promise<void> {
+	try {
+		const { data: box } = await admin
+			.from('league_boxes')
+			.select('label, ladder_position')
+			.eq('id', params.boxId)
+			.maybeSingle();
+		const boxLabel = box?.label ?? `Box ${box?.ladder_position ?? ''}`.trim();
+
+		const { data: members } = await admin
+			.from('league_box_members')
+			.select('player_id')
+			.eq('box_id', params.boxId)
+			.neq('player_id', params.replacementPlayerId);
+		const remainingPlayerIds = (members ?? [])
+			.map((m) => m.player_id)
+			.filter((id) => id !== params.departingPlayerId);
+
+		const { data: sub } = await admin
+			.from('players')
+			.select('display_name, claim_status, show_full_name')
+			.eq('id', params.replacementPlayerId)
+			.maybeSingle();
+		const substituteName = sub
+			? formatPlayerName(sub.display_name, sub.claim_status, sub.show_full_name)
+			: 'Ein Ersatzspieler';
+
+		await notifySubstituteAssigned(admin, ctx, {
+			substitutePlayerId: params.replacementPlayerId,
+			boxId: params.boxId,
+			boxLabel
+		});
+		if (remainingPlayerIds.length > 0) {
+			await notifySubstituteJoined(admin, ctx, {
+				playerIds: remainingPlayerIds,
+				boxId: params.boxId,
+				boxLabel,
+				substituteName
+			});
+		}
+	} catch (e) {
+		console.error('Benachrichtigung zur Auswechselung fehlgeschlagen', e);
+	}
 }
 
 /**
@@ -357,6 +460,7 @@ type LineupRow = {
 	player_id: string;
 	name: string;
 	handle: string | null;
+	rating: number;
 };
 
 /**
@@ -382,14 +486,16 @@ export async function loadLadder(
 
 	const { data: lineupRows, error: lErr } = await admin
 		.from('league_box_lineup')
-		.select('box_id, seat, role, player_id, name, handle')
+		.select('box_id, seat, role, player_id, name, handle, rating')
 		.in('box_id', boxIds);
 	if (lErr) throw error(500, lErr.message);
 
 	const { data: roundRows, error: rErr } = await admin
 		.from('league_box_matches')
 		.select(
-			`id, box_id, round_number, status, match_id, winner_team,
+			`id, box_id, round_number, status, match_id, winner_team, note, is_replacement,
+			 scheduled_at, court, match_assigned_by_admin, scheduled_by,
+			 previous_scheduled_at, previous_court,
 			 matches ( status, match_participants ( player_id, team ),
 			           match_sets ( set_number, team1_games, team2_games ) )`
 		)
@@ -405,9 +511,32 @@ export async function loadLadder(
 			seat: row.seat,
 			name: row.name,
 			handle: row.handle,
-			role: row.role
+			role: row.role,
+			rating: Number(row.rating)
 		});
 		lineupByBox.set(row.box_id, list);
+	}
+
+	// scheduled_by zeigt auf einen Spieler (Admin oder Box-Mitglied) — für
+	// die Anzeige "von X vergeben/eingetragen" brauchen wir dessen Namen,
+	// unabhängig davon, ob die Person in DIESER Box sitzt (ein Admin muss
+	// kein Box-Mitglied sein).
+	const scheduledByIds = [
+		...new Set(
+			((roundRows ?? []) as Record<string, any>[])
+				.map((r) => r.scheduled_by as string | null)
+				.filter((id): id is string => id !== null)
+		)
+	];
+	const scheduledByName = new Map<string, string>();
+	if (scheduledByIds.length > 0) {
+		const { data: byRows } = await admin
+			.from('players')
+			.select('id, display_name, claim_status, show_full_name')
+			.in('id', scheduledByIds);
+		for (const p of byRows ?? []) {
+			scheduledByName.set(p.id, formatPlayerName(p.display_name, p.claim_status, p.show_full_name));
+		}
 	}
 
 	const roundsByBox = new Map<string, BoxRound[]>();
@@ -449,7 +578,16 @@ export async function loadLadder(
 			team1,
 			team2,
 			sets,
-			confirmed: m?.status === 'confirmed'
+			confirmed: m?.status === 'confirmed',
+			winnerTeam: (row.winner_team as 1 | 2 | null) ?? null,
+			note: row.note ?? null,
+			isReplacement: row.is_replacement ?? false,
+			scheduledAt: row.scheduled_at ?? null,
+			court: row.court ?? null,
+			assignedByAdmin: row.match_assigned_by_admin ?? false,
+			scheduledByName: row.scheduled_by ? (scheduledByName.get(row.scheduled_by) ?? null) : null,
+			previousScheduledAt: row.previous_scheduled_at ?? null,
+			previousCourt: row.previous_court ?? null
 		});
 		roundsByBox.set(row.box_id, list);
 	}
@@ -463,7 +601,8 @@ export async function loadLadder(
 			team1: r.team1,
 			team2: r.team2,
 			sets: r.sets,
-			status: r.status
+			status: r.status,
+			winnerTeam: r.winnerTeam
 		}));
 
 		return {
@@ -582,7 +721,9 @@ export async function loadPromotionProposal(
 		.eq('cycle_id', cycleId);
 	if (sErr) throw error(500, sErr.message);
 
-	const savedBy = new Map((saved ?? []).map((r) => [r.player_id, r.status as PromotionRow['saved']]));
+	const savedBy = new Map(
+		(saved ?? []).map((r) => [r.player_id, r.status as PromotionRow['saved']])
+	);
 
 	return proposals.map((p) => ({
 		...p,
@@ -592,19 +733,61 @@ export async function loadPromotionProposal(
 }
 
 /**
+ * Wendet manuelle Overrides auf den berechneten Vorschlag an, BEVOR er
+ * geprüft/festgeschrieben wird. Ein Override ersetzt direction und
+ * toLadderPosition vollständig und räumt eine etwaige Warnung ab — der
+ * Admin übernimmt damit ausdrücklich die Verantwortung für genau diesen
+ * Fall (z. B. eine punktgleiche Grenze oder eine unvollständige Box).
+ * toLadderPosition folgt derselben Nachbar-Box-Logik wie
+ * proposePromotions() selbst (rauf = -1, runter = +1, bleibt = gleich).
+ */
+function applyPromotionOverrides(
+	rows: PromotionRow[],
+	overrides: Map<string, PromotionDirection>
+): PromotionRow[] {
+	return rows.map((row) => {
+		const direction = overrides.get(row.playerId);
+		if (!direction) return row;
+		const toLadderPosition =
+			direction === 'up'
+				? row.fromLadderPosition - 1
+				: direction === 'down'
+					? row.fromLadderPosition + 1
+					: row.fromLadderPosition;
+		return { ...row, direction, toLadderPosition, warning: undefined };
+	});
+}
+
+export type ApplyPromotionsResult =
+	{ ok: true; count: number } | { ok: false; blocked: PromotionRow[] };
+
+/**
  * Bestätigt den Vorschlag: schreibt ihn als 'applied' fest. Bewusst nur
  * ein Protokoll — die Boxen des Folgezyklus baut ein Admin daraus, das
  * ist kein automatischer Schritt.
+ *
+ * overrides lässt den Admin einzelne Zeilen VOR dem Festschreiben
+ * manuell korrigieren (z. B. eine Warnung auflösen oder einen
+ * Standardvorschlag bewusst übersteuern) — ohne Override gilt der
+ * berechnete Vorschlag unverändert. Bleibt nach den Overrides noch eine
+ * Warnung übrig, wird NICHTS festgeschrieben (alles oder nichts, wie
+ * bisher), und die betroffenen Zeilen kommen als "blocked" zurück.
  */
 export async function applyPromotionProposal(
 	admin: SupabaseClient,
 	cycleId: string,
 	decidedBy: string,
-	config: BoxLeagueConfig
-): Promise<number> {
-	const rows = await loadPromotionProposal(admin, cycleId, config);
-	const movable = rows.filter((r) => r.direction !== 'stay' && !r.warning);
-	if (movable.length === 0) return 0;
+	config: BoxLeagueConfig,
+	overrides: Map<string, PromotionDirection> = new Map()
+): Promise<ApplyPromotionsResult> {
+	const base = await loadPromotionProposal(admin, cycleId, config);
+	const rows = applyPromotionOverrides(base, overrides);
+
+	const blocked = rows.filter((r) => r.warning);
+	if (blocked.length > 0) return { ok: false, blocked };
+
+	const movable = rows.filter((r) => r.direction !== 'stay');
+	if (movable.length === 0) return { ok: true, count: 0 };
 
 	const { error: err } = await admin.from('league_promotions').upsert(
 		movable.map((r) => ({
@@ -622,5 +805,225 @@ export async function applyPromotionProposal(
 	);
 
 	if (err) throw error(500, err.message);
-	return movable.length;
+	return { ok: true, count: movable.length };
+}
+
+// ------------------------------------------------------------
+// Termine & Plätze je Runde (6-Wochen-Regel)
+// ------------------------------------------------------------
+// Woche 1 bis config.selfServiceWeeks: Spieler tragen ihren Termin
+// selbst ein (playerScheduleRound). Danach vergibt der Admin die
+// restlichen offenen Runden (assignRoundSlot). Reine Datumslogik dazu:
+// cyclePhase() in box-americano.ts.
+
+export { computeCyclePhase as cyclePhase };
+export type { CyclePhase };
+
+export type ScheduleWriteResult = { ok: true } | { ok: false; message: string };
+
+async function loadRoundForScheduling(admin: SupabaseClient, boxMatchId: string) {
+	const { data, error: err } = await admin
+		.from('league_box_matches')
+		.select('id, status, scheduled_at, court, match_assigned_by_admin')
+		.eq('id', boxMatchId)
+		.maybeSingle();
+	if (err) throw error(500, err.message);
+	return data;
+}
+
+/** Admin vergibt Platz &amp; Zeit für eine Runde (Woche 4-6). */
+export async function assignRoundSlot(
+	admin: SupabaseClient,
+	boxMatchId: string,
+	params: { scheduledAt: string; court: string | null; adminPlayerId: string }
+): Promise<ScheduleWriteResult> {
+	const round = await loadRoundForScheduling(admin, boxMatchId);
+	if (!round) return { ok: false, message: 'Runde nicht gefunden.' };
+	if (round.status !== 'scheduled') {
+		return { ok: false, message: 'Diese Runde ist bereits gewertet — kein Termin mehr nötig.' };
+	}
+
+	const { error: err } = await admin
+		.from('league_box_matches')
+		.update({
+			scheduled_at: params.scheduledAt,
+			court: params.court,
+			match_assigned_by_admin: true,
+			scheduled_by: params.adminPlayerId,
+			previous_scheduled_at: null,
+			previous_court: null
+		})
+		.eq('id', boxMatchId);
+	if (err) return { ok: false, message: err.message };
+	return { ok: true };
+}
+
+/**
+ * Ein Box-Mitglied trägt einen eigenständig vereinbarten Termin ein
+ * (Woche 1-3, oder als Sonderfall auch danach). Autorisierung
+ * (ist der/die Aufrufende Mitglied DIESER Box?) prüft der Aufrufer, wie
+ * bei reportBoxResult — hier nur die Datenintegrität.
+ *
+ * Verdrängt der neue Termin einen bereits vom Admin vergebenen Slot,
+ * wird der alte Slot NICHT verworfen, sondern in previous_scheduled_at/
+ * previous_court geparkt — das Dashboard zeigt ihn dann als "wird frei"
+ * mit Bestätigen/Ablehnen an (siehe resolveFreedSlot).
+ */
+export async function playerScheduleRound(
+	admin: SupabaseClient,
+	boxMatchId: string,
+	params: { scheduledAt: string; court: string | null; playerId: string }
+): Promise<ScheduleWriteResult> {
+	const round = await loadRoundForScheduling(admin, boxMatchId);
+	if (!round) return { ok: false, message: 'Runde nicht gefunden.' };
+	if (round.status !== 'scheduled') {
+		return { ok: false, message: 'Diese Runde ist bereits gewertet — kein Termin mehr nötig.' };
+	}
+
+	const displaces = round.match_assigned_by_admin && round.scheduled_at;
+	const { error: err } = await admin
+		.from('league_box_matches')
+		.update({
+			scheduled_at: params.scheduledAt,
+			court: params.court,
+			match_assigned_by_admin: false,
+			scheduled_by: params.playerId,
+			...(displaces
+				? { previous_scheduled_at: round.scheduled_at, previous_court: round.court }
+				: {})
+		})
+		.eq('id', boxMatchId);
+	if (err) return { ok: false, message: err.message };
+	return { ok: true };
+}
+
+/**
+ * Admin entscheidet über einen durch einen Spieler-Termin freigewordenen
+ * Slot: 'confirm' bestätigt die Freigabe (alter Slot verfällt endgültig,
+ * die Court-Buchung gilt als storniert), 'reject' verwirft stattdessen
+ * den Spieler-Termin und stellt den ursprünglich vergebenen Slot wieder
+ * her.
+ */
+export async function resolveFreedSlot(
+	admin: SupabaseClient,
+	boxMatchId: string,
+	action: 'confirm' | 'reject'
+): Promise<ScheduleWriteResult> {
+	if (action === 'confirm') {
+		const { error: err } = await admin
+			.from('league_box_matches')
+			.update({ previous_scheduled_at: null, previous_court: null })
+			.eq('id', boxMatchId);
+		if (err) return { ok: false, message: err.message };
+		return { ok: true };
+	}
+
+	const { data, error: loadErr } = await admin
+		.from('league_box_matches')
+		.select('previous_scheduled_at, previous_court')
+		.eq('id', boxMatchId)
+		.maybeSingle();
+	if (loadErr) return { ok: false, message: loadErr.message };
+	if (!data?.previous_scheduled_at) {
+		return { ok: false, message: 'Kein freigewordener Slot zum Wiederherstellen vorhanden.' };
+	}
+
+	const { error: err } = await admin
+		.from('league_box_matches')
+		.update({
+			scheduled_at: data.previous_scheduled_at,
+			court: data.previous_court,
+			match_assigned_by_admin: true,
+			previous_scheduled_at: null,
+			previous_court: null
+		})
+		.eq('id', boxMatchId);
+	if (err) return { ok: false, message: err.message };
+	return { ok: true };
+}
+
+// ------------------------------------------------------------
+// Admin-Ergebniskorrektur, Walkover, Abbruch
+// ------------------------------------------------------------
+// Ruft die Funktionen aus 0022_league_admin_dashboard.sql. Für 'played'
+// und 'abandoned' entsteht ein ganz normales, noch unbestätigtes Match
+// (status='pending') — siehe Doku bei adminReportBoxResult() dazu, warum
+// das so bleibt statt sofort zu werten.
+
+export type AdminResultInput = {
+	boxMatchId: string;
+	adminPlayerId: string;
+	team1: [string, string];
+	team2: [string, string];
+	sets: { team1_games: number; team2_games: number }[];
+	status: 'played' | 'abandoned';
+	winnerTeam?: 1 | 2 | null;
+	note?: string | null;
+};
+
+/**
+ * Wirft bei Fehlern (wie reportBoxResult) — der Aufrufer wandelt das in
+ * fail(400, …) um.
+ *
+ * Das entstehende Match bleibt bewusst status='pending', genau wie beim
+ * Selbst-Melden — beide Teams sind zwar schon als "confirmed" markiert
+ * (der Admin hat für beide gemeldet), aber matches.status kippt erst,
+ * wenn die bestehende 48h-Frist (confirm_deadline, siehe 0001) über den
+ * Cron abläuft (runConfirmCron -> applyRatingForMatch). Das ist kein
+ * Kompromiss: die Box-Tabelle (league_box_matches.status/sets) gilt
+ * SOFORT, unabhängig von matches.status — nur das allgemeine
+ * Index-Rating braucht die Frist, exakt wie bei jedem anderen Match.
+ * Der eigentliche Nutzen: solange die Frist läuft, ist das Ergebnis noch
+ * korrigierbar (admin_report_league_box_result löscht + legt neu an,
+ * solange status='pending') — ein sofortiges Bestätigen+Werten würde
+ * genau dieses Korrekturfenster wieder zunichtemachen, ohne dass es
+ * einen Weg gäbe, ein einmal angewendetes Rating zurückzunehmen.
+ */
+export async function adminReportBoxResult(
+	admin: SupabaseClient,
+	input: AdminResultInput
+): Promise<string> {
+	const { data: matchId, error: rpcErr } = await admin.rpc('admin_report_league_box_result', {
+		p_box_match_id: input.boxMatchId,
+		p_admin_id: input.adminPlayerId,
+		p_team1: input.team1,
+		p_team2: input.team2,
+		p_sets: input.sets,
+		p_status: input.status,
+		p_winner_team: input.winnerTeam ?? null,
+		p_note: input.note ?? null
+	});
+	if (rpcErr) throw error(400, rpcErr.message);
+
+	return matchId as string;
+}
+
+export type AdminWriteResult = { ok: true } | { ok: false; message: string };
+
+/** Walkover: reines Box-Tabellen-Ereignis, kein Match, kein Rating-Effekt (siehe 0022). */
+export async function setBoxWalkover(
+	admin: SupabaseClient,
+	params: { boxMatchId: string; adminPlayerId: string; winnerTeam: 1 | 2; note?: string | null }
+): Promise<AdminWriteResult> {
+	const { error: err } = await admin.rpc('admin_set_league_box_walkover', {
+		p_box_match_id: params.boxMatchId,
+		p_admin_id: params.adminPlayerId,
+		p_winner_team: params.winnerTeam,
+		p_note: params.note ?? null
+	});
+	if (err) return { ok: false, message: err.message };
+	return { ok: true };
+}
+
+/** Macht eine noch nicht gewertete Eintragung rückgängig (Korrektur-Werkzeug). */
+export async function resetBoxMatch(
+	admin: SupabaseClient,
+	params: { boxMatchId: string; adminPlayerId: string }
+): Promise<AdminWriteResult> {
+	const { error: err } = await admin.rpc('admin_reset_league_box_match', {
+		p_box_match_id: params.boxMatchId,
+		p_admin_id: params.adminPlayerId
+	});
+	if (err) return { ok: false, message: err.message };
+	return { ok: true };
 }

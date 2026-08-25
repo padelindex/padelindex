@@ -52,7 +52,10 @@ export type SeasonSummary = {
 	status: 'planned' | 'running' | 'completed';
 };
 
-export async function listSeasons(admin: SupabaseClient, leagueId: string): Promise<SeasonSummary[]> {
+export async function listSeasons(
+	admin: SupabaseClient,
+	leagueId: string
+): Promise<SeasonSummary[]> {
 	const { data, error: err } = await admin
 		.from('league_seasons')
 		.select('id, name, status')
@@ -201,7 +204,12 @@ export type CreateBoxResult = { ok: true; boxId: string } | { ok: false; message
 export async function createBox(
 	admin: SupabaseClient,
 	cycleId: string,
-	params: { ladderPosition: number; label: string | null; scheduledAt: string | null; court: string | null },
+	params: {
+		ladderPosition: number;
+		label: string | null;
+		scheduledAt: string | null;
+		court: string | null;
+	},
 	rounds: number
 ): Promise<CreateBoxResult> {
 	const { data: box, error: bErr } = await admin
@@ -218,7 +226,10 @@ export async function createBox(
 
 	if (bErr) {
 		if (bErr.code === '23505') {
-			return { ok: false, message: `Leiterposition ${params.ladderPosition} ist in diesem Zyklus schon belegt.` };
+			return {
+				ok: false,
+				message: `Leiterposition ${params.ladderPosition} ist in diesem Zyklus schon belegt.`
+			};
 		}
 		return { ok: false, message: bErr.message };
 	}
@@ -254,7 +265,10 @@ export type WriteResult = { ok: true } | { ok: false; message: string };
 
 export async function deleteBox(admin: SupabaseClient, boxId: string): Promise<WriteResult> {
 	if (await boxHasResults(admin, boxId)) {
-		return { ok: false, message: 'Diese Box hat schon gemeldete Ergebnisse und lässt sich nicht mehr löschen.' };
+		return {
+			ok: false,
+			message: 'Diese Box hat schon gemeldete Ergebnisse und lässt sich nicht mehr löschen.'
+		};
 	}
 	// league_box_members/league_box_matches hängen mit on delete cascade
 	// an league_boxes (0016) — ein delete hier räumt beides mit ab.
@@ -270,7 +284,12 @@ export async function deleteBox(admin: SupabaseClient, boxId: string): Promise<W
 export async function addBoxMember(
 	admin: SupabaseClient,
 	boxId: string,
-	params: { playerId: string; seat: number; role: 'regular' | 'substitute'; replacesPlayerId: string | null }
+	params: {
+		playerId: string;
+		seat: number;
+		role: 'regular' | 'substitute';
+		replacesPlayerId: string | null;
+	}
 ): Promise<WriteResult> {
 	const { error: err } = await admin.from('league_box_members').insert({
 		box_id: boxId,
@@ -282,7 +301,10 @@ export async function addBoxMember(
 
 	if (err) {
 		if (err.code === '23505') {
-			return { ok: false, message: 'Dieser Sitz ist schon belegt, oder der Spieler ist bereits in dieser Box.' };
+			return {
+				ok: false,
+				message: 'Dieser Sitz ist schon belegt, oder der Spieler ist bereits in dieser Box.'
+			};
 		}
 		return { ok: false, message: err.message };
 	}
@@ -297,7 +319,8 @@ export async function removeBoxMember(
 	if (await boxHasResults(admin, boxId)) {
 		return {
 			ok: false,
-			message: 'Diese Box hat schon gemeldete Ergebnisse — Mitglieder lassen sich jetzt nicht mehr entfernen.'
+			message:
+				'Diese Box hat schon gemeldete Ergebnisse — Mitglieder lassen sich jetzt nicht mehr entfernen.'
 		};
 	}
 	const { error: err } = await admin
@@ -305,6 +328,88 @@ export async function removeBoxMember(
 		.delete()
 		.eq('box_id', boxId)
 		.eq('player_id', playerId);
+	if (err) return { ok: false, message: err.message };
+	return { ok: true };
+}
+
+/**
+ * Verschiebt einen Spieler per Drag & Drop zwischen Sitzen — innerhalb
+ * einer Box (Sitztausch) oder zwischen zwei Boxen (Box-Wechsel). Nutzt
+ * dieselben Bausteine wie die manuellen Formulare (addBoxMember/
+ * removeBoxMember), rollt aber zurück, falls das Hinzufügen in der
+ * Zielbox scheitert (z. B. Sitz doch schon belegt) — sonst stünde der
+ * Spieler plötzlich in gar keiner Box mehr.
+ */
+export async function moveBoxMember(
+	admin: SupabaseClient,
+	params: {
+		playerId: string;
+		fromBoxId: string;
+		fromSeat: number;
+		fromRole: 'regular' | 'substitute';
+		toBoxId: string;
+		toSeat: number;
+		role: 'regular' | 'substitute';
+	}
+): Promise<WriteResult> {
+	if (params.fromBoxId === params.toBoxId && params.fromSeat === params.toSeat) {
+		return { ok: true };
+	}
+
+	if (params.fromBoxId === params.toBoxId) {
+		const { error: err } = await admin
+			.from('league_box_members')
+			.update({ seat: params.toSeat, role: params.role })
+			.eq('box_id', params.fromBoxId)
+			.eq('player_id', params.playerId);
+		if (err) {
+			if (err.code === '23505') return { ok: false, message: 'Dieser Sitz ist schon belegt.' };
+			return { ok: false, message: err.message };
+		}
+		return { ok: true };
+	}
+
+	const removed = await removeBoxMember(admin, params.fromBoxId, params.playerId);
+	if (!removed.ok) return removed;
+
+	const added = await addBoxMember(admin, params.toBoxId, {
+		playerId: params.playerId,
+		seat: params.toSeat,
+		role: params.role,
+		replacesPlayerId: null
+	});
+	if (!added.ok) {
+		// Zurückrollen: lieber der alte Zustand als ein Spieler ganz ohne Box.
+		await admin.from('league_box_members').insert({
+			box_id: params.fromBoxId,
+			player_id: params.playerId,
+			seat: params.fromSeat,
+			role: params.fromRole
+		});
+		return added;
+	}
+	return { ok: true };
+}
+
+/**
+ * Tauscht die Sitze zweier Spieler INNERHALB derselben Box (Drag & Drop
+ * auf einen bereits besetzten Sitz). Läuft über die SQL-Funktion aus
+ * 0022_league_admin_dashboard.sql: zwei sequenzielle UPDATEs würden die
+ * unique(box_id, seat)-Regel beim ersten Schritt verletzen, weil der
+ * jeweils andere Sitz zu dem Zeitpunkt noch belegt ist — die Funktion
+ * löst das mit einer innerhalb der Transaktion aufgeschobenen Prüfung.
+ */
+export async function swapBoxMembers(
+	admin: SupabaseClient,
+	boxId: string,
+	playerAId: string,
+	playerBId: string
+): Promise<WriteResult> {
+	const { error: err } = await admin.rpc('swap_league_box_seats', {
+		p_box_id: boxId,
+		p_player_a: playerAId,
+		p_player_b: playerBId
+	});
 	if (err) return { ok: false, message: err.message };
 	return { ok: true };
 }
@@ -336,13 +441,19 @@ export type WaitlistEntry = {
 	playerId: string;
 	name: string;
 	joinedAt: string;
+	rating: number;
 };
 
 /** Warteliste, älteste Anmeldung zuerst — das ist "der Nächstbeste". */
-export async function listWaitlist(admin: SupabaseClient, leagueId: string): Promise<WaitlistEntry[]> {
+export async function listWaitlist(
+	admin: SupabaseClient,
+	leagueId: string
+): Promise<WaitlistEntry[]> {
 	const { data, error: err } = await admin
 		.from('league_registrations')
-		.select('player_id, joined_at, players!inner(display_name, claim_status, show_full_name)')
+		.select(
+			'player_id, joined_at, players!inner(display_name, claim_status, show_full_name, rating)'
+		)
 		.eq('league_id', leagueId)
 		.eq('status', 'waitlist')
 		.order('joined_at', { ascending: true });
@@ -354,11 +465,13 @@ export async function listWaitlist(admin: SupabaseClient, leagueId: string): Pro
 			display_name: string;
 			claim_status: string;
 			show_full_name: boolean;
+			rating: number;
 		};
 		return {
 			playerId: row.player_id,
 			name: formatPlayerName(p.display_name, p.claim_status, p.show_full_name),
-			joinedAt: row.joined_at
+			joinedAt: row.joined_at,
+			rating: Number(p.rating)
 		};
 	});
 }

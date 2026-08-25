@@ -11,6 +11,7 @@
 	import LandingFooter from '$lib/components/landing/LandingFooter.svelte';
 	import type { ActionData, PageData } from './$types';
 	import { mainNav } from '$lib/landing/nav';
+	import { sortByRatingCloseness } from '$lib/league/box-americano';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -24,6 +25,17 @@
 	});
 	function fmtDate(iso: string): string {
 		return dateFmt.format(new Date(iso));
+	}
+
+	/**
+	 * Automatischer Vorschlag: Warteliste nach Nähe zum Rating der
+	 * ausfallenden Person sortiert, der nächste zuerst vorausgewählt.
+	 * Der manuelle Modus ist einfach dieselbe Liste — der Admin kann im
+	 * Dropdown jederzeit frei wählen, es ist nur die Reihenfolge/
+	 * Vorauswahl, die sich ändert.
+	 */
+	function suggestionsFor(departingRating: number) {
+		return sortByRatingCloseness(data.waitlist, departingRating);
 	}
 </script>
 
@@ -65,6 +77,7 @@
 						<li>
 							<span class="wpos num">{i + 1}.</span>
 							<span class="wname">{w.name}</span>
+							<span class="wrating num" title="Rating">{w.rating.toFixed(2)}</span>
 							<span class="wdate muted num">seit {fmtDate(w.joinedAt)}</span>
 						</li>
 					{/each}
@@ -110,9 +123,12 @@
 												</label>
 												<select id="replacement-{p.playerId}" name="replacementPlayerId">
 													<option value="">Kein Ersatz — Sitz bleibt frei</option>
-													{#each data.waitlist as w (w.playerId)}
-														<option value={w.playerId}>{w.name} (seit {fmtDate(w.joinedAt)})</option
-														>
+													{#each suggestionsFor(p.rating) as w, i (w.playerId)}
+														<option value={w.playerId} selected={i === 0}>
+															{w.name} · {w.rating.toFixed(2)}{i === 0
+																? ' — empfohlen (ähnlichstes Level)'
+																: ''} (seit {fmtDate(w.joinedAt)})
+														</option>
 													{/each}
 												</select>
 												<div class="depart-actions">
@@ -215,6 +231,10 @@
 	}
 	.wname {
 		flex: 1;
+	}
+	.wrating {
+		font-weight: 600;
+		color: var(--court-deep, #0f6e5c);
 	}
 	.wdate {
 		font-size: 12px;
