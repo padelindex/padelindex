@@ -8,6 +8,14 @@
 // kein Umweg"). token_hash wird als SHA-256-Hex gespeichert, der rohe
 // Token steckt nur im Link — wie bei anderen Bestätigungsflüssen hier
 // nie im Klartext in der Datenbank.
+//
+// Genau DESHALB gilt der Flow nur für claim_status='unclaimed': ein
+// bereits beanspruchtes Profil hat eine echte, verifizierte E-Mail und
+// einen Login (siehe /konto) — dafür ist "Klick auf einen Link genügt"
+// keine Hürde mehr, sondern eine Lücke. Ohne diese Einschränkung könnte
+// jede Person mit ihrer EIGENEN E-Mail-Adresse das öffentliche Profil
+// einer fremden, aktiven Person unsichtbar machen (Handle reicht als
+// einzige Eingabe) — kein Zugriff auf deren Postfach nötig.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isValidEmail } from '$lib/email';
@@ -44,11 +52,13 @@ export async function requestDelisting(
 
 	const { data: player } = await admin
 		.from('players')
-		.select('id, display_name, profile_public')
+		.select('id, display_name, profile_public, claim_status')
 		.eq('handle', trimmedHandle)
 		.maybeSingle();
 
-	if (!player || !player.profile_public) return { ok: true };
+	if (!player || !player.profile_public || player.claim_status !== 'unclaimed') {
+		return { ok: true };
+	}
 
 	const rawToken = crypto.randomUUID() + crypto.randomUUID();
 	const tokenHash = await hashToken(rawToken);

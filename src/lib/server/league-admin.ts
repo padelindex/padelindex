@@ -5,8 +5,12 @@
 // club-members.ts) — es gibt bewusst keine INSERT/UPDATE/DELETE-Policies
 // auf den league_*-Tabellen. Die Autorisierung ("ist diese Person Admin
 // GENAU dieses Vereins?") prüft der Aufrufer VOR jedem Call über
-// isClubAdmin(), nie hier — diese Funktionen vertrauen der übergebenen
-// leagueId/cycleId/boxId.
+// isClubAdmin(), nie hier. Was diese Funktionen selbst prüfen (über
+// assertBoxInLeague aus league.ts): dass eine übergebene boxId auch
+// wirklich zu der leagueId gehört, die requireLeagueAdmin() bestätigt
+// hat — sonst könnte ein Admin von Verein A eine boxId von Verein B
+// einschleusen (sichtbar z. B. als hidden input auf der öffentlichen
+// Box-Seite) und dessen Box verändern.
 //
 // Was hier bewusst FEHLT: ein "Boxen automatisch aus dem
 // Auf-/Abstiegsbeschluss befüllen"-Knopf. Bei einer obersten/untersten
@@ -21,7 +25,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseAdmin, supabasePublic } from '$lib/server/supabase';
 import { isClubAdmin } from '$lib/server/club-admin';
 import { formatPlayerName } from '$lib/claim-match';
-import { loadLeague, type League } from '$lib/server/league';
+import { assertBoxInLeague, loadLeague, type League } from '$lib/server/league';
 
 /**
  * Gemeinsame Zugriffsprüfung für alle /liga/[slug]/verwaltung/*-Routen:
@@ -263,7 +267,12 @@ async function boxHasResults(admin: SupabaseClient, boxId: string): Promise<bool
 
 export type WriteResult = { ok: true } | { ok: false; message: string };
 
-export async function deleteBox(admin: SupabaseClient, boxId: string): Promise<WriteResult> {
+export async function deleteBox(
+	admin: SupabaseClient,
+	boxId: string,
+	leagueId: string
+): Promise<WriteResult> {
+	await assertBoxInLeague(admin, boxId, leagueId);
 	if (await boxHasResults(admin, boxId)) {
 		return {
 			ok: false,
@@ -289,8 +298,10 @@ export async function addBoxMember(
 		seat: number;
 		role: 'regular' | 'substitute';
 		replacesPlayerId: string | null;
-	}
+	},
+	leagueId: string
 ): Promise<WriteResult> {
+	await assertBoxInLeague(admin, boxId, leagueId);
 	const { error: err } = await admin.from('league_box_members').insert({
 		box_id: boxId,
 		player_id: params.playerId,
@@ -314,8 +325,10 @@ export async function addBoxMember(
 export async function removeBoxMember(
 	admin: SupabaseClient,
 	boxId: string,
-	playerId: string
+	playerId: string,
+	leagueId: string
 ): Promise<WriteResult> {
+	await assertBoxInLeague(admin, boxId, leagueId);
 	if (await boxHasResults(admin, boxId)) {
 		return {
 			ok: false,
@@ -350,8 +363,12 @@ export async function moveBoxMember(
 		toBoxId: string;
 		toSeat: number;
 		role: 'regular' | 'substitute';
-	}
+	},
+	leagueId: string
 ): Promise<WriteResult> {
+	await assertBoxInLeague(admin, params.fromBoxId, leagueId);
+	await assertBoxInLeague(admin, params.toBoxId, leagueId);
+
 	if (params.fromBoxId === params.toBoxId && params.fromSeat === params.toSeat) {
 		return { ok: true };
 	}
@@ -369,15 +386,20 @@ export async function moveBoxMember(
 		return { ok: true };
 	}
 
-	const removed = await removeBoxMember(admin, params.fromBoxId, params.playerId);
+	const removed = await removeBoxMember(admin, params.fromBoxId, params.playerId, leagueId);
 	if (!removed.ok) return removed;
 
-	const added = await addBoxMember(admin, params.toBoxId, {
-		playerId: params.playerId,
-		seat: params.toSeat,
-		role: params.role,
-		replacesPlayerId: null
-	});
+	const added = await addBoxMember(
+		admin,
+		params.toBoxId,
+		{
+			playerId: params.playerId,
+			seat: params.toSeat,
+			role: params.role,
+			replacesPlayerId: null
+		},
+		leagueId
+	);
 	if (!added.ok) {
 		// Zurückrollen: lieber der alte Zustand als ein Spieler ganz ohne Box.
 		await admin.from('league_box_members').insert({
@@ -403,8 +425,10 @@ export async function swapBoxMembers(
 	admin: SupabaseClient,
 	boxId: string,
 	playerAId: string,
-	playerBId: string
+	playerBId: string,
+	leagueId: string
 ): Promise<WriteResult> {
+	await assertBoxInLeague(admin, boxId, leagueId);
 	const { error: err } = await admin.rpc('swap_league_box_seats', {
 		p_box_id: boxId,
 		p_player_a: playerAId,

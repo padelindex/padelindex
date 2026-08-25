@@ -69,11 +69,16 @@ export const actions: Actions = {
 			return fail(400, { message: 'Bitte mindestens ein Datum angeben.' });
 		}
 
-		const result = await assignRoundSlot(admin, boxMatchId, {
-			scheduledAt: `${dateRaw}T${timeRaw}:00`,
-			court,
-			adminPlayerId: locals.player!.id
-		});
+		const result = await assignRoundSlot(
+			admin,
+			boxMatchId,
+			{
+				scheduledAt: `${dateRaw}T${timeRaw}:00`,
+				court,
+				adminPlayerId: locals.player!.id
+			},
+			league.id
+		);
 		if (!result.ok) return fail(400, { message: result.message });
 
 		const boxes = await loadLadder(admin, cycle.id, league.config);
@@ -178,7 +183,7 @@ export const actions: Actions = {
 		const decision = form.get('decision') === 'reject' ? 'reject' : 'confirm';
 		if (!boxMatchId) return fail(400, { message: 'Keine Runde angegeben.' });
 
-		const result = await resolveFreedSlot(admin, boxMatchId, decision);
+		const result = await resolveFreedSlot(admin, boxMatchId, decision, league.id);
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true, action: 'resolveFreed' };
 	}

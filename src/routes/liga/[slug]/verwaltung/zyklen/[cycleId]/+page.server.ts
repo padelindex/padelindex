@@ -85,7 +85,7 @@ export const actions: Actions = {
 		const boxId = String(form.get('boxId') ?? '');
 		if (!boxId) return fail(400, { message: 'Keine Box angegeben.' });
 
-		const result = await deleteBox(admin, boxId);
+		const result = await deleteBox(admin, boxId, league.id);
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true };
 	},
@@ -106,12 +106,17 @@ export const actions: Actions = {
 			return fail(400, { message: `Sitz muss zwischen 1 und ${league.config.boxSize} liegen.` });
 		}
 
-		const result = await addBoxMember(admin, boxId, {
-			playerId,
-			seat,
-			role,
-			replacesPlayerId: null
-		});
+		const result = await addBoxMember(
+			admin,
+			boxId,
+			{
+				playerId,
+				seat,
+				role,
+				replacesPlayerId: null
+			},
+			league.id
+		);
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true };
 	},
@@ -142,21 +147,30 @@ export const actions: Actions = {
 		}
 
 		const result = fromBoxId
-			? await moveBoxMember(admin, {
-					playerId,
-					fromBoxId,
-					fromSeat,
-					fromRole,
+			? await moveBoxMember(
+					admin,
+					{
+						playerId,
+						fromBoxId,
+						fromSeat,
+						fromRole,
+						toBoxId,
+						toSeat,
+						role
+					},
+					league.id
+				)
+			: await addBoxMember(
+					admin,
 					toBoxId,
-					toSeat,
-					role
-				})
-			: await addBoxMember(admin, toBoxId, {
-					playerId,
-					seat: toSeat,
-					role,
-					replacesPlayerId: null
-				});
+					{
+						playerId,
+						seat: toSeat,
+						role,
+						replacesPlayerId: null
+					},
+					league.id
+				);
 
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true };
@@ -174,7 +188,7 @@ export const actions: Actions = {
 		const playerBId = String(form.get('playerBId') ?? '');
 		if (!boxId || !playerAId || !playerBId) return fail(400, { message: 'Unvollständige Angabe.' });
 
-		const result = await swapBoxMembers(admin, boxId, playerAId, playerBId);
+		const result = await swapBoxMembers(admin, boxId, playerAId, playerBId, league.id);
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true };
 	},
@@ -189,7 +203,7 @@ export const actions: Actions = {
 		const playerId = String(form.get('playerId') ?? '');
 		if (!boxId || !playerId) return fail(400, { message: 'Unvollständige Angabe.' });
 
-		const result = await removeBoxMember(admin, boxId, playerId);
+		const result = await removeBoxMember(admin, boxId, playerId, league.id);
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true };
 	}
