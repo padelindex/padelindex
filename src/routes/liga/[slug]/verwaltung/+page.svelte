@@ -48,6 +48,7 @@
 			<p class="cycles-link" use:reveal={{ delay: 0.08 }}>
 				<a href="/liga/{data.league.slug}/verwaltung/zyklen">Zyklen und Boxen verwalten →</a>
 				· <a href="/liga/{data.league.slug}/verwaltung/spieler">Warteliste &amp; Austritt →</a>
+				· <a href="/liga/{data.league.slug}/verwaltung/saisons/neu">Neue Saison starten →</a>
 			</p>
 
 			{#if data.league.clubSlug}
@@ -58,7 +59,8 @@
 
 			{#if !data.cycle}
 				<p class="muted intro" use:reveal={{ delay: 0.1 }}>
-					Für diese Liga läuft gerade kein Zyklus. Leg unter „Zyklen und Boxen verwalten" einen an.
+					Für diese Liga läuft gerade kein Zyklus. Neue Liga? Starte unter „Neue Saison starten" den
+					Assistenten — er führt durch Teilnehmer und Einteilung von Zyklus 1.
 				</p>
 			{:else}
 				<p class="muted intro" use:reveal={{ delay: 0.1 }}>
@@ -171,6 +173,36 @@
 					<div class="apply" use:reveal>
 						{#if alreadyApplied}
 							<p class="ok">Für diesen Zyklus ist der Auf-/Abstieg bereits festgeschrieben.</p>
+							{#if data.nextCycle?.canStart}
+								<form
+									method="POST"
+									action="?/startNextCycle"
+									use:enhance={() => {
+										busy = true;
+										return async ({ update }) => {
+											await update();
+											busy = false;
+										};
+									}}
+								>
+									<button class="btn btn-primary" type="submit" disabled={busy}>
+										{busy ? 'Wird angelegt …' : 'Nächsten Zyklus anlegen →'}
+									</button>
+								</form>
+								<p class="muted small">
+									Baut die neuen Boxen aus dem Auf-/Abstieg — Korrektur und Veröffentlichung folgen
+									auf der Boxen-Seite.
+								</p>
+							{:else if data.nextCycle?.pendingCycleId}
+								<p class="muted small">
+									<a
+										href="/liga/{data.league.slug}/verwaltung/zyklen/{data.nextCycle
+											.pendingCycleId}"
+									>
+										Es gibt schon einen vorbereiteten Folgezyklus — zur Korrektur/Veröffentlichung →
+									</a>
+								</p>
+							{/if}
 						{:else}
 							{#if unresolvedWarnings.length > 0}
 								<p class="warn">

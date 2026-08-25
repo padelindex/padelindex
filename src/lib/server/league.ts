@@ -50,6 +50,7 @@ export type League = {
 
 export type Cycle = {
 	id: string;
+	seasonId: string;
 	ordinal: number;
 	name: string | null;
 	startDate: string;
@@ -424,33 +425,88 @@ async function notifyAboutSubstitution(
 /**
  * Der Zyklus, den die Ligaseite zeigt: der laufende, sonst der zuletzt
  * abgeschlossene. Ohne Zyklus gibt es schlicht nichts anzuzeigen.
+ *
+ * Ohne explizite cycleId reicht "höchste ordinal-Zahl der Liga" NICHT
+ * aus, um damit die Season-Trennung zu respektieren: ordinal ist nur
+ * INNERHALB einer Saison eindeutig (unique(season_id, ordinal), siehe
+ * 0016) und startet bei jeder neuen Saison wieder bei 1. Eine gerade
+ * abgeschlossene Saison mit Zyklus 8 hätte sonst Vorrang vor der neuen
+ * aktiven Saison mit Zyklus 1. Deshalb: erst unter den Zyklen der
+ * AKTIVEN Saison suchen, nur wenn es keine gibt (Liga ohne aktive
+ * Saison, z. B. alles archiviert) auf die alte Liga-weite Bestimmung
+ * zurückfallen.
  */
 export async function loadCurrentCycle(
 	sb: SupabaseClient,
 	leagueId: string,
 	cycleId?: string
 ): Promise<Cycle | null> {
-	let query = sb
+	if (cycleId) {
+		const { data, error: err } = await sb
+			.from('league_cycles')
+			.select(
+				'id, season_id, ordinal, name, start_date, end_date, status, league_seasons!inner(league_id)'
+			)
+			.eq('league_seasons.league_id', leagueId)
+			.eq('id', cycleId)
+			.maybeSingle();
+		if (err) throw error(500, err.message);
+		return data ? toCycle(data) : null;
+	}
+
+	const { data, error: err } = await sb
 		.from('league_cycles')
-		.select('id, ordinal, name, start_date, end_date, status, league_seasons!inner(league_id)')
-		.eq('league_seasons.league_id', leagueId);
-
-	query = cycleId
-		? query.eq('id', cycleId)
-		: query.in('status', ['running', 'completed']).order('ordinal', { ascending: false }).limit(1);
-
-	const { data, error: err } = await query.maybeSingle();
+		.select(
+			'id, season_id, ordinal, name, start_date, end_date, status, league_seasons!inner(league_id, status)'
+		)
+		.eq('league_seasons.league_id', leagueId)
+		.in('status', ['running', 'completed'])
+		.order('ordinal', { ascending: false });
 	if (err) throw error(500, err.message);
-	if (!data) return null;
+	if (!data || data.length === 0) return null;
 
+	const inActiveSeason = data.find(
+		(row) => (row.league_seasons as unknown as { status: string }).status === 'active'
+	);
+	return toCycle(inActiveSeason ?? data[0]);
+}
+
+function toCycle(row: {
+	id: string;
+	season_id: string;
+	ordinal: number;
+	name: string | null;
+	start_date: string;
+	end_date: string;
+	status: string;
+}): Cycle {
 	return {
-		id: data.id,
-		ordinal: data.ordinal,
-		name: data.name,
-		startDate: data.start_date,
-		endDate: data.end_date,
-		status: data.status
+		id: row.id,
+		seasonId: row.season_id,
+		ordinal: row.ordinal,
+		name: row.name,
+		startDate: row.start_date,
+		endDate: row.end_date,
+		status: row.status as Cycle['status']
 	};
+}
+
+/** Ein bereits angelegter, aber noch nicht veröffentlichter Zyklus dieser Saison, falls vorhanden. */
+export async function findPlannedCycle(
+	sb: SupabaseClient,
+	seasonId: string
+): Promise<Cycle | null> {
+	const { data, error: err } = await sb
+		.from('league_cycles')
+		.select('id, season_id, ordinal, name, start_date, end_date, status')
+		.eq('season_id', seasonId)
+		.eq('status', 'planned')
+		.order('ordinal', { ascending: false })
+		.limit(1)
+		.maybeSingle();
+
+	if (err) throw error(500, err.message);
+	return data ? toCycle(data) : null;
 }
 
 type LineupRow = {

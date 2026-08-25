@@ -3,9 +3,11 @@ import {
 	BOX_AMERICANO_4_DEFAULTS,
 	computeBoxStandings,
 	cyclePhase,
+	groupPromotionsIntoBoxes,
 	isBoxComplete,
 	proposePromotions,
 	roundPairings,
+	seedBoxesByRating,
 	sortByRatingCloseness,
 	winnerOfBoxMatch,
 	type BoxMatchResult,
@@ -474,6 +476,96 @@ describe('cyclePhase', () => {
 	it('bleibt kurz vor der Grenze bei self_service', () => {
 		const justBefore = new Date('2026-01-21T23:59:59Z');
 		expect(cyclePhase('2026-01-01', 3, justBefore)).toBe('self_service');
+	});
+});
+
+describe('seedBoxesByRating', () => {
+	function cand(id: string, rating: number) {
+		return { playerId: id, rating };
+	}
+
+	it('teilt eine glatt aufgehende Spielerzahl in gleich große Boxen, stärkste zuerst', () => {
+		const players = [
+			cand('a', 5),
+			cand('b', 4),
+			cand('c', 6),
+			cand('d', 3),
+			cand('e', 2),
+			cand('f', 1),
+			cand('g', 3.5),
+			cand('h', 4.5)
+		];
+		const boxes = seedBoxesByRating(players, 4);
+		expect(boxes).toHaveLength(2);
+		expect(boxes[0].map((s) => s.playerId)).toEqual(['c', 'a', 'h', 'b']);
+		expect(boxes[1].map((s) => s.playerId)).toEqual(['g', 'd', 'e', 'f']);
+		expect(boxes.flat().every((s) => s.role === 'regular')).toBe(true);
+		expect(boxes[0].map((s) => s.seat)).toEqual([1, 2, 3, 4]);
+	});
+
+	it('hängt einen Rest an die vorletzte Box statt eine Rumpf-Box zu eröffnen', () => {
+		const players = Array.from({ length: 9 }, (_, i) => cand(`p${i}`, 9 - i));
+		const boxes = seedBoxesByRating(players, 4);
+		expect(boxes).toHaveLength(2);
+		expect(boxes[0]).toHaveLength(4);
+		expect(boxes[1]).toHaveLength(5);
+		expect(boxes[1].map((s) => s.role)).toEqual([
+			'regular',
+			'regular',
+			'regular',
+			'regular',
+			'substitute'
+		]);
+		expect(boxes[1][4].seat).toBe(5);
+	});
+
+	it('lässt eine einzelne, zu kleine Box unangetastet', () => {
+		const players = [cand('a', 5), cand('b', 3)];
+		const boxes = seedBoxesByRating(players, 4);
+		expect(boxes).toHaveLength(1);
+		expect(boxes[0].every((s) => s.role === 'regular')).toBe(true);
+	});
+
+	it('bleibt bei leerer Eingabe leer', () => {
+		expect(seedBoxesByRating([], 4)).toEqual([]);
+	});
+});
+
+describe('groupPromotionsIntoBoxes', () => {
+	function standing(id: string, rating: number, to: number) {
+		return { playerId: id, rating, toLadderPosition: to };
+	}
+
+	it('gruppiert nach Ziel-Leiterposition, aufsteigend sortiert', () => {
+		const rows = [
+			standing('a', 5, 2),
+			standing('b', 4, 1),
+			standing('c', 6, 1),
+			standing('d', 3, 2)
+		];
+		const boxes = groupPromotionsIntoBoxes(rows, 4);
+		expect(boxes.map((b) => b.ladderPosition)).toEqual([1, 2]);
+		expect(boxes[0].members.map((m) => m.playerId)).toEqual(['c', 'b']);
+	});
+
+	it('markiert Sitze über boxSize als Ersatz, wenn eine Box zu groß wird', () => {
+		const rows = [1, 2, 3, 4, 5].map((n) => standing(`p${n}`, 10 - n, 1));
+		const boxes = groupPromotionsIntoBoxes(rows, 4);
+		expect(boxes[0].members).toHaveLength(5);
+		expect(boxes[0].members.map((m) => m.role)).toEqual([
+			'regular',
+			'regular',
+			'regular',
+			'regular',
+			'substitute'
+		]);
+	});
+
+	it('lässt eine unterbesetzte Box einfach kleiner', () => {
+		const rows = [standing('a', 5, 3), standing('b', 4, 3)];
+		const boxes = groupPromotionsIntoBoxes(rows, 4);
+		expect(boxes[0].members).toHaveLength(2);
+		expect(boxes[0].members.every((m) => m.role === 'regular')).toBe(true);
 	});
 });
 

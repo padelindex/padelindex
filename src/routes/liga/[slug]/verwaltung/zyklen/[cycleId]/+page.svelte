@@ -226,8 +226,40 @@
 				>
 			</p>
 
+			{#if data.cycle.status === 'planned'}
+				<div class="callout" use:reveal>
+					<h2>
+						Noch nicht veröffentlicht{#if data.season?.status === 'draft'}
+							— Saison „{data.season.name}" ist noch ein Entwurf{/if}
+					</h2>
+					<p>
+						Boxen und Aufstellung sind nur hier im Dashboard sichtbar. Korrigiere die Einteilung per
+						Drag &amp; Drop, dann veröffentliche den Zyklus — danach zeigt ihn auch die öffentliche
+						Ligaseite.
+					</p>
+					<form
+						method="POST"
+						action="?/publish"
+						use:enhance={() => {
+							busy = 'publish';
+							return async ({ update }) => {
+								await update();
+								busy = null;
+							};
+						}}
+					>
+						<button class="btn btn-primary" type="submit" disabled={busy === 'publish'}>
+							{busy === 'publish' ? 'Wird veröffentlicht …' : 'Zyklus veröffentlichen'}
+						</button>
+					</form>
+				</div>
+			{/if}
+
 			{#if form?.message}
 				<p class="warn" role="alert">{form.message}</p>
+			{/if}
+			{#if form?.published}
+				<p class="ok" role="status">Zyklus veröffentlicht — jetzt öffentlich sichtbar.</p>
 			{/if}
 
 			<h2 class="section-title" use:reveal>Box hinzufügen</h2>
@@ -476,6 +508,30 @@
 		font-size: 14px;
 		background: rgba(179, 65, 31, 0.1);
 		color: #8f3419;
+	}
+	.ok {
+		margin-bottom: 20px;
+		padding: 12px 16px;
+		border-radius: 12px;
+		font-size: 14px;
+		background: rgba(22, 163, 148, 0.12);
+		color: var(--court-deep, #0f6e5c);
+	}
+	.callout {
+		margin: 18px 0;
+		padding: 16px 18px;
+		border-radius: 14px;
+		border: 1px solid rgba(233, 178, 60, 0.5);
+		background: rgba(233, 178, 60, 0.1);
+	}
+	.callout h2 {
+		font-size: 16px;
+		margin-bottom: 6px;
+	}
+	.callout p {
+		font-size: 14px;
+		color: var(--muted-light);
+		margin-bottom: 12px;
 	}
 	.section-title {
 		margin-top: 36px;

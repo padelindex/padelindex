@@ -420,3 +420,104 @@ export function proposePromotions(
 
 	return proposals;
 }
+
+// ------------------------------------------------------------
+// Boxen-Einteilung: neue Saison seeden, nächsten Zyklus aus Auf-/Abstieg bauen
+// ------------------------------------------------------------
+
+export interface SeedCandidate {
+	playerId: string;
+	rating: number;
+}
+
+export interface SeedSeat {
+	playerId: string;
+	seat: number;
+	role: 'regular' | 'substitute';
+}
+
+/**
+ * Nummeriert eine nach Stärke sortierte Gruppe zu Sitzen durch: die
+ * ersten boxSize bekommen reguläre Sitze, alles darüber hinaus (eine zu
+ * groß geratene Box, siehe groupPromotionsIntoBoxes) role='substitute'
+ * mit fortlaufender Sitznummer — die Rotation kennt ohnehin nur die
+ * ersten boxSize Sitze, ein Admin muss so eine Box vor dem Spielbeginn
+ * per Drag & Drop ausgleichen.
+ */
+function assignSeats(group: SeedCandidate[], boxSize: number): SeedSeat[] {
+	return group.map((c, i) => ({
+		playerId: c.playerId,
+		seat: i + 1,
+		role: i < boxSize ? 'regular' : 'substitute'
+	}));
+}
+
+/**
+ * Vorschlag für die Boxen einer neuen Saison (Zyklus 1): nach Rating
+ * absteigend sortiert, in Gruppen von boxSize eingeteilt — Box 1 die
+ * stärksten, die letzte Box die schwächsten. Geht die Spielerzahl nicht
+ * glatt durch boxSize auf, bekommt die VORLETZTE Box die übrig
+ * gebliebenen Personen zusätzlich als Ersatz statt eine eigene
+ * Rumpf-Box mit zu wenigen Spielern zu eröffnen, die mit sich selbst
+ * keine Runde spielen könnte. Reiner Vorschlag — der Admin korrigiert
+ * das Ergebnis vor dem Start per Drag & Drop.
+ */
+export function seedBoxesByRating(candidates: SeedCandidate[], boxSize: number): SeedSeat[][] {
+	const sorted = [...candidates].sort((a, b) => b.rating - a.rating);
+	const groups: SeedCandidate[][] = [];
+	for (let i = 0; i < sorted.length; i += boxSize) {
+		groups.push(sorted.slice(i, i + boxSize));
+	}
+
+	if (groups.length > 1 && groups[groups.length - 1].length < boxSize) {
+		const leftover = groups.pop()!;
+		groups[groups.length - 1].push(...leftover);
+	}
+
+	return groups.map((g) => assignSeats(g, boxSize));
+}
+
+export interface FinalStanding {
+	playerId: string;
+	rating: number;
+	toLadderPosition: number;
+}
+
+export interface GroupedBox {
+	ladderPosition: number;
+	members: SeedSeat[];
+}
+
+/**
+ * Baut die Boxen des Folgezyklus aus dem bestätigten Auf-/Abstieg: alle
+ * Spieler nach ihrer jeweiligen Ziel-Leiterposition gruppiert (siehe
+ * proposePromotions — toLadderPosition gilt für JEDE Zeile, auch
+ * "bleibt"). Kann bewusst Boxen mit weniger oder mehr als boxSize
+ * Mitgliedern liefern — bei einer obersten/untersten Box mit
+ * abweichender Auf-/Abstiegszahl (relegateTopBox/promoteBottomBox)
+ * balanciert sich die Spielerzahl zwischen Nachbarboxen nicht von
+ * selbst aus (siehe league-admin.ts). Das zeigt diese Funktion
+ * ungefiltert an, damit der Admin es vor der Veröffentlichung per
+ * Drag & Drop ausgleichen kann — sie korrigiert nichts automatisch.
+ */
+export function groupPromotionsIntoBoxes(
+	standings: FinalStanding[],
+	boxSize: number
+): GroupedBox[] {
+	const byPosition = new Map<number, FinalStanding[]>();
+	for (const s of standings) {
+		const list = byPosition.get(s.toLadderPosition) ?? [];
+		list.push(s);
+		byPosition.set(s.toLadderPosition, list);
+	}
+
+	return [...byPosition.entries()]
+		.sort(([a], [b]) => a - b)
+		.map(([ladderPosition, members]) => ({
+			ladderPosition,
+			members: assignSeats(
+				[...members].sort((a, b) => b.rating - a.rating),
+				boxSize
+			)
+		}));
+}

@@ -1,14 +1,19 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
-import { createCycle, listSeasons, nextCycleOrdinal, requireLeagueAdmin } from '$lib/server/league-admin';
+import {
+	createCycle,
+	listSeasons,
+	nextCycleOrdinal,
+	requireLeagueAdmin
+} from '$lib/server/league-admin';
 
 export const load: PageServerLoad = async ({ params, url, platform, locals }) => {
 	const league = await requireLeagueAdmin(platform, params.slug, locals.player?.id, url.pathname);
 	const admin = supabaseAdmin(platform);
 
 	const seasons = await listSeasons(admin, league.id);
-	const latest = seasons.find((s) => s.status !== 'completed') ?? seasons[0] ?? null;
+	const latest = seasons.find((s) => s.status !== 'archived') ?? seasons[0] ?? null;
 	const suggestedOrdinal = latest ? await nextCycleOrdinal(admin, latest.id) : 1;
 
 	return { league, seasons, suggestedOrdinal, suggestedSeasonId: latest?.id ?? null };

@@ -17,6 +17,18 @@
 		running: 'läuft',
 		completed: 'abgeschlossen'
 	};
+	const seasonStatusLabel: Record<string, string> = {
+		draft: 'Entwurf',
+		active: 'aktiv',
+		archived: 'archiviert'
+	};
+
+	function selectSeason(e: Event) {
+		const value = (e.target as HTMLSelectElement).value;
+		const url = new URL(window.location.href);
+		url.searchParams.set('season', value);
+		window.location.href = url.toString();
+	}
 </script>
 
 <svelte:head>
@@ -37,12 +49,28 @@
 				du danach an.
 			</p>
 
-			<a class="btn btn-primary" href="/liga/{data.league.slug}/verwaltung/zyklen/neu" use:reveal>
-				Neuen Zyklus anlegen
-			</a>
+			<div class="toolbar" use:reveal>
+				<div class="season-switch">
+					<label class="sr-only" for="season-select">Saison</label>
+					<select id="season-select" value={data.selectedSeasonId} onchange={selectSeason}>
+						<option value="all">Alle Saisons</option>
+						{#each data.seasons as s (s.id)}
+							<option value={s.id}>
+								{s.name} ({seasonStatusLabel[s.status]})
+							</option>
+						{/each}
+					</select>
+				</div>
+				<a class="btn btn-ghost-light" href="/liga/{data.league.slug}/verwaltung/saisons/neu">
+					Neue Saison starten
+				</a>
+				<a class="btn btn-primary" href="/liga/{data.league.slug}/verwaltung/zyklen/neu">
+					Neuen Zyklus anlegen
+				</a>
+			</div>
 
 			{#if data.cycles.length === 0}
-				<p class="muted" style="margin-top: 24px">Noch kein Zyklus angelegt.</p>
+				<p class="muted" style="margin-top: 24px">Keine Zyklen für diese Auswahl.</p>
 			{:else}
 				<div class="tablewrap" use:reveal>
 					<table>
@@ -89,12 +117,39 @@
 <LandingFooter />
 
 <style>
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
 	h1 {
 		margin-top: 18px;
 	}
 	.intro {
 		margin-top: 14px;
-		margin-bottom: 28px;
+		margin-bottom: 20px;
+	}
+	.toolbar {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-bottom: 8px;
+	}
+	.season-switch select {
+		padding: 9px 12px;
+		border: 1px solid var(--line-light);
+		border-radius: 100px;
+		font-size: 13px;
+		background: #fff;
+		color: var(--ink);
+		font-family: inherit;
 	}
 	.tablewrap {
 		margin-top: 28px;

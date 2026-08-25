@@ -49,7 +49,7 @@ export async function requireLeagueAdmin(
 export type SeasonSummary = {
 	id: string;
 	name: string;
-	status: 'planned' | 'running' | 'completed';
+	status: 'draft' | 'active' | 'archived';
 };
 
 export async function listSeasons(
@@ -147,10 +147,22 @@ export async function createCycle(
 		} else {
 			const { data: created, error: sErr } = await admin
 				.from('league_seasons')
-				.insert({ league_id: leagueId, name, status: 'running' })
+				.insert({ league_id: leagueId, name, status: 'active' })
 				.select('id')
 				.single();
-			if (sErr) return { ok: false, message: sErr.message };
+			if (sErr) {
+				// league_seasons_one_active_idx (0023): höchstens eine aktive
+				// Saison je Liga — die alte muss erst über den Saison-
+				// Assistenten (verwaltung/saisons/neu) archiviert werden.
+				if (sErr.code === '23505') {
+					return {
+						ok: false,
+						message:
+							'Es läuft bereits eine aktive Saison — über „Neue Saison starten" erst die aktuelle archivieren.'
+					};
+				}
+				return { ok: false, message: sErr.message };
+			}
 			seasonId = created.id;
 		}
 	}

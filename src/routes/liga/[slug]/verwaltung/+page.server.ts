@@ -4,30 +4,43 @@
 // Zugriff hat, wer Admin des Vereins ist, zu dem die Liga gehört —
 // geprüft bei jedem Laden UND bei jeder Aktion (requireLeagueAdmin).
 
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { readEmailEnv } from '$lib/server/email';
 import {
 	applyPromotionProposal,
 	cyclePhase,
+	findPlannedCycle,
 	loadCurrentCycle,
 	loadLadder,
 	loadPromotionProposal
 } from '$lib/server/league';
 import { requireLeagueAdmin } from '$lib/server/league-admin';
 import { notifyCycleClosed } from '$lib/server/league-notifications';
+import { activeSeason, createNextCycle } from '$lib/server/league-seasons';
 
 export const load: PageServerLoad = async ({ params, url, platform, locals }) => {
 	const league = await requireLeagueAdmin(platform, params.slug, locals.player?.id, url.pathname);
 
 	const admin = supabaseAdmin(platform);
 	const cycle = await loadCurrentCycle(admin, league.id);
-	if (!cycle) return { league, cycle: null, ladder: [], proposal: [], phase: null, tags: null };
+	if (!cycle) {
+		return {
+			league,
+			cycle: null,
+			ladder: [],
+			proposal: [],
+			phase: null,
+			tags: null,
+			nextCycle: null
+		};
+	}
 
-	const [ladder, proposal] = await Promise.all([
+	const [ladder, proposal, season] = await Promise.all([
 		loadLadder(admin, cycle.id, league.config),
-		loadPromotionProposal(admin, cycle.id, league.config)
+		loadPromotionProposal(admin, cycle.id, league.config),
+		activeSeason(admin, league.id)
 	]);
 
 	const phase = cyclePhase(cycle.startDate, league.config.selfServiceWeeks);
@@ -44,13 +57,23 @@ export const load: PageServerLoad = async ({ params, url, platform, locals }) =>
 	);
 	const openSeats = ladder.reduce((n, b) => n + (league.config.boxSize - b.lineup.length), 0);
 
+	// "Nächsten Zyklus anlegen" braucht: aktive Saison, Auf-/Abstieg schon
+	// festgeschrieben, alle Runden gewertet, und noch keinen
+	// unveröffentlichten Zyklus, der auf Korrektur wartet (sonst gäbe es
+	// zwei parallele Vorschläge).
+	const alreadyApplied = proposal.some((p) => p.saved === 'applied');
+	const allRoundsScored = ladder.length > 0 && openMatches === 0;
+	const pendingCycle = season ? await findPlannedCycle(admin, season.id) : null;
+	const canStartNextCycle = Boolean(season) && alreadyApplied && allRoundsScored && !pendingCycle;
+
 	return {
 		league,
 		cycle,
 		ladder,
 		proposal,
 		phase,
-		tags: { openMatches, missingSchedule, openSeats }
+		tags: { openMatches, missingSchedule, openSeats },
+		nextCycle: { canStart: canStartNextCycle, pendingCycleId: pendingCycle?.id ?? null }
 	};
 };
 
@@ -109,5 +132,37 @@ export const actions: Actions = {
 		}
 
 		return { success: true, count: result.count };
+	},
+
+	/**
+	 * "Neuer Zyklus starten": baut den Folgezyklus (status='planned') aus
+	 * dem bereits festgeschriebenen Auf-/Abstieg. Die Korrektur läuft auf
+	 * der normalen Boxen-Seite (Drag & Drop), veröffentlicht wird er dort
+	 * über den separaten "Zyklus veröffentlichen"-Knopf.
+	 */
+	startNextCycle: async ({ params, url, platform, locals }) => {
+		const league = await requireLeagueAdmin(platform, params.slug, locals.player?.id, url.pathname);
+		const admin = supabaseAdmin(platform);
+
+		const cycle = await loadCurrentCycle(admin, league.id);
+		if (!cycle) return fail(400, { message: 'Kein Zyklus vorhanden.' });
+
+		const season = await activeSeason(admin, league.id);
+		if (!season) return fail(400, { message: 'Keine aktive Saison.' });
+
+		const pending = await findPlannedCycle(admin, season.id);
+		if (pending) {
+			throw redirect(303, `/liga/${league.slug}/verwaltung/zyklen/${pending.id}`);
+		}
+
+		const result = await createNextCycle(admin, {
+			seasonId: season.id,
+			currentCycleId: cycle.id,
+			ordinal: cycle.ordinal + 1,
+			config: league.config
+		});
+		if (!result.ok) return fail(400, { message: result.message });
+
+		throw redirect(303, `/liga/${league.slug}/verwaltung/zyklen/${result.cycleId}`);
 	}
 };

@@ -13,6 +13,7 @@ import {
 	requireLeagueAdmin,
 	swapBoxMembers
 } from '$lib/server/league-admin';
+import { loadSeason, publishCycle } from '$lib/server/league-seasons';
 
 async function loadCycleOr404(
 	admin: ReturnType<typeof supabaseAdmin>,
@@ -30,11 +31,12 @@ export const load: PageServerLoad = async ({ params, url, platform, locals }) =>
 
 	const cycle = await loadCycleOr404(admin, league.id, params.cycleId);
 
-	const [boxes, roster, assignedIds, suggestedPosition] = await Promise.all([
+	const [boxes, roster, assignedIds, suggestedPosition, season] = await Promise.all([
 		loadLadder(admin, cycle.id, league.config),
 		league.clubId ? loadClubRoster(admin, league.clubId) : Promise.resolve([]),
 		listAssignedPlayerIds(admin, cycle.id),
-		nextLadderPosition(admin, cycle.id)
+		nextLadderPosition(admin, cycle.id),
+		loadSeason(admin, cycle.seasonId)
 	]);
 
 	const availableRoster = roster.filter((p) => !assignedIds.has(p.id));
@@ -42,6 +44,7 @@ export const load: PageServerLoad = async ({ params, url, platform, locals }) =>
 	return {
 		league,
 		cycle,
+		season,
 		boxes,
 		availableRoster,
 		suggestedPosition,
@@ -192,5 +195,21 @@ export const actions: Actions = {
 		const result = await removeBoxMember(admin, boxId, playerId);
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true };
+	},
+
+	/**
+	 * Schaltet einen per Assistent vorbereiteten Zyklus (status='planned')
+	 * frei — "erste Spielrunde freischalten". Ab hier zeigt die
+	 * öffentliche Ligaseite den Zyklus, und für die Erst-Saison wechselt
+	 * die Saison von 'draft' auf 'active' (siehe publishCycle).
+	 */
+	publish: async ({ params, url, platform, locals }) => {
+		const league = await requireLeagueAdmin(platform, params.slug, locals.player?.id, url.pathname);
+		const admin = supabaseAdmin(platform);
+		await loadCycleOr404(admin, league.id, params.cycleId);
+
+		const result = await publishCycle(admin, params.cycleId);
+		if (!result.ok) return fail(400, { message: result.message });
+		return { success: true, published: true };
 	}
 };
