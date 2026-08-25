@@ -151,7 +151,10 @@ function formatGermanDate(isoDate: string): string {
 
 export type WaitlistConfirmInput = { confirmUrl: string };
 
-export function waitlistConfirmEmail(input: WaitlistConfirmInput): { subject: string; html: string } {
+export function waitlistConfirmEmail(input: WaitlistConfirmInput): {
+	subject: string;
+	html: string;
+} {
 	return {
 		subject: 'Bitte bestätige deinen Platz auf der Warteliste — PadelIndex',
 		html: `
@@ -164,7 +167,10 @@ export function waitlistConfirmEmail(input: WaitlistConfirmInput): { subject: st
 
 export type DelistingConfirmInput = { playerName: string; confirmUrl: string };
 
-export function delistingConfirmEmail(input: DelistingConfirmInput): { subject: string; html: string } {
+export function delistingConfirmEmail(input: DelistingConfirmInput): {
+	subject: string;
+	html: string;
+} {
 	return {
 		subject: 'Bestätige, dass dein Profil aus der Rangliste soll — PadelIndex',
 		html: `
@@ -172,6 +178,99 @@ export function delistingConfirmEmail(input: DelistingConfirmInput): { subject: 
 			<p>Wenn das dein Profil ist und du das möchtest, bestätige das hier — das Profil verschwindet danach sofort aus der öffentlichen Ansicht:</p>
 			<p><a href="${input.confirmUrl}">Profil aus der Rangliste nehmen</a></p>
 			<p>Wenn du das nicht angefragt hast, kannst du diese E-Mail einfach ignorieren — es passiert dann nichts.</p>
+		`.trim()
+	};
+}
+
+export type LeagueSubstituteAssignedInput = { leagueName: string; boxLabel: string; url: string };
+
+export function leagueSubstituteAssignedEmail(input: LeagueSubstituteAssignedInput): {
+	subject: string;
+	html: string;
+} {
+	const boxLabel = escapeHtml(input.boxLabel);
+	return {
+		subject: `Du rückst in ${boxLabel} nach — ${input.leagueName}`,
+		html: `
+			<p>Ein Platz in <strong>${boxLabel}</strong> (${escapeHtml(input.leagueName)}) ist frei geworden — du rückst als Ersatz nach.</p>
+			<p><a href="${input.url}">Box ansehen</a></p>
+		`.trim()
+	};
+}
+
+export type LeagueSubstituteJoinedInput = {
+	leagueName: string;
+	boxLabel: string;
+	substituteName: string;
+	url: string;
+};
+
+export function leagueSubstituteJoinedEmail(input: LeagueSubstituteJoinedInput): {
+	subject: string;
+	html: string;
+} {
+	const boxLabel = escapeHtml(input.boxLabel);
+	return {
+		subject: `Neuer Mitspieler in ${boxLabel} — ${input.leagueName}`,
+		html: `
+			<p><strong>${escapeHtml(input.substituteName)}</strong> ist als Ersatz neu in <strong>${boxLabel}</strong> (${escapeHtml(input.leagueName)}).</p>
+			<p><a href="${input.url}">Box ansehen</a></p>
+		`.trim()
+	};
+}
+
+export type LeagueScheduleReminderInput = { leagueName: string; boxLabel: string; url: string };
+
+export function leagueScheduleReminderEmail(input: LeagueScheduleReminderInput): {
+	subject: string;
+	html: string;
+} {
+	const boxLabel = escapeHtml(input.boxLabel);
+	return {
+		subject: `Erinnerung: Termin für ${boxLabel} eintragen — ${input.leagueName}`,
+		html: `
+			<p>Für <strong>${boxLabel}</strong> (${escapeHtml(input.leagueName)}) fehlt noch ein Termin für eure Runde.</p>
+			<p>Einigt euch mit eurem Gegnerteam und tragt Datum, Uhrzeit und Platz ein — sonst vergibt der Admin ab Woche 4 einen festen Slot.</p>
+			<p><a href="${input.url}">Termin eintragen</a></p>
+		`.trim()
+	};
+}
+
+export type LeagueSlotAssignedInput = {
+	leagueName: string;
+	boxLabel: string;
+	when: string;
+	court: string | null;
+	url: string;
+};
+
+export function leagueSlotAssignedEmail(input: LeagueSlotAssignedInput): {
+	subject: string;
+	html: string;
+} {
+	const boxLabel = escapeHtml(input.boxLabel);
+	const where = input.court ? ` · ${escapeHtml(input.court)}` : '';
+	return {
+		subject: `Termin vergeben für ${boxLabel} — ${input.leagueName}`,
+		html: `
+			<p>Der Admin hat für <strong>${boxLabel}</strong> (${escapeHtml(input.leagueName)}) einen Termin vergeben:</p>
+			<p>${escapeHtml(input.when)}${where}</p>
+			<p><a href="${input.url}">Box ansehen</a></p>
+		`.trim()
+	};
+}
+
+export type LeagueCycleClosedInput = { leagueName: string; url: string };
+
+export function leagueCycleClosedEmail(input: LeagueCycleClosedInput): {
+	subject: string;
+	html: string;
+} {
+	return {
+		subject: `Zyklus beendet — ${input.leagueName}`,
+		html: `
+			<p>Der Zyklus in <strong>${escapeHtml(input.leagueName)}</strong> ist beendet. Auf-/Abstieg wurden festgeschrieben.</p>
+			<p><a href="${input.url}">Zur Liga</a></p>
 		`.trim()
 	};
 }

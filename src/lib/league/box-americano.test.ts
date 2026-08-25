@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
 	BOX_AMERICANO_4_DEFAULTS,
 	computeBoxStandings,
+	cyclePhase,
 	isBoxComplete,
 	proposePromotions,
 	roundPairings,
+	sortByRatingCloseness,
 	winnerOfBoxMatch,
 	type BoxMatchResult,
 	type BoxOutcome
@@ -71,19 +73,67 @@ describe('roundPairings', () => {
 
 describe('winnerOfBoxMatch', () => {
 	it('entscheidet nach gewonnenen Sätzen', () => {
-		expect(winnerOfBoxMatch(match(1, [1, 2], [3, 4], [[6, 1], [6, 2]]))).toBe(1);
-		expect(winnerOfBoxMatch(match(1, [1, 2], [3, 4], [[1, 6], [2, 6]]))).toBe(2);
+		expect(
+			winnerOfBoxMatch(
+				match(
+					1,
+					[1, 2],
+					[3, 4],
+					[
+						[6, 1],
+						[6, 2]
+					]
+				)
+			)
+		).toBe(1);
+		expect(
+			winnerOfBoxMatch(
+				match(
+					1,
+					[1, 2],
+					[3, 4],
+					[
+						[1, 6],
+						[2, 6]
+					]
+				)
+			)
+		).toBe(2);
 	});
 
 	it('entscheidet bei Satzgleichstand über die Games', () => {
 		// Echter Fall aus Zyklus 5: 7:5, 0:3 -> Sätze 1:1, Games 7:8.
 		// Die offizielle Ligatabelle schreibt den Sieg Team 2 gut.
-		expect(winnerOfBoxMatch(match(1, [1, 2], [3, 4], [[7, 5], [0, 3]], { status: 'abandoned' })))
-			.toBe(2);
+		expect(
+			winnerOfBoxMatch(
+				match(
+					1,
+					[1, 2],
+					[3, 4],
+					[
+						[7, 5],
+						[0, 3]
+					],
+					{ status: 'abandoned' }
+				)
+			)
+		).toBe(2);
 	});
 
 	it('lässt nur bei Gleichstand in Sätzen UND Games offen', () => {
-		expect(winnerOfBoxMatch(match(1, [1, 2], [3, 4], [[6, 3], [3, 6]]))).toBeNull();
+		expect(
+			winnerOfBoxMatch(
+				match(
+					1,
+					[1, 2],
+					[3, 4],
+					[
+						[6, 3],
+						[3, 6]
+					]
+				)
+			)
+		).toBeNull();
 	});
 
 	it('nimmt einen explizit gesetzten Sieger, auch ohne Sätze', () => {
@@ -92,25 +142,59 @@ describe('winnerOfBoxMatch', () => {
 	});
 
 	it('lässt den expliziten Sieger die Sätze überstimmen', () => {
-		const m = match(1, [1, 2], [3, 4], [[6, 0], [6, 0]], { status: 'abandoned', winnerTeam: 2 });
+		const m = match(
+			1,
+			[1, 2],
+			[3, 4],
+			[
+				[6, 0],
+				[6, 0]
+			],
+			{ status: 'abandoned', winnerTeam: 2 }
+		);
 		expect(winnerOfBoxMatch(m)).toBe(2);
 	});
 });
 
 describe('computeBoxStandings', () => {
 	it('gibt Partnern innerhalb einer Runde identische Werte', () => {
-		const s = computeBoxStandings([1, 2, 3, 4], [match(1, [1, 2], [3, 4], [[6, 1], [6, 2]])]);
+		const s = computeBoxStandings(
+			[1, 2, 3, 4],
+			[
+				match(
+					1,
+					[1, 2],
+					[3, 4],
+					[
+						[6, 1],
+						[6, 2]
+					]
+				)
+			]
+		);
 		const a = s.find((r) => r.seat === 1)!;
 		const b = s.find((r) => r.seat === 2)!;
 		expect({ ...a, seat: 0, rank: 0 }).toEqual({ ...b, seat: 0, rank: 0 });
 	});
 
 	it('zählt einen Punkt pro Sieg (Bávaro-Zählweise)', () => {
-		const s = computeBoxStandings([1, 2, 3, 4], fullBox([
-			[[6, 1], [6, 2]], // 1+2 schlagen 3+4
-			[[6, 2], [6, 4]], // 1+3 schlagen 2+4
-			[[4, 6], [6, 7]]  // 2+3 schlagen 1+4
-		]));
+		const s = computeBoxStandings(
+			[1, 2, 3, 4],
+			fullBox([
+				[
+					[6, 1],
+					[6, 2]
+				], // 1+2 schlagen 3+4
+				[
+					[6, 2],
+					[6, 4]
+				], // 1+3 schlagen 2+4
+				[
+					[4, 6],
+					[6, 7]
+				] // 2+3 schlagen 1+4
+			])
+		);
 		const byseat = Object.fromEntries(s.map((r) => [r.seat, r.matchPoints]));
 		expect(byseat).toEqual({ 1: 2, 2: 2, 3: 2, 4: 0 });
 		// Jeder spielt genau 3 Partien
@@ -122,27 +206,65 @@ describe('computeBoxStandings', () => {
 
 	it('unterstützt eine 2:0-Zählweise über die Konfiguration', () => {
 		const cfg = { ...BOX_AMERICANO_4_DEFAULTS, pointsPerWin: 2 };
-		const s = computeBoxStandings([1, 2, 3, 4], [match(1, [1, 2], [3, 4], [[6, 1], [6, 2]])], cfg);
+		const s = computeBoxStandings(
+			[1, 2, 3, 4],
+			[
+				match(
+					1,
+					[1, 2],
+					[3, 4],
+					[
+						[6, 1],
+						[6, 2]
+					]
+				)
+			],
+			cfg
+		);
 		expect(s.find((r) => r.seat === 1)!.matchPoints).toBe(2);
 		expect(s.find((r) => r.seat === 3)!.matchPoints).toBe(0);
 	});
 
 	it('sortiert nach Matchpunkten, dann Sätzen, dann Spielen', () => {
 		// Alle drei Sieger haben 2 Punkte und 4:2 Sätze -> Games entscheiden
-		const s = computeBoxStandings([1, 2, 3, 4], fullBox([
-			[[6, 1], [6, 2]],
-			[[6, 2], [6, 4]],
-			[[4, 6], [6, 7]]
-		]));
+		const s = computeBoxStandings(
+			[1, 2, 3, 4],
+			fullBox([
+				[
+					[6, 1],
+					[6, 2]
+				],
+				[
+					[6, 2],
+					[6, 4]
+				],
+				[
+					[4, 6],
+					[6, 7]
+				]
+			])
+		);
 		const diffs = s.map((r) => r.gamesWon - r.gamesLost);
 		expect(diffs).toEqual([...diffs].sort((a, b) => b - a));
 		expect(s[3].seat).toBe(4); // der punktlose Spieler steht hinten
 	});
 
 	it('wertet einen Abbruch wie die offizielle Tabelle über die Games', () => {
-		const s = computeBoxStandings([1, 2, 3, 4], [
-			match(1, [1, 2], [3, 4], [[7, 5], [0, 3]], { status: 'abandoned' })
-		]);
+		const s = computeBoxStandings(
+			[1, 2, 3, 4],
+			[
+				match(
+					1,
+					[1, 2],
+					[3, 4],
+					[
+						[7, 5],
+						[0, 3]
+					],
+					{ status: 'abandoned' }
+				)
+			]
+		);
 		const t1 = s.find((r) => r.seat === 1)!;
 		const t3 = s.find((r) => r.seat === 3)!;
 		expect(t1.matchPoints).toBe(0);
@@ -152,25 +274,69 @@ describe('computeBoxStandings', () => {
 	});
 
 	it('lässt eine in Sätzen und Games gleiche Partie für beide offen', () => {
-		const s = computeBoxStandings([1, 2, 3, 4], [match(1, [1, 2], [3, 4], [[6, 3], [3, 6]])]);
+		const s = computeBoxStandings(
+			[1, 2, 3, 4],
+			[
+				match(
+					1,
+					[1, 2],
+					[3, 4],
+					[
+						[6, 3],
+						[3, 6]
+					]
+				)
+			]
+		);
 		expect(s.every((r) => r.matchPoints === 0)).toBe(true);
 		expect(s.every((r) => r.matchesUndecided === 1)).toBe(true);
 	});
 
 	it('ignoriert geplante und abgesagte Partien', () => {
-		const s = computeBoxStandings([1, 2, 3, 4], [
-			match(1, [1, 2], [3, 4], [], { status: 'scheduled' }),
-			match(2, [1, 3], [2, 4], [[6, 0], [6, 0]], { status: 'cancelled' })
-		]);
+		const s = computeBoxStandings(
+			[1, 2, 3, 4],
+			[
+				match(1, [1, 2], [3, 4], [], { status: 'scheduled' }),
+				match(
+					2,
+					[1, 3],
+					[2, 4],
+					[
+						[6, 0],
+						[6, 0]
+					],
+					{ status: 'cancelled' }
+				)
+			]
+		);
 		expect(s.every((r) => r.played === 0)).toBe(true);
 	});
 
 	it('vergibt bei völligem Gleichstand geteilte Ränge', () => {
 		// Beide Teams gewinnen je einmal mit identischen Zahlen
-		const s = computeBoxStandings([1, 2, 3, 4], [
-			match(1, [1, 2], [3, 4], [[6, 3], [6, 3]]),
-			match(2, [3, 4], [1, 2], [[6, 3], [6, 3]])
-		]);
+		const s = computeBoxStandings(
+			[1, 2, 3, 4],
+			[
+				match(
+					1,
+					[1, 2],
+					[3, 4],
+					[
+						[6, 3],
+						[6, 3]
+					]
+				),
+				match(
+					2,
+					[3, 4],
+					[1, 2],
+					[
+						[6, 3],
+						[6, 3]
+					]
+				)
+			]
+		);
 		expect(s.map((r) => r.rank)).toEqual([1, 1, 1, 1]);
 	});
 
@@ -192,7 +358,14 @@ describe('isBoxComplete', () => {
 	});
 
 	it('zählt einen Abbruch als gespielte Runde', () => {
-		const ms = fullBox([[[6, 1]], [[6, 2]], [[7, 5], [0, 3]]]);
+		const ms = fullBox([
+			[[6, 1]],
+			[[6, 2]],
+			[
+				[7, 5],
+				[0, 3]
+			]
+		]);
 		ms[2].status = 'abandoned';
 		expect(isBoxComplete(ms)).toBe(true);
 	});
@@ -228,8 +401,14 @@ describe('proposePromotions', () => {
 
 	it('bewegt in einer mittleren Box genau den Ersten hoch und den Letzten runter', () => {
 		const p = proposePromotions(ladder).filter((x) => x.fromBoxId === 'b2');
-		expect(p.find((x) => x.playerId === 'b1p')).toMatchObject({ direction: 'up', toLadderPosition: 1 });
-		expect(p.find((x) => x.playerId === 'b4p')).toMatchObject({ direction: 'down', toLadderPosition: 3 });
+		expect(p.find((x) => x.playerId === 'b1p')).toMatchObject({
+			direction: 'up',
+			toLadderPosition: 1
+		});
+		expect(p.find((x) => x.playerId === 'b4p')).toMatchObject({
+			direction: 'down',
+			toLadderPosition: 3
+		});
 		expect(p.filter((x) => x.direction === 'stay').map((x) => x.playerId)).toEqual(['b2p', 'b3p']);
 	});
 
@@ -278,5 +457,43 @@ describe('proposePromotions', () => {
 
 	it('bleibt bei leerer Eingabe leer', () => {
 		expect(proposePromotions([])).toEqual([]);
+	});
+});
+
+describe('cyclePhase', () => {
+	it('ist self_service innerhalb der ersten selfServiceWeeks Wochen', () => {
+		const today = new Date('2026-01-15T12:00:00Z');
+		expect(cyclePhase('2026-01-01', 3, today)).toBe('self_service');
+	});
+
+	it('wechselt am Tag der Grenze auf admin_assignment', () => {
+		const cutoff = new Date('2026-01-22T00:00:00Z'); // 2026-01-01 + 3 Wochen
+		expect(cyclePhase('2026-01-01', 3, cutoff)).toBe('admin_assignment');
+	});
+
+	it('bleibt kurz vor der Grenze bei self_service', () => {
+		const justBefore = new Date('2026-01-21T23:59:59Z');
+		expect(cyclePhase('2026-01-01', 3, justBefore)).toBe('self_service');
+	});
+});
+
+describe('sortByRatingCloseness', () => {
+	it('sortiert nach Abstand zur Zielspielstärke, nächster zuerst', () => {
+		const items = [
+			{ id: 'a', rating: 5.0 },
+			{ id: 'b', rating: 3.2 },
+			{ id: 'c', rating: 3.6 }
+		];
+		expect(sortByRatingCloseness(items, 3.5).map((x) => x.id)).toEqual(['c', 'b', 'a']);
+	});
+
+	it('verändert das Original-Array nicht', () => {
+		const items = [
+			{ id: 'a', rating: 1 },
+			{ id: 'b', rating: 2 }
+		];
+		const copy = [...items];
+		sortByRatingCloseness(items, 5);
+		expect(items).toEqual(copy);
 	});
 });

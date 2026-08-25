@@ -18,9 +18,24 @@
 
 	let busy = $state(false);
 	let openRound = $state<string | null>(null);
+	let scheduleOpenRound = $state<string | null>(null);
+	let scheduleBusy = $state(false);
 
 	function nameOf(seat: number): string {
 		return data.box.lineup.find((p) => p.seat === seat)?.name ?? '—';
+	}
+
+	const dateTimeFmt = new Intl.DateTimeFormat('de-DE', {
+		weekday: 'short',
+		day: '2-digit',
+		month: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit'
+	});
+	function fmtSlot(iso: string, court: string | null): string {
+		return court
+			? `${dateTimeFmt.format(new Date(iso))} · ${court}`
+			: dateTimeFmt.format(new Date(iso));
 	}
 
 	const boxTitle = $derived(
@@ -73,6 +88,74 @@
 							<em>{m.ligabox_vs()}</em>
 							<strong>{nameOf(round.team2[0])} / {nameOf(round.team2[1])}</strong>
 						</p>
+
+						{#if !done}
+							<div class="schedule">
+								<p class="schedule-status muted small">
+									{#if round.scheduledAt}
+										{round.assignedByAdmin
+											? m.ligabox_schedule_status_admin({
+													when: fmtSlot(round.scheduledAt, round.court)
+												})
+											: m.ligabox_schedule_status_player({
+													name: round.scheduledByName ?? '',
+													when: fmtSlot(round.scheduledAt, round.court)
+												})}
+									{:else}
+										{m.ligabox_schedule_status_open()}
+									{/if}
+								</p>
+
+								{#if scheduleOpenRound === round.id}
+									<form
+										method="POST"
+										action="?/schedule"
+										use:enhance={() => {
+											scheduleBusy = true;
+											return async ({ update }) => {
+												await update();
+												scheduleBusy = false;
+												scheduleOpenRound = null;
+											};
+										}}
+									>
+										<input type="hidden" name="boxMatchId" value={round.id} />
+										<fieldset disabled={scheduleBusy}>
+											<div class="schedule-row">
+												<input type="date" name="scheduledDate" required />
+												<input type="time" name="scheduledTime" value="18:00" />
+												<input
+													type="text"
+													name="court"
+													placeholder={m.ligabox_schedule_court_label()}
+													maxlength="40"
+												/>
+											</div>
+											<div class="actions">
+												<button class="btn btn-ghost-light small" type="submit">
+													{m.ligabox_schedule_save()}
+												</button>
+												<button
+													class="btn btn-ghost-light small"
+													type="button"
+													onclick={() => (scheduleOpenRound = null)}
+												>
+													{m.ligabox_cancel()}
+												</button>
+											</div>
+										</fieldset>
+									</form>
+								{:else}
+									<button
+										class="btn btn-ghost-light small"
+										type="button"
+										onclick={() => (scheduleOpenRound = round.id)}
+									>
+										{round.scheduledAt ? m.ligabox_schedule_edit() : m.ligabox_schedule_enter()}
+									</button>
+								{/if}
+							</div>
+						{/if}
 
 						{#if done}
 							<p class="result num">
@@ -258,6 +341,37 @@
 	.result {
 		font-size: 18px;
 		letter-spacing: 0.04em;
+	}
+
+	.schedule {
+		margin-bottom: 14px;
+		padding: 10px 12px;
+		border-radius: 10px;
+		background: rgba(0, 0, 0, 0.03);
+	}
+	.schedule-status {
+		margin: 0 0 8px;
+	}
+	.schedule-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-bottom: 8px;
+	}
+	.schedule-row input {
+		flex: 1 1 8em;
+		padding: 7px 9px;
+		border: 1px solid var(--line-light);
+		border-radius: 8px;
+		font-size: 13px;
+		background: #fff;
+		color: var(--ink);
+		font-family: inherit;
+		box-sizing: border-box;
+	}
+	.btn.small {
+		padding: 7px 12px;
+		font-size: 13px;
 	}
 
 	fieldset {

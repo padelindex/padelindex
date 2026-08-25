@@ -63,6 +63,18 @@
 			</p>
 		</div>
 
+		{#if data.league}
+			<div class="card league-card">
+				<div class="card-head">
+					<h3 class="card-title" style="margin:0">Liga — {data.league.name}</h3>
+					<a class="btn btn-primary" href="/liga/{data.league.slug}/verwaltung">Liga verwalten →</a>
+				</div>
+				<p class="muted" style="font-size: 13px; margin: 10px 0 0">
+					Boxen &amp; Paarungen, Warteliste, Termine, Ergebnisse und Auf-/Abstieg für diese Liga.
+				</p>
+			</div>
+		{/if}
+
 		{#if form?.settingsError}
 			<p class="err">{form.settingsError}</p>
 		{/if}
@@ -124,10 +136,9 @@
 					>
 						Auf Google Maps suchen
 					</a>
-					— dort mit Rechtsklick auf den Platz klicken, die Koordinaten kopieren
-					(„48.1234, 11.5678") und hier auf beide Felder aufteilen. Leer lassen, um
-					den Standort wieder zu entfernen; ohne Koordinaten fällt das Matchmaking bei
-					der Entfernung auf „gleicher Verein" zurück.
+					— dort mit Rechtsklick auf den Platz klicken, die Koordinaten kopieren („48.1234, 11.5678")
+					und hier auf beide Felder aufteilen. Leer lassen, um den Standort wieder zu entfernen; ohne
+					Koordinaten fällt das Matchmaking bei der Entfernung auf „gleicher Verein" zurück.
 				</p>
 
 				<button class="btn btn-primary" type="submit" disabled={settingsBusy}>
@@ -230,10 +241,15 @@
 							};
 						}}
 					>
-						<input name="displayName" placeholder="Name, z. B. Max Mustermann" required maxlength="120" />
+						<input
+							name="displayName"
+							placeholder="Name, z. B. Max Mustermann"
+							required
+							maxlength="120"
+						/>
 						<label for="new-member-tier" class="muted tier-label">
-							Skill-Level (optional) — für erfahrene Neuzugänge, damit das Matchmaking nicht
-							bei Anfänger-Niveau startet
+							Skill-Level (optional) — für erfahrene Neuzugänge, damit das Matchmaking nicht bei
+							Anfänger-Niveau startet
 						</label>
 						<select id="new-member-tier" name="skillTier">
 							<option value="">Nicht festlegen — startet mit Standardwert</option>
@@ -253,8 +269,8 @@
 						</button>
 					</form>
 					<p class="muted" style="font-size: 12.5px; margin-top: 10px">
-						Für jemanden, der noch keinen Account hat — kann das Profil später über den
-						Vereins-Link selbst beanspruchen.
+						Für jemanden, der noch keinen Account hat — kann das Profil später über den Vereins-Link
+						selbst beanspruchen.
 					</p>
 				{/if}
 			{/if}
@@ -316,7 +332,11 @@
 										}}
 									>
 										<input type="hidden" name="playerId" value={m.id} />
-										<button class="btn btn-ghost-light" type="submit" disabled={memberBusyId === m.id}>
+										<button
+											class="btn btn-ghost-light"
+											type="submit"
+											disabled={memberBusyId === m.id}
+										>
 											Ablehnen
 										</button>
 									</form>
@@ -333,7 +353,11 @@
 									}}
 								>
 									<input type="hidden" name="playerId" value={m.id} />
-									<button class="btn btn-ghost-light" type="submit" disabled={memberBusyId === m.id}>
+									<button
+										class="btn btn-ghost-light"
+										type="submit"
+										disabled={memberBusyId === m.id}
+									>
 										Entfernen
 									</button>
 								</form>
@@ -456,7 +480,11 @@
 									}}
 								>
 									<input type="hidden" name="slotId" value={s.id} />
-									<button class="btn btn-ghost-light" type="submit" disabled={rouletteBusyId === s.id}>
+									<button
+										class="btn btn-ghost-light"
+										type="submit"
+										disabled={rouletteBusyId === s.id}
+									>
 										Absagen
 									</button>
 								</form>
@@ -537,7 +565,14 @@
 				>
 					<input name="title" placeholder="Titel, z. B. Trainerstunde" required maxlength="120" />
 					<textarea name="description" placeholder="Beschreibung (optional)" rows="2"></textarea>
-					<input name="cost" type="number" min="1" step="1" placeholder="Kosten in Tokens" required />
+					<input
+						name="cost"
+						type="number"
+						min="1"
+						step="1"
+						placeholder="Kosten in Tokens"
+						required
+					/>
 					<button class="btn btn-primary" type="submit" disabled={busyId === 'new'}>
 						{busyId === 'new' ? 'Wird gespeichert…' : 'Anlegen'}
 					</button>
@@ -640,6 +675,13 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
+	}
+
+	.league-card {
+		border-left: 3px solid var(--court-deep, #0f6e5c);
+	}
+	.league-card .card-head {
+		flex-wrap: wrap;
 	}
 
 	.card-title {

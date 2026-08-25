@@ -7,6 +7,7 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
+import { readEmailEnv } from '$lib/server/email';
 import { departLeagueMember, loadCurrentCycle, loadLadder } from '$lib/server/league';
 import { listWaitlist, requireLeagueAdmin } from '$lib/server/league-admin';
 
@@ -37,11 +38,20 @@ export const actions: Actions = {
 			return fail(400, { message: 'Kein Spieler ausgewählt.' });
 		}
 
-		const result = await departLeagueMember(admin, {
-			leagueId: league.id,
-			departingPlayerId,
-			replacementPlayerId
-		});
+		const result = await departLeagueMember(
+			admin,
+			{
+				leagueId: league.id,
+				departingPlayerId,
+				replacementPlayerId
+			},
+			{
+				baseUrl: url.origin,
+				leagueSlug: league.slug,
+				leagueName: league.name,
+				emailEnv: readEmailEnv(platform)
+			}
+		);
 
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true, replaced: replacementPlayerId !== null };

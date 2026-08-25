@@ -29,7 +29,8 @@
 		"@supabase/supabase-js": "^2.112.3",
 		"leaflet": "^1.9.4",
 		"openskill": "^5.0.1",
-		"satori": "^0.29.1"
+		"satori": "^0.29.1",
+		"svelte-dnd-action": "^0.9.79"
 	},
 	"devDependencies": {
 		"@capacitor/cli": "^8.5.0",

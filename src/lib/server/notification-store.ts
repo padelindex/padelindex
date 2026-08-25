@@ -20,7 +20,12 @@ export type NotificationKind =
 	| 'challenge_accepted'
 	| 'challenge_declined'
 	| 'challenge_expiring'
-	| 'challenge_expired';
+	| 'challenge_expired'
+	| 'league_substitute_assigned'
+	| 'league_substitute_joined'
+	| 'league_schedule_reminder'
+	| 'league_slot_assigned'
+	| 'league_cycle_closed';
 
 export type AppNotification = {
 	id: string;

@@ -6,10 +6,20 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin, supabasePublic } from '$lib/server/supabase';
-import { loadCurrentCycle, loadLadder, loadLeague, reportBoxResult } from '$lib/server/league';
+import {
+	loadCurrentCycle,
+	loadLadder,
+	loadLeague,
+	playerScheduleRound,
+	reportBoxResult
+} from '$lib/server/league';
 
 /** Wirft, wenn der eingeloggte Spieler nicht zu dieser Box gehört. */
-async function requireBoxMember(platform: App.Platform | undefined, boxId: string, playerId: string) {
+async function requireBoxMember(
+	platform: App.Platform | undefined,
+	boxId: string,
+	playerId: string
+) {
 	const { data, error: err } = await supabaseAdmin(platform)
 		.from('league_box_members')
 		.select('player_id')
@@ -41,6 +51,28 @@ export const load: PageServerLoad = async ({ params, url, platform, locals }) =>
 };
 
 export const actions: Actions = {
+	schedule: async ({ request, params, platform, locals }) => {
+		if (!locals.player) throw error(401, 'Nicht angemeldet.');
+		await requireBoxMember(platform, params.boxId, locals.player.id);
+
+		const form = await request.formData();
+		const boxMatchId = String(form.get('boxMatchId') ?? '');
+		const dateRaw = String(form.get('scheduledDate') ?? '');
+		const timeRaw = String(form.get('scheduledTime') ?? '').trim() || '18:00';
+		const court = String(form.get('court') ?? '').trim() || null;
+
+		if (!boxMatchId || !dateRaw)
+			return fail(400, { message: 'Bitte mindestens ein Datum angeben.' });
+
+		const result = await playerScheduleRound(supabaseAdmin(platform), boxMatchId, {
+			scheduledAt: `${dateRaw}T${timeRaw}:00`,
+			court,
+			playerId: locals.player.id
+		});
+		if (!result.ok) return fail(400, { message: result.message });
+		return { success: true, scheduled: true };
+	},
+
 	report: async ({ request, params, platform, locals }) => {
 		if (!locals.player) throw error(401, 'Nicht angemeldet.');
 		await requireBoxMember(platform, params.boxId, locals.player.id);
