@@ -86,6 +86,40 @@
 			<a href={localizeHref('/impressum')}>{m.footer_impressum()}</a>
 			<a href="mailto:kontakt@padelindex.de">{m.footer_kontakt()}</a>
 		</div>
+		<div class="foot-social">
+			<a
+				href="https://t.me/padelindexapp"
+				target="_blank"
+				rel="noopener noreferrer"
+				aria-label={m.footer_social_telegram()}
+			>
+				<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+					<path
+						d="M21.05 3.42 2.9 10.53c-1.13.45-1.12 1.08-.2 1.36l4.64 1.45 1.79 5.51c.22.6.38.84.78.84.34 0 .5-.16.7-.36l1.7-1.65 3.6 2.66c.66.36 1.14.18 1.3-.61l2.36-11.13c.24-.97-.37-1.4-1.02-1.18Zm-11.03 9.9-1.13-3.6 8.4-5.28c.4-.24.76-.11.47.16L10 13.36l.02-.04Z"
+					/>
+				</svg>
+			</a>
+			<a
+				href="https://www.instagram.com/padelindexapp"
+				target="_blank"
+				rel="noopener noreferrer"
+				aria-label={m.footer_social_instagram()}
+			>
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.8"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<rect x="3" y="3" width="18" height="18" rx="5" />
+					<circle cx="12" cy="12" r="4.2" />
+					<circle cx="17.4" cy="6.6" r=".9" fill="currentColor" stroke="none" />
+				</svg>
+			</a>
+		</div>
 		{#if isLocalizable}
 			<div class="foot-langs" aria-label={m.footer_sprache()}>
 				{#each languageLinks as lang (lang.locale)}
@@ -99,6 +133,36 @@
 </footer>
 
 <style>
+	.foot-social {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+	}
+
+	.foot-social a {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 34px;
+		height: 34px;
+		color: var(--muted-dark);
+		opacity: 0.85;
+		transition:
+			color 0.2s,
+			opacity 0.2s;
+	}
+
+	.foot-social a:hover,
+	.foot-social a:focus-visible {
+		color: var(--chalk);
+		opacity: 1;
+	}
+
+	.foot-social svg {
+		width: 19px;
+		height: 19px;
+	}
+
 	.foot-langs {
 		display: flex;
 		gap: 10px;
