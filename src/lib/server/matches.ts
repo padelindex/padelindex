@@ -173,6 +173,8 @@ export type PendingMatch = {
 	confirmDeadline: string;
 	myTeam: 1 | 2;
 	canConfirm: boolean;
+	/** true = diese Person hat das Match gemeldet — sieht "Ablehnen" nie (siehe disputeMatchAsPlayer). */
+	isReporter: boolean;
 	team1: { name: string; claimed: boolean }[];
 	team2: { name: string; claimed: boolean }[];
 	sets: { team1Games: number; team2Games: number }[];
@@ -246,6 +248,7 @@ export async function loadPendingMatches(
 			confirmDeadline: m.confirm_deadline,
 			myTeam,
 			canConfirm,
+			isReporter: playerId === m.reported_by,
 			team1: mine.filter((p) => p.team === 1).map(toEntry),
 			team2: mine.filter((p) => p.team === 2).map(toEntry),
 			sets: (sets ?? [])
@@ -281,6 +284,58 @@ export async function confirmMatchAsPlayer(
 
 	const result = await confirmMatchByPlayer(admin, matchId, playerId);
 	return { ok: true, confirmed: result.confirmed };
+}
+
+/**
+ * Ein Teilnehmer lehnt ein noch unbestätigtes Match ab — löscht die
+ * gemeldete Zeile, bevor die 48h-Frist automatisch ein Rating anwendet.
+ * Wichtig für die eigene "Partner"-Seite des Melders: die kann bisher gar
+ * nicht bestätigen (canConfirm prüft nur die Gegenseite, siehe
+ * loadPendingMatches), hatte aber bislang KEINE Möglichkeit, ein falsch
+ * gemeldetes Match (falscher Name, falsches Ergebnis) zu verhindern —
+ * ohne Widerspruch lief es nach 48h einfach durch. Der Melder selbst
+ * kann sein eigenes Match nicht "ablehnen" (hat es ja bewusst gemeldet);
+ * ein Tippfehler dort braucht weiterhin den Vereins-Admin
+ * (cancelPendingMatch).
+ */
+export async function disputeMatchAsPlayer(
+	admin: SupabaseClient,
+	matchId: string,
+	playerId: string
+): Promise<CancelResult> {
+	const { data: match, error: mErr } = await admin
+		.from('matches')
+		.select('reported_by, status')
+		.eq('id', matchId)
+		.maybeSingle();
+	if (mErr) return { ok: false, message: mErr.message };
+	if (!match || match.status !== 'pending') {
+		return { ok: false, message: 'Match nicht gefunden oder bereits bestätigt.' };
+	}
+	if (match.reported_by === playerId) {
+		return { ok: false, message: 'Du kannst dein eigenes gemeldetes Match nicht ablehnen.' };
+	}
+
+	const { data: participant, error: partErr } = await admin
+		.from('match_participants')
+		.select('player_id')
+		.eq('match_id', matchId)
+		.eq('player_id', playerId)
+		.maybeSingle();
+	if (partErr) return { ok: false, message: partErr.message };
+	if (!participant) return { ok: false, message: 'Kein Teilnehmer dieses Matches.' };
+
+	const { data, error: err } = await admin
+		.from('matches')
+		.delete()
+		.eq('id', matchId)
+		.eq('status', 'pending')
+		.select('id');
+	if (err) return { ok: false, message: err.message };
+	if (!data || data.length === 0) {
+		return { ok: false, message: 'Match nicht gefunden oder bereits bestätigt.' };
+	}
+	return { ok: true };
 }
 
 // ============================================================
