@@ -51,6 +51,27 @@ alter table league_seasons
   add column if not exists planned_cycles smallint
     check (planned_cycles is null or planned_cycles >= 1);
 
+-- In echten Daten können mehrere Saisons je Liga als 'running' (jetzt
+-- 'active') dastehen: die alte "Neuen Zyklus anlegen"-Form legte bei
+-- jedem neuen Saisonnamen sofort eine 'running'-Saison an, ohne die
+-- vorige zu schließen — genau das Problem, das dieses Modul jetzt löst.
+-- Vor dem Unique-Index deshalb je Liga alle "aktiven" Saisons bis auf
+-- die zuletzt angelegte automatisch archivieren. Das ist ein Best-Guess
+-- (zuletzt angelegt = wahrscheinlich die tatsächlich aktuelle) — nach
+-- der Migration einmal per
+--   select id, name, status from league_seasons where league_id = '…';
+-- prüfen, ob wirklich die richtige Saison aktiv geblieben ist, und bei
+-- Bedarf manuell mit einem update auf 'active'/'archived' korrigieren.
+with ranked as (
+  select id, league_id,
+         row_number() over (partition by league_id order by created_at desc) as rn
+  from league_seasons
+  where status = 'active'
+)
+update league_seasons
+set status = 'archived'
+where id in (select id from ranked where rn > 1);
+
 -- Höchstens eine aktive Saison je Liga.
 create unique index if not exists league_seasons_one_active_idx
   on league_seasons (league_id) where status = 'active';
