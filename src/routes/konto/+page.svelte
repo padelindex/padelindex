@@ -7,9 +7,17 @@
 	import { abbreviateName } from '$lib/claim-match';
 	import { parseLevelParam } from '$lib/level-estimator';
 	import AvatarUpload from '$lib/components/AvatarUpload.svelte';
+	import MatchChat from '$lib/components/chat/MatchChat.svelte';
+	// Alias t statt m: {#each data.pendingMatches as m} weiter unten belegt
+	// den Namen m bereits als Schleifenvariable für das einzelne Match.
+	import { m as t } from '$lib/paraglide/messages.js';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	let openChatId = $state<string | null>(null);
+	const unreadThreadIds = $derived(new Set(data.unreadThreadIds));
+	const myPlayerId = $derived(data.player?.id ?? null);
 
 	// Nur der Startwert wird übernommen — AvatarUpload aktualisiert das
 	// danach selbst über bind:avatarUrl, kein fortlaufender Sync mit data.
@@ -427,6 +435,31 @@
 									</form>
 								{:else}
 									<span class="pending-waiting">Warte auf Bestätigung der Gegenseite</span>
+								{/if}
+
+								<div class="chat-toggle-row">
+									<button
+										type="button"
+										class="btn btn-ghost-light chat-toggle"
+										onclick={() => (openChatId = openChatId === m.id ? null : m.id)}
+									>
+										{openChatId === m.id ? t.chat_toggle_close() : t.chat_toggle_open()}
+										{#if unreadThreadIds.has(m.id) && openChatId !== m.id}
+											<span class="unread-dot" role="img" aria-label={t.chat_unread_dot_label()}
+											></span>
+										{/if}
+									</button>
+								</div>
+
+								{#if openChatId === m.id && myPlayerId}
+									<div class="chat-panel">
+										<MatchChat
+											matchId={m.id}
+											contextType="match"
+											{myPlayerId}
+											contextLabel={t.chat_label_match({ date: formatDate(m.playedAt) })}
+										/>
+									</div>
 								{/if}
 							</li>
 						{/each}
@@ -1015,5 +1048,29 @@
 		margin-top: 4px;
 		font-size: 12px;
 		color: var(--muted-light);
+	}
+
+	.chat-toggle-row {
+		margin-top: 10px;
+	}
+
+	.chat-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 7px 14px;
+		font-size: 12.5px;
+	}
+
+	.unread-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #d64545;
+		display: inline-block;
+	}
+
+	.chat-panel {
+		margin-top: 10px;
 	}
 </style>

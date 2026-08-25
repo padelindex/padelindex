@@ -11,14 +11,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatPlayerName } from '$lib/claim-match';
 import type { AvailabilityMatchType } from '$lib/availability';
-import {
-	canTransitionPlayRequest,
-	isExpired,
-	type PlayRequestStatus
-} from '$lib/challenge-rules';
+import { canTransitionPlayRequest, isExpired, type PlayRequestStatus } from '$lib/challenge-rules';
+import { postSystemMessage } from '$lib/server/chat';
 import { notify, resolvePlayerEmailAddress } from './notification-store';
 import { sendEmail, type EmailEnv } from './email';
-import { playRequestAcceptedEmail, playRequestDeclinedEmail, playRequestEmail } from '$lib/notifications';
+import {
+	playRequestAcceptedEmail,
+	playRequestDeclinedEmail,
+	playRequestEmail
+} from '$lib/notifications';
 
 export type PlayRequest = {
 	id: string;
@@ -212,7 +213,10 @@ export async function createPlayRequest(
 	if (error) {
 		// Teilindex play_requests_one_open_idx (0013)
 		if (error.code === '23505') {
-			return { ok: false, message: 'Du hast diesem Spieler bereits eine offene Anfrage geschickt.' };
+			return {
+				ok: false,
+				message: 'Du hast diesem Spieler bereits eine offene Anfrage geschickt.'
+			};
 		}
 		return { ok: false, message: error.message };
 	}
@@ -312,6 +316,13 @@ export async function acceptPlayRequest(
 	if (!(await setStatus(admin, requestId, 'pending', 'accepted'))) {
 		return { ok: false, message: 'Diese Anfrage wurde bereits beantwortet.' };
 	}
+
+	await postSystemMessage(
+		admin,
+		'play_request',
+		requestId,
+		`${receiverName} hat die Anfrage angenommen.`
+	);
 
 	await notify(admin, {
 		playerId: loaded.row.sender_id,

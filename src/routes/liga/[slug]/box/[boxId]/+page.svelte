@@ -13,6 +13,7 @@
 	import { mainNav } from '$lib/landing/nav';
 	import { m } from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime';
+	import MatchChat from '$lib/components/chat/MatchChat.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -20,6 +21,11 @@
 	let openRound = $state<string | null>(null);
 	let scheduleOpenRound = $state<string | null>(null);
 	let scheduleBusy = $state(false);
+	// Ein einzelner Chat-Toggle für die ganze Seite (Box-Gruppenchat ODER
+	// eine Runde) statt pro Panel ein eigener boolean — spart das manuelle
+	// Schließen der jeweils anderen Panels, gleiches Muster wie openRound.
+	let openChatId = $state<string | null>(null);
+	const unreadThreadIds = $derived(new Set(data.unreadThreadIds));
 
 	function nameOf(seat: number): string {
 		return data.box.lineup.find((p) => p.seat === seat)?.name ?? '—';
@@ -68,6 +74,30 @@
 				<p class="ok" role="status">
 					{m.ligabox_saved()}
 				</p>
+			{/if}
+
+			<div class="box-chat-toggle-row">
+				<button
+					type="button"
+					class="btn btn-ghost-light chat-toggle"
+					onclick={() => (openChatId = openChatId === data.box.id ? null : data.box.id)}
+				>
+					{openChatId === data.box.id ? m.chat_toggle_close() : m.chat_toggle_open()}
+					{#if unreadThreadIds.has(data.box.id) && openChatId !== data.box.id}
+						<span class="unread-dot" role="img" aria-label={m.chat_unread_dot_label()}></span>
+					{/if}
+				</button>
+			</div>
+
+			{#if openChatId === data.box.id}
+				<div class="chat-panel">
+					<MatchChat
+						matchId={data.box.id}
+						contextType="league_box"
+						myPlayerId={data.myPlayerId}
+						contextLabel={m.chat_label_box_group({ label: boxTitle })}
+					/>
+				</div>
 			{/if}
 
 			<ol class="rounds" use:reveal>
@@ -237,6 +267,35 @@
 							>
 								{m.ligabox_enter_result()}
 							</button>
+						{/if}
+
+						<div class="chat-toggle-row">
+							<button
+								type="button"
+								class="btn btn-ghost-light chat-toggle small"
+								onclick={() => (openChatId = openChatId === round.id ? null : round.id)}
+							>
+								{openChatId === round.id ? m.chat_toggle_close() : m.chat_toggle_open()}
+								{#if unreadThreadIds.has(round.id) && openChatId !== round.id}
+									<span class="unread-dot" role="img" aria-label={m.chat_unread_dot_label()}></span>
+								{/if}
+							</button>
+						</div>
+
+						{#if openChatId === round.id}
+							<div class="chat-panel">
+								<MatchChat
+									matchId={round.id}
+									contextType="league_box_match"
+									myPlayerId={data.myPlayerId}
+									contextLabel={round.scheduledAt
+										? m.chat_label_round({
+												n: round.roundNumber,
+												when: fmtSlot(round.scheduledAt, round.court)
+											})
+										: m.chat_label_round_unscheduled({ n: round.roundNumber })}
+								/>
+							</div>
 						{/if}
 					</li>
 				{/each}
@@ -413,5 +472,36 @@
 	.back a {
 		color: var(--court-deep, #0f6e5c);
 		font-weight: 600;
+	}
+
+	.box-chat-toggle-row {
+		margin: 28px 0 0;
+	}
+
+	.chat-toggle-row {
+		margin-top: 12px;
+	}
+
+	.chat-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+	}
+
+	.chat-toggle.small {
+		padding: 7px 12px;
+		font-size: 12.5px;
+	}
+
+	.unread-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #d64545;
+		display: inline-block;
+	}
+
+	.chat-panel {
+		margin-top: 12px;
 	}
 </style>

@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { isValidEmail } from '$lib/email';
 import { loadRatingHistory } from '$lib/server/rating-history';
+import { getUnreadThreadKeys } from '$lib/server/chat';
 import { confirmMatchAsPlayer, loadPendingMatches, loadPlayerClub } from '$lib/server/matches';
 import { loadTokenAccount } from '$lib/server/tokens';
 import { loadRewardCatalog, redeemReward } from '$lib/server/rewards';
@@ -34,7 +35,8 @@ export const load: PageServerLoad = async ({ locals, platform, url }) => {
 			notifications: [],
 			league: null,
 			leagueRegistration: null,
-			challengeHinweis
+			challengeHinweis,
+			unreadThreadIds: []
 		};
 	}
 
@@ -58,6 +60,15 @@ export const load: PageServerLoad = async ({ locals, platform, url }) => {
 	const league = club ? await loadLeagueForClub(locals.supabase, club.id) : null;
 	const leagueRegistration = league ? await loadOwnRegistration(admin, league.id, player.id) : null;
 
+	// Jedes ausstehende Match ist zugleich sein eigener Chat-Thread
+	// (thread_key == matches.id, siehe 0023_match_chat).
+	const unreadThreadIds = [
+		...(await getUnreadThreadKeys(
+			locals.supabase,
+			pendingMatches.map((pm) => pm.id)
+		))
+	];
+
 	return {
 		email: locals.user?.email ?? null,
 		userId: locals.user?.id ?? null,
@@ -71,7 +82,8 @@ export const load: PageServerLoad = async ({ locals, platform, url }) => {
 		notifications,
 		league,
 		leagueRegistration,
-		challengeHinweis
+		challengeHinweis,
+		unreadThreadIds
 	};
 };
 

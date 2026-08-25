@@ -39,6 +39,8 @@
 		return box.label ?? m.liga_box_label_fallback({ n: box.ladderPosition });
 	}
 
+	const hasUnreadChat = $derived(data.unreadThreadIds.length > 0);
+
 	const canonical = $derived(`https://padelindex.de${page.url.pathname}`);
 	const ogLocale = $derived(ogLocaleFor(getLocale()));
 	const ogImage = $derived(ogImageUrl(getLocale()));
@@ -189,6 +191,10 @@
 									href={localizeHref(`/liga/${data.league.slug}/box/${box.id}`)}
 								>
 									{m.liga_report_result()}
+									{#if hasUnreadChat}
+										<span class="unread-dot" role="img" aria-label={m.chat_unread_dot_label()}
+										></span>
+									{/if}
 								</a>
 							{/if}
 						</article>
@@ -398,6 +404,17 @@
 	}
 	.report {
 		margin-top: 16px;
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+	}
+
+	.unread-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #d64545;
+		display: inline-block;
 	}
 
 	.joinbox {

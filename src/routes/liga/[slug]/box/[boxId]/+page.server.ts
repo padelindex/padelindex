@@ -6,6 +6,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin, supabasePublic } from '$lib/server/supabase';
+import { getUnreadThreadKeys } from '$lib/server/chat';
 import {
 	loadCurrentCycle,
 	loadLadder,
@@ -47,7 +48,15 @@ export const load: PageServerLoad = async ({ params, url, platform, locals }) =>
 	const box = (await loadLadder(admin, cycle.id, league.config)).find((b) => b.id === params.boxId);
 	if (!box) throw error(404, 'Diese Box gehört nicht zum laufenden Zyklus.');
 
-	return { league, cycle, box, myPlayerId: locals.player.id };
+	// Ein Thread pro Box (Gruppenchat) plus einer je Runde (Ansetzung) —
+	// thread_key ist für beide identisch mit der jeweiligen ID, siehe
+	// 0023_match_chat.
+	const threadIds = [box.id, ...box.rounds.map((r) => r.id)];
+	const unreadThreadIds = locals.supabase
+		? [...(await getUnreadThreadKeys(locals.supabase, threadIds))]
+		: [];
+
+	return { league, cycle, box, myPlayerId: locals.player.id, unreadThreadIds };
 };
 
 export const actions: Actions = {
