@@ -963,7 +963,7 @@
 		gap: 8px;
 		font-weight: 400;
 		font-size: 13px;
-		color: var(--muted-dark);
+		color: var(--muted-light);
 		cursor: pointer;
 	}
 
