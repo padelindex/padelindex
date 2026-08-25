@@ -58,7 +58,8 @@
 			[m.faq_pr_q4, m.faq_pr_a4],
 			[m.faq_pr_q5, m.faq_pr_a5],
 			[m.faq_pr_q6, m.faq_pr_a6],
-			[m.faq_pr_q7, m.faq_pr_a7]
+			[m.faq_pr_q7, m.faq_pr_a7],
+			[m.faq_pr_q8, m.faq_pr_a8]
 		]),
 		cat('ra', m.faq_cat_rating(), [
 			[m.faq_ra_q1, m.faq_ra_a1],

@@ -347,6 +347,8 @@
 	"faq_pr_a6": "Bei mehreren gleichnamigen Profilen im selben Verein prüft dein Vereins-Admin die Zuordnung von Hand, bevor sie freigegeben wird — dein Profilstatus zeigt in der Zwischenzeit „Wartet auf Freigabe“. Wurde die Anfrage abgelehnt, etwa weil der Name nicht eindeutig war, wende dich an deine Vereinsleitung.",
 	"faq_pr_q7": "Wer kann meine Profildaten sehen, und kann ich meinen vollen Namen verbergen?",
 	"faq_pr_a7": "Öffentlich sichtbar sind Anzeigename, Rating, Matches und die freiwilligen Angaben, die du selbst einträgst. Geburtsdatum und E-Mail-Adresse sind immer privat. Ist dein Profil beansprucht, kannst du in [deinem Konto](/konto) wählen, ob dein voller Name öffentlich steht oder nur eine gekürzte Form, z. B. „M. Kaiser“.",
+	"faq_pr_q8": "Was sind die Abzeichen (Badges) auf meinem Profil?",
+	"faq_pr_a8": "Dein öffentliches Profil kann automatisch berechnete Abzeichen zeigen: „10 Siege in Folge“ für zehn bestätigte Siege am Stück, „Most Improved Player“ für den größten Rating-Zuwachs in deinem Verein der letzten 30 Tage, und „Mixed Specialist“ ab fünf bestätigten Mixed-Matches. Aktuell gibt es genau diese drei — weitere sind laut [Roadmap](/roadmap) geplant.",
 	"faq_ra_q1": "Wie wird mein Level berechnet?",
 	"faq_ra_a1": "Aus jedem bestätigten Match: wen du geschlagen hast, wie klar es war, und wie viele Matches wir schon von dir kennen. Ein Sieg gegen ein stärkeres Duo zählt mehr als einer gegen ein schwächeres, und der Satzverlauf fließt mit ein — eine knappe Niederlage gegen starke Gegner kostet kaum etwas. Der [Rating-Simulator](/rating) rechnet live mit demselben Modell, das auch produktiv läuft.",
 	"faq_ra_q2": "Was bedeutet die Sicherheit (Confidence) meines Ratings?",

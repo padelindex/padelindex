@@ -347,6 +347,8 @@
 	"faq_pr_a6": "If several profiles in the same club share a name, your club admin reviews the match by hand before approving it — your profile status shows \"awaiting review\" in the meantime. If a request was rejected, for example because the name wasn't unambiguous, reach out to your club's management.",
 	"faq_pr_q7": "Who can see my profile data, and can I hide my full name?",
 	"faq_pr_a7": "Publicly visible are your display name, rating, matches, and any optional details you enter yourself. Date of birth and email address are always private. Once your profile is claimed, [your account](/konto) lets you choose whether your full name shows publicly or only a shortened form, e.g. \"M. Kaiser\".",
+	"faq_pr_q8": "What are the badges on my profile?",
+	"faq_pr_a8": "Your public profile can show badges calculated automatically from your matches: \"10 Siege in Folge\" (ten confirmed wins in a row), \"Most Improved Player\" (the biggest rating gain in your club over the last 30 days), and \"Mixed Specialist\" (five or more confirmed mixed matches) — these labels show as-is regardless of the site language. There are exactly these three today; more are planned according to the [roadmap](/roadmap).",
 	"faq_ra_q1": "How is my level calculated?",
 	"faq_ra_a1": "From every confirmed match: who you beat, how clear-cut it was, and how many matches we already know about you. A win against a stronger pair counts for more than one against a weaker pair, and the score margin factors in too — a close loss against strong opponents costs you almost nothing. The [rating simulator](/rating) calculates live with the exact same model that runs in production.",
 	"faq_ra_q2": "What does the confidence of my rating mean?",
