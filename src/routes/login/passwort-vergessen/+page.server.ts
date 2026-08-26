@@ -39,7 +39,7 @@ export const actions: Actions = {
 		const sb = supabaseAnon(platform);
 		if (sb) {
 			await sb.auth.resetPasswordForEmail(email, {
-				redirectTo: `${url.origin}/auth/confirm?next=${encodeURIComponent('/login/neues-passwort')}`
+				redirectTo: `${url.origin}/login/neues-passwort`
 			});
 		}
 
