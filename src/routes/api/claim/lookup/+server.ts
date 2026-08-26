@@ -2,8 +2,19 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { isUsableClaimQuery } from '$lib/claim-match';
 import { lookupClaimableProfile } from '$lib/server/claims';
+import { supabaseAdmin } from '$lib/server/supabase';
+import { checkRateLimit } from '$lib/server/rate-limit';
 
-export const POST: RequestHandler = async ({ request, platform }) => {
+export const POST: RequestHandler = async ({ request, platform, getClientAddress }) => {
+	const allowed = await checkRateLimit(
+		supabaseAdmin(platform),
+		'claim-lookup:ip',
+		getClientAddress()
+	);
+	if (!allowed) {
+		return json({ message: 'Zu viele Versuche. Bitte versuch es später erneut.' }, { status: 429 });
+	}
+
 	let body: unknown;
 	try {
 		body = await request.json();

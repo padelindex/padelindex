@@ -11,7 +11,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatPlayerName } from '$lib/claim-match';
 import type { AvailabilityMatchType } from '$lib/availability';
-import { canTransitionPlayRequest, isExpired, type PlayRequestStatus } from '$lib/challenge-rules';
+import {
+	canTransitionPlayRequest,
+	isExpired,
+	playRequestResendCooldownHoursLeft,
+	type PlayRequestStatus
+} from '$lib/challenge-rules';
 import { postSystemMessage } from '$lib/server/chat';
 import { notify, resolvePlayerEmailAddress } from './notification-store';
 import { sendEmail, type EmailEnv } from './email';
@@ -191,6 +196,24 @@ export async function createPlayRequest(
 
 	if (blocked?.blocked) {
 		return { ok: false, message: 'Anfrage konnte nicht zugestellt werden.' };
+	}
+
+	const { data: lastDeclined } = await admin
+		.from('play_requests')
+		.select('updated_at')
+		.eq('sender_id', senderId)
+		.eq('receiver_id', input.receiverId)
+		.eq('status', 'declined')
+		.order('updated_at', { ascending: false })
+		.limit(1)
+		.maybeSingle();
+
+	const cooldownHoursLeft = playRequestResendCooldownHoursLeft(lastDeclined?.updated_at ?? null);
+	if (cooldownHoursLeft > 0) {
+		return {
+			ok: false,
+			message: `Dieser Spieler hat kürzlich abgelehnt. Erneut möglich in ${cooldownHoursLeft} Stunde(n).`
+		};
 	}
 
 	const { data, error } = await admin

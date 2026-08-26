@@ -18,14 +18,31 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type RateLimitBucket =
-	'register:ip' | 'login:ip' | 'login:email' | 'password-reset:email' | 'resend-confirmation:email';
+	| 'register:ip'
+	| 'login:ip'
+	| 'login:email'
+	| 'password-reset:email'
+	| 'resend-confirmation:email'
+	| 'claim-lookup:ip'
+	| 'claim:ip'
+	| 'claim:email';
 
 const LIMITS: Record<RateLimitBucket, { max: number; windowSeconds: number }> = {
 	'register:ip': { max: 8, windowSeconds: 60 * 60 }, // 8 Registrierungen / Stunde / IP
 	'login:ip': { max: 20, windowSeconds: 15 * 60 }, // 20 Loginversuche / 15 min / IP
 	'login:email': { max: 8, windowSeconds: 15 * 60 }, // 8 Loginversuche / 15 min / Adresse (Brute-Force auf ein Konto)
 	'password-reset:email': { max: 3, windowSeconds: 60 * 60 }, // 3 Reset-Mails / Stunde / Adresse
-	'resend-confirmation:email': { max: 3, windowSeconds: 60 * 60 }
+	'resend-confirmation:email': { max: 3, windowSeconds: 60 * 60 },
+	// /api/claim/lookup verrät ohne Bremse per Trial-and-Error, welcher
+	// abgekürzte Profilname ("Robin K.") zu welchem vollen Namen gehört.
+	'claim-lookup:ip': { max: 20, windowSeconds: 15 * 60 },
+	// /api/claim verschickt eine Magic-Link-Mail an eine vom Aufrufer
+	// angegebene Adresse (nicht zwingend die eigene) — ohne Bremse ließe
+	// sich eine fremde Adresse mit einem Mail pro unbeanspruchtem Profil
+	// im selben Verein zuspammen. IP zusätzlich zur E-Mail, gegen breit
+	// automatisiertes Durchprobieren aus einer Quelle.
+	'claim:ip': { max: 10, windowSeconds: 60 * 60 },
+	'claim:email': { max: 3, windowSeconds: 60 * 60 }
 };
 
 /**
