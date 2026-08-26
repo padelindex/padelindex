@@ -6,10 +6,9 @@
 // einzelne Person administriert. 404 statt 403 bei fehlender
 // Berechtigung: kein Oracle, dass es diese Seite überhaupt gibt.
 
-import { error, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/server/supabase';
-import { isPlatformOwner } from '$lib/server/platform-owner';
+import { requirePlatformOwner } from '$lib/server/platform-owner';
 import {
 	addClubAdmin,
 	createClub,
@@ -18,15 +17,6 @@ import {
 	searchClaimedPlayers,
 	updateLicenseTier
 } from '$lib/server/platform-admin';
-
-function requirePlatformOwner(locals: App.Locals, platform: App.Platform | undefined, url: URL) {
-	if (!locals.user) {
-		throw redirect(303, `/anmelden?next=${encodeURIComponent(url.pathname)}`);
-	}
-	if (!isPlatformOwner(platform, locals.user.email)) {
-		throw error(404, 'Seite nicht gefunden');
-	}
-}
 
 export const load: PageServerLoad = async ({ locals, platform, url }) => {
 	requirePlatformOwner(locals, platform, url);

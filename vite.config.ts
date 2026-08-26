@@ -7,6 +7,7 @@
 
 import { sveltekit } from '@sveltejs/kit/vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 
 // i18n-Routing: nur die ~15 öffentlichen/SEO-Seiten bekommen /en, /es
@@ -46,6 +47,7 @@ const urlPatterns = IN_SCOPE_PATHS.map((path) => ({
 
 export default defineConfig({
 	plugins: [
+		tailwindcss(),
 		sveltekit(),
 		paraglideVitePlugin({
 			project: './project.inlang',

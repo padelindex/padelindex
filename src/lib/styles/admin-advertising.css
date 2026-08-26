@@ -1,0 +1,8 @@
+/* Tailwind wird bewusst nur hier eingebunden (importiert von
+   routes/admin/advertising/+page.svelte), nicht global in
+   +layout.svelte — der Rest der Seite läuft weiter auf dem
+   bestehenden CSS-System in lib/styles/landing.css. Zwei Stylesheets
+   nebeneinander sind für dieses eine neue Admin-Dashboard unkritisch,
+   eine Tailwind-Migration der ganzen Plattform stand hier nicht zur
+   Debatte. */
+@import 'tailwindcss';
