@@ -97,7 +97,7 @@ export const actions: Actions = {
 				type: 'signup',
 				email,
 				options: {
-					emailRedirectTo: `${url.origin}/auth/confirm?next=${encodeURIComponent('/login')}`
+					emailRedirectTo: `${url.origin}/login`
 				}
 			});
 		}

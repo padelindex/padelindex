@@ -92,7 +92,7 @@ export const actions: Actions = {
 					birth_date: input.birthDate,
 					club_name: input.clubName
 				},
-				emailRedirectTo: `${url.origin}/auth/confirm?next=${encodeURIComponent('/login')}`
+				emailRedirectTo: `${url.origin}/login`
 			}
 		});
 
