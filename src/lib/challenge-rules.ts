@@ -210,3 +210,24 @@ export function canTransitionPlayRequest(from: PlayRequestStatus, to: PlayReques
 export function isExpired(expiresAt: string, now: Date = new Date()): boolean {
 	return new Date(expiresAt).getTime() <= now.getTime();
 }
+
+/**
+ * Verhindert sofortiges erneutes Anfragen an dieselbe Person nach einer
+ * Ablehnung. Ohne das blockiert play_requests_one_open_idx (0013) nur
+ * eine ZWEITE OFFENE Anfrage gleichzeitig — eine Kette aus
+ * Anfrage -> Ablehnung -> sofort neue Anfrage -> ... bliebe beliebig oft
+ * möglich (Spam-/Belästigungsvektor). Kürzer als
+ * RECHALLENGE_COOLDOWN_DAYS bei Challenges: eine Spielanfrage ist ein
+ * einzelner, formloser Terminvorschlag, keine Rangfolge-Challenge.
+ */
+export const PLAY_REQUEST_RESEND_COOLDOWN_HOURS = 24;
+
+/** 0 = keine Sperre (mehr); sonst die noch verbleibenden ganzen Stunden. */
+export function playRequestResendCooldownHoursLeft(
+	lastDeclinedAt: string | null,
+	now: Date = new Date()
+): number {
+	if (!lastDeclinedAt) return 0;
+	const hoursSince = (now.getTime() - new Date(lastDeclinedAt).getTime()) / 3_600_000;
+	return Math.max(0, Math.ceil(PLAY_REQUEST_RESEND_COOLDOWN_HOURS - hoursSince));
+}

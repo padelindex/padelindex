@@ -93,15 +93,19 @@ export const actions: Actions = {
 		}
 
 		try {
-			await adminReportBoxResult(admin, {
-				boxMatchId,
-				adminPlayerId: locals.player!.id,
-				team1: [team1[0], team1[1]],
-				team2: [team2[0], team2[1]],
-				sets,
-				status,
-				note
-			});
+			await adminReportBoxResult(
+				admin,
+				{
+					boxMatchId,
+					adminPlayerId: locals.player!.id,
+					team1: [team1[0], team1[1]],
+					team2: [team2[0], team2[1]],
+					sets,
+					status,
+					note
+				},
+				league.id
+			);
 		} catch (e) {
 			const message = e instanceof Error ? e.message : 'Ergebnis konnte nicht gespeichert werden.';
 			return fail(400, { message });
@@ -125,12 +129,16 @@ export const actions: Actions = {
 			return fail(400, { message: 'Bitte das siegende Team wählen.' });
 		}
 
-		const result = await setBoxWalkover(admin, {
-			boxMatchId,
-			adminPlayerId: locals.player!.id,
-			winnerTeam: winnerTeam as 1 | 2,
-			note
-		});
+		const result = await setBoxWalkover(
+			admin,
+			{
+				boxMatchId,
+				adminPlayerId: locals.player!.id,
+				winnerTeam: winnerTeam as 1 | 2,
+				note
+			},
+			league.id
+		);
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true, action: 'walkover' };
 	},
@@ -144,7 +152,11 @@ export const actions: Actions = {
 		const boxMatchId = String(form.get('boxMatchId') ?? '');
 		if (!boxMatchId) return fail(400, { message: 'Keine Runde angegeben.' });
 
-		const result = await resetBoxMatch(admin, { boxMatchId, adminPlayerId: locals.player!.id });
+		const result = await resetBoxMatch(
+			admin,
+			{ boxMatchId, adminPlayerId: locals.player!.id },
+			league.id
+		);
 		if (!result.ok) return fail(400, { message: result.message });
 		return { success: true, action: 'reset' };
 	}

@@ -307,13 +307,22 @@ export async function departLeagueMember(
 		.eq('player_id', params.departingPlayerId)
 		.maybeSingle();
 
-	const box = membership
+	let box = membership
 		? {
 				boxId: membership.box_id,
 				seat: membership.seat,
 				cycleId: (membership.league_boxes as unknown as { cycle_id: string }).cycle_id
 			}
 		: null;
+
+	// membership kann zu einer FREMDEN Liga gehören: departingPlayerId kommt
+	// aus dem Formular (siehe verwaltung/spieler), league_box_members selbst
+	// trägt keinen league_id-Bezug. Ohne diesen Check könnte ein Admin einer
+	// Liga einen Spieler aus der Box einer ANDEREN Liga werfen. Gehört die
+	// gefundene Box nicht zu params.leagueId, zählt sie hier als "keine".
+	if (box && !(await loadCurrentCycle(admin, params.leagueId, box.cycleId))) {
+		box = null;
+	}
 
 	if (box && params.replacementPlayerId) {
 		const assigned = await listAssignedPlayerIds(admin, box.cycleId);
@@ -469,6 +478,47 @@ export async function loadCurrentCycle(
 		endDate: data.end_date,
 		status: data.status
 	};
+}
+
+/**
+ * Schutz gegen IDOR: requireLeagueAdmin() prüft nur "ist diese Person
+ * Admin GENAU DIESER Liga" (aus dem URL-Slug) — nie, ob eine boxId/
+ * boxMatchId aus dem Formular überhaupt zu DIESER Liga gehört. boxId
+ * steht z. B. als hidden input auf der öffentlichen Box-Seite (jede
+ * eingeloggte Person sieht sie) — ohne diesen Check könnte ein
+ * Vereins-Admin von Verein A eine boxId/boxMatchId von Verein B
+ * einschleusen und dessen Ergebnisse, Mitglieder oder Termine ändern.
+ * Jede schreibende Admin-Funktion mit boxId/boxMatchId ruft eine der
+ * beiden hier zuerst auf; wirft error(404), genau wie loadCycleOr404 in
+ * denselben Routen — bewusst 404 statt 403, um nicht zu verraten, ob die
+ * ID überhaupt existiert (nur in einer anderen Liga).
+ */
+export async function assertBoxInLeague(
+	admin: SupabaseClient,
+	boxId: string,
+	leagueId: string
+): Promise<void> {
+	const { data: box } = await admin
+		.from('league_boxes')
+		.select('cycle_id')
+		.eq('id', boxId)
+		.maybeSingle();
+	const cycle = box ? await loadCurrentCycle(admin, leagueId, box.cycle_id) : null;
+	if (!cycle) throw error(404, 'Diese Box gehört nicht zu dieser Liga.');
+}
+
+export async function assertBoxMatchInLeague(
+	admin: SupabaseClient,
+	boxMatchId: string,
+	leagueId: string
+): Promise<void> {
+	const { data: round } = await admin
+		.from('league_box_matches')
+		.select('box_id')
+		.eq('id', boxMatchId)
+		.maybeSingle();
+	if (!round) throw error(404, 'Diese Runde gibt es nicht.');
+	await assertBoxInLeague(admin, round.box_id, leagueId);
 }
 
 type LineupRow = {
@@ -853,8 +903,10 @@ async function loadRoundForScheduling(admin: SupabaseClient, boxMatchId: string)
 export async function assignRoundSlot(
 	admin: SupabaseClient,
 	boxMatchId: string,
-	params: { scheduledAt: string; court: string | null; adminPlayerId: string }
+	params: { scheduledAt: string; court: string | null; adminPlayerId: string },
+	leagueId: string
 ): Promise<ScheduleWriteResult> {
+	await assertBoxMatchInLeague(admin, boxMatchId, leagueId);
 	const round = await loadRoundForScheduling(admin, boxMatchId);
 	if (!round) return { ok: false, message: 'Runde nicht gefunden.' };
 	if (round.status !== 'scheduled') {
@@ -941,8 +993,10 @@ export async function playerScheduleRound(
 export async function resolveFreedSlot(
 	admin: SupabaseClient,
 	boxMatchId: string,
-	action: 'confirm' | 'reject'
+	action: 'confirm' | 'reject',
+	leagueId: string
 ): Promise<ScheduleWriteResult> {
+	await assertBoxMatchInLeague(admin, boxMatchId, leagueId);
 	if (action === 'confirm') {
 		const { error: err } = await admin
 			.from('league_box_matches')
@@ -1015,8 +1069,10 @@ export type AdminResultInput = {
  */
 export async function adminReportBoxResult(
 	admin: SupabaseClient,
-	input: AdminResultInput
+	input: AdminResultInput,
+	leagueId: string
 ): Promise<string> {
+	await assertBoxMatchInLeague(admin, input.boxMatchId, leagueId);
 	const { data: matchId, error: rpcErr } = await admin.rpc('admin_report_league_box_result', {
 		p_box_match_id: input.boxMatchId,
 		p_admin_id: input.adminPlayerId,
@@ -1037,8 +1093,10 @@ export type AdminWriteResult = { ok: true } | { ok: false; message: string };
 /** Walkover: reines Box-Tabellen-Ereignis, kein Match, kein Rating-Effekt (siehe 0022). */
 export async function setBoxWalkover(
 	admin: SupabaseClient,
-	params: { boxMatchId: string; adminPlayerId: string; winnerTeam: 1 | 2; note?: string | null }
+	params: { boxMatchId: string; adminPlayerId: string; winnerTeam: 1 | 2; note?: string | null },
+	leagueId: string
 ): Promise<AdminWriteResult> {
+	await assertBoxMatchInLeague(admin, params.boxMatchId, leagueId);
 	const { error: err } = await admin.rpc('admin_set_league_box_walkover', {
 		p_box_match_id: params.boxMatchId,
 		p_admin_id: params.adminPlayerId,
@@ -1052,8 +1110,10 @@ export async function setBoxWalkover(
 /** Macht eine noch nicht gewertete Eintragung rückgängig (Korrektur-Werkzeug). */
 export async function resetBoxMatch(
 	admin: SupabaseClient,
-	params: { boxMatchId: string; adminPlayerId: string }
+	params: { boxMatchId: string; adminPlayerId: string },
+	leagueId: string
 ): Promise<AdminWriteResult> {
+	await assertBoxMatchInLeague(admin, params.boxMatchId, leagueId);
 	const { error: err } = await admin.rpc('admin_reset_league_box_match', {
 		p_box_match_id: params.boxMatchId,
 		p_admin_id: params.adminPlayerId

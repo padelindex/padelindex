@@ -43,6 +43,7 @@
 
 	let emailBusy = $state(false);
 	let confirmingId = $state<string | null>(null);
+	let disputingId = $state<string | null>(null);
 	let redeemingId = $state<string | null>(null);
 	let profileBusy = $state(false);
 
@@ -411,31 +412,60 @@
 								<span class="pending-date">
 									gemeldet für {formatDate(m.playedAt)} · Frist {formatDate(m.confirmDeadline)}
 								</span>
-								{#if m.canConfirm}
-									<form
-										method="POST"
-										action="?/confirmMatch"
-										use:enhance={() => {
-											confirmingId = m.id;
-											return async ({ update }) => {
-												await update();
-												confirmingId = null;
-											};
-										}}
-									>
-										<input type="hidden" name="matchId" value={m.id} />
-										<button
-											class="btn btn-primary"
-											type="submit"
-											disabled={confirmingId === m.id}
-											style="margin-top: 10px; padding: 8px 16px; font-size: 13px"
+								<div class="pending-actions">
+									{#if m.canConfirm}
+										<form
+											method="POST"
+											action="?/confirmMatch"
+											use:enhance={() => {
+												confirmingId = m.id;
+												return async ({ update }) => {
+													await update();
+													confirmingId = null;
+												};
+											}}
 										>
-											{confirmingId === m.id ? 'Wird bestätigt…' : 'Ergebnis bestätigen'}
-										</button>
-									</form>
-								{:else}
-									<span class="pending-waiting">Warte auf Bestätigung der Gegenseite</span>
-								{/if}
+											<input type="hidden" name="matchId" value={m.id} />
+											<button
+												class="btn btn-primary"
+												type="submit"
+												disabled={confirmingId === m.id}
+												style="margin-top: 10px; padding: 8px 16px; font-size: 13px"
+											>
+												{confirmingId === m.id ? 'Wird bestätigt…' : 'Ergebnis bestätigen'}
+											</button>
+										</form>
+									{:else if !m.isReporter}
+										<span class="pending-waiting">Warte auf Bestätigung der Gegenseite</span>
+									{/if}
+									{#if !m.isReporter}
+										<form
+											method="POST"
+											action="?/disputeMatch"
+											use:enhance={({ cancel }) => {
+												if (!confirm('Dieses Match wirklich ablehnen? Es wird komplett gelöscht.')) {
+													cancel();
+													return;
+												}
+												disputingId = m.id;
+												return async ({ update }) => {
+													await update();
+													disputingId = null;
+												};
+											}}
+										>
+											<input type="hidden" name="matchId" value={m.id} />
+											<button
+												class="btn btn-ghost-light"
+												type="submit"
+												disabled={disputingId === m.id}
+												style="margin-top: 10px; padding: 8px 16px; font-size: 13px"
+											>
+												{disputingId === m.id ? 'Wird abgelehnt…' : 'Das stimmt nicht — ablehnen'}
+											</button>
+										</form>
+									{/if}
+								</div>
 
 								<div class="chat-toggle-row">
 									<button
@@ -1048,6 +1078,17 @@
 		margin-top: 4px;
 		font-size: 12px;
 		color: var(--muted-light);
+	}
+
+	.pending-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.pending-actions form {
+		margin: 0;
 	}
 
 	.chat-toggle-row {

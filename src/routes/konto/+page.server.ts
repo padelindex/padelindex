@@ -3,7 +3,12 @@ import type { Actions, PageServerLoad } from './$types';
 import { isValidEmail } from '$lib/email';
 import { loadRatingHistory } from '$lib/server/rating-history';
 import { getUnreadThreadKeys } from '$lib/server/chat';
-import { confirmMatchAsPlayer, loadPendingMatches, loadPlayerClub } from '$lib/server/matches';
+import {
+	confirmMatchAsPlayer,
+	disputeMatchAsPlayer,
+	loadPendingMatches,
+	loadPlayerClub
+} from '$lib/server/matches';
 import { loadTokenAccount } from '$lib/server/tokens';
 import { loadRewardCatalog, redeemReward } from '$lib/server/rewards';
 import { loadAdminClubs } from '$lib/server/club-admin';
@@ -144,6 +149,21 @@ export const actions: Actions = {
 		if (!result.ok) return { matchError: result.message };
 
 		return { matchConfirmed: true };
+	},
+
+	disputeMatch: async ({ request, locals, platform }) => {
+		if (!locals.player) {
+			return { matchError: 'Nicht angemeldet.' };
+		}
+
+		const form = await request.formData();
+		const matchId = String(form.get('matchId') ?? '');
+		if (!matchId) return { matchError: 'Ungültige Anfrage.' };
+
+		const result = await disputeMatchAsPlayer(supabaseAdmin(platform), matchId, locals.player.id);
+		if (!result.ok) return { matchError: result.message };
+
+		return { matchDisputed: true };
 	},
 
 	redeem: async ({ request, locals, platform }) => {

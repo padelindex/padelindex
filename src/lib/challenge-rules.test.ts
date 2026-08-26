@@ -2,13 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
 	CHALLENGE_RANGE_CONFIG,
 	MAX_ACTIVE_OUTGOING_CHALLENGES,
+	PLAY_REQUEST_RESEND_COOLDOWN_HOURS,
 	RECHALLENGE_COOLDOWN_DAYS,
 	canChallenge,
 	canTransitionChallenge,
 	canTransitionPlayRequest,
 	getChallengeRange,
 	isExpired,
-	isRankChallengeable
+	isRankChallengeable,
+	playRequestResendCooldownHoursLeft
 } from './challenge-rules';
 
 describe('getChallengeRange', () => {
@@ -172,5 +174,31 @@ describe('isExpired', () => {
 
 	it('behandelt den exakten Ablaufzeitpunkt als abgelaufen', () => {
 		expect(isExpired('2026-03-20T12:00:00Z', now)).toBe(true);
+	});
+});
+
+describe('playRequestResendCooldownHoursLeft', () => {
+	const now = new Date('2026-03-20T12:00:00Z');
+
+	it('keine Sperre ohne vorherige Ablehnung', () => {
+		expect(playRequestResendCooldownHoursLeft(null, now)).toBe(0);
+	});
+
+	it('sperrt direkt nach einer Ablehnung für die volle Cooldown-Dauer', () => {
+		expect(playRequestResendCooldownHoursLeft(now.toISOString(), now)).toBe(
+			PLAY_REQUEST_RESEND_COOLDOWN_HOURS
+		);
+	});
+
+	it('zählt die verbleibenden Stunden herunter', () => {
+		const declinedAt = new Date(now.getTime() - 20 * 3_600_000).toISOString();
+		expect(playRequestResendCooldownHoursLeft(declinedAt, now)).toBe(4);
+	});
+
+	it('keine Sperre mehr, sobald die Cooldown-Dauer verstrichen ist', () => {
+		const declinedAt = new Date(
+			now.getTime() - PLAY_REQUEST_RESEND_COOLDOWN_HOURS * 3_600_000
+		).toISOString();
+		expect(playRequestResendCooldownHoursLeft(declinedAt, now)).toBe(0);
 	});
 });

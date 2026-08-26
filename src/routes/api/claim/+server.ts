@@ -2,6 +2,8 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { startProfileClaim } from '$lib/server/claims';
 import { isValidEmail } from '$lib/email';
+import { supabaseAdmin } from '$lib/server/supabase';
+import { checkRateLimit } from '$lib/server/rate-limit';
 
 const REASONS: Record<string, string> = {
 	not_found: 'Dieses Profil gibt es in diesem Verein nicht.',
@@ -10,7 +12,7 @@ const REASONS: Record<string, string> = {
 		'Für dieses Profil läuft bereits eine Bestätigung. Prüfe dein Postfach oder warte, bis der Link abgelaufen ist.'
 };
 
-export const POST: RequestHandler = async ({ request, url, platform }) => {
+export const POST: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
 	let body: unknown;
 	try {
 		body = await request.json();
@@ -30,6 +32,15 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
 	if (!slug || !handle) return json({ message: 'Ungültige Anfrage.' }, { status: 400 });
 	if (!isValidEmail(email)) {
 		return json({ message: 'Bitte eine gültige E-Mail-Adresse eingeben.' }, { status: 400 });
+	}
+
+	const admin = supabaseAdmin(platform);
+	const [ipOk, emailOk] = await Promise.all([
+		checkRateLimit(admin, 'claim:ip', getClientAddress()),
+		checkRateLimit(admin, 'claim:email', email)
+	]);
+	if (!ipOk || !emailOk) {
+		return json({ message: 'Zu viele Versuche. Bitte versuch es später erneut.' }, { status: 429 });
 	}
 
 	const result = await startProfileClaim(slug, handle, email, url.origin, platform);

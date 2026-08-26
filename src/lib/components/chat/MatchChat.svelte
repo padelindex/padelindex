@@ -95,23 +95,29 @@
 		messages = [];
 
 		(async () => {
+			// Neueste 500 zuerst laden (sonst zeigt ein Thread mit >500
+			// Nachrichten für immer nur die ältesten 500 und nie etwas
+			// Neueres), dann für die Anzeige wieder aufsteigend sortieren.
 			const { data, error } = await supabase
 				.from('match_messages')
 				.select(CHAT_MESSAGE_COLUMNS)
 				.eq('thread_key', matchId)
-				.order('created_at', { ascending: true })
+				.order('created_at', { ascending: false })
 				.limit(500);
 
 			if (cancelled) return;
 			if (error) {
 				loadError = true;
 			} else {
-				messages = (data ?? []).map(mapChatMessageRow);
+				messages = (data ?? []).map(mapChatMessageRow).reverse();
 			}
 			loading = false;
 			await tick();
 			scrollToBottom();
-			markRead();
+			// Nur bei erfolgreichem Laden als gelesen markieren — sonst
+			// verschwindet der Unread-Punkt für Nachrichten, die wegen
+			// dieses Fehlers gar nicht angezeigt wurden.
+			if (!error) markRead();
 		})();
 
 		const channel = supabase
