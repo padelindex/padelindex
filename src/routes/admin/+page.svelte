@@ -22,6 +22,7 @@
 			<img src="/logo.svg" width="30" height="30" alt="" />
 			<span>Padel<b>Index</b></span>
 		</a>
+		<a class="btn btn-ghost" href="/admin/advertising">Werbung &amp; Sponsoring</a>
 		<a class="btn btn-ghost" href="/konto">Zu meinem Konto</a>
 	</div>
 </nav>
@@ -31,9 +32,7 @@
 		<div class="sec-head">
 			<span class="eyebrow">Super-Admin</span>
 			<h2>Vereine</h2>
-			<p class="muted">
-				Alle Vereine der Plattform, Lizenzstufen und Vereins-Admins — ohne SQL.
-			</p>
+			<p class="muted">Alle Vereine der Plattform, Lizenzstufen und Vereins-Admins — ohne SQL.</p>
 		</div>
 
 		{#if form?.clubError}
@@ -43,7 +42,11 @@
 		<div class="card">
 			<div class="card-head">
 				<h3 class="card-title" style="margin: 0">Neuer Verein</h3>
-				<button class="btn btn-ghost-light" type="button" onclick={() => (addingClub = !addingClub)}>
+				<button
+					class="btn btn-ghost-light"
+					type="button"
+					onclick={() => (addingClub = !addingClub)}
+				>
 					{addingClub ? 'Abbrechen' : '+ Anlegen'}
 				</button>
 			</div>
@@ -74,7 +77,12 @@
 						<option value="basic">Basic</option>
 						<option value="pro">Pro</option>
 					</select>
-					<button class="btn btn-primary" type="submit" disabled={clubBusy} style="margin-top: 10px">
+					<button
+						class="btn btn-primary"
+						type="submit"
+						disabled={clubBusy}
+						style="margin-top: 10px"
+					>
 						{clubBusy ? 'Wird angelegt…' : 'Anlegen'}
 					</button>
 				</form>
