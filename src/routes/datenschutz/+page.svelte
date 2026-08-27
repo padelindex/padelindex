@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
+	import MinimalNav from '$lib/components/MinimalNav.svelte';
 	import { localizeHref } from '$lib/paraglide/runtime';
 </script>
 
@@ -8,19 +9,12 @@
 	<meta name="robots" content="noindex, follow" />
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href={localizeHref('/')}>
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-	</div>
-</nav>
+<MinimalNav />
 
 <section class="sec">
 	<div class="wrap legal" style="max-width: 72ch">
 		<span class="eyebrow">{m.legal_eyebrow()}</span>
-		<h2 style="margin-top: 18px">{m.ds_h2()}</h2>
+		<h1 style="margin-top: 18px">{m.ds_h2()}</h1>
 
 		<h3>{m.ds_h3_1()}</h3>
 		<p>

@@ -9,8 +9,10 @@
 	//
 	// DYNAMISCH GELADEN: Leaflet greift beim Import auf window zu und
 	// würde das SSR-Rendering dieser Seite sonst zerlegen. Deshalb erst
-	// in onMount() importieren — die Seite selbst rendert serverseitig
-	// ganz normal, inklusive der Anlagenliste unten.
+	// client-seitig importieren, und zwar erst sobald der Container ins
+	// Sichtfeld scrollt (siehe initMap/whenVisible unten) — die Seite
+	// selbst rendert serverseitig ganz normal, inklusive der
+	// Anlagenliste unten.
 	//
 	// KEINE STANDARD-MARKER: Leaflets Default-Icon lädt PNGs über relative
 	// Pfade, die unter einem Bundler regelmäßig ins Leere zeigen.
@@ -25,6 +27,7 @@
 	import { onMount } from 'svelte';
 	import type { Map as LeafletMap, CircleMarker } from 'leaflet';
 	import type { Venue } from '$lib/server/venues';
+	import { whenVisible } from '$lib/landing/reveal';
 	import { m } from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime';
 	// Leaflets eigenes CSS. Statischer Import (anders als das JS): Vite
@@ -60,38 +63,43 @@
 		};
 	}
 
+	let cancelled = false;
+
+	// Erst laden, wenn der Container tatsächlich ins Sichtfeld scrollt: auf
+	// /karte liegt die Karte hinter Header, Legende und Filtern, würde ohne
+	// diese Gate aber trotzdem sofort beim Seitenaufruf sämtliche Kacheln
+	// für die Startansicht ziehen (mehrere MB, siehe docs/karte.md) —
+	// selbst wenn niemand so weit scrollt.
+	async function initMap() {
+		try {
+			const L = await import('leaflet');
+			if (cancelled) return;
+
+			map = L.map(container, {
+				center: CENTER,
+				zoom: ZOOM,
+				scrollWheelZoom: false // sonst "fängt" die Karte das Seiten-Scrollen ab
+			});
+
+			L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				maxZoom: 18,
+				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+			}).addTo(map);
+
+			// Tastaturbedienung: Leaflet macht den Container fokussierbar,
+			// aber ohne Beschriftung weiß ein Screenreader nicht, was das ist.
+			container.setAttribute('role', 'application');
+			container.setAttribute('aria-label', m.venuemap_aria_label());
+
+			ready = true;
+		} catch {
+			// Kein Netz, blockierte Kacheln, was auch immer — die Liste
+			// unter der Karte trägt die Information ohnehin allein.
+			failed = true;
+		}
+	}
+
 	onMount(() => {
-		let cancelled = false;
-
-		(async () => {
-			try {
-				const L = await import('leaflet');
-				if (cancelled) return;
-
-				map = L.map(container, {
-					center: CENTER,
-					zoom: ZOOM,
-					scrollWheelZoom: false // sonst "fängt" die Karte das Seiten-Scrollen ab
-				});
-
-				L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-					maxZoom: 18,
-					attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-				}).addTo(map);
-
-				// Tastaturbedienung: Leaflet macht den Container fokussierbar,
-				// aber ohne Beschriftung weiß ein Screenreader nicht, was das ist.
-				container.setAttribute('role', 'application');
-				container.setAttribute('aria-label', m.venuemap_aria_label());
-
-				ready = true;
-			} catch {
-				// Kein Netz, blockierte Kacheln, was auch immer — die Liste
-				// unter der Karte trägt die Information ohnehin allein.
-				failed = true;
-			}
-		})();
-
 		return () => {
 			cancelled = true;
 			map?.remove();
@@ -185,7 +193,12 @@
 </script>
 
 <div class="mapwrap">
-	<div bind:this={container} class="map" class:hidden={failed}></div>
+	<div
+		bind:this={container}
+		use:whenVisible={{ onVisible: initMap, threshold: 0 }}
+		class="map"
+		class:hidden={failed}
+	></div>
 
 	{#if failed}
 		<p class="mapfail">

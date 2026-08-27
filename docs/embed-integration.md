@@ -58,7 +58,7 @@ Sicherheitsanforderungen)
 ```html
 <script
   src="https://padelindex.de/embed.js"
-  integrity="sha384-hsUzktAMycfrnp7zgrBfg/jMJYhJ+EaQ+z1XlY1CdvbOaQCF+LQklHLuGPIfHvDT"
+  integrity="sha384-/WFE1Udb3OCzPlnGInUZ5R+XTEQnqKz0S9E2JwCxYCDiJyQfYXzvYTuM++vOLXYu"
   crossorigin="anonymous"
   async
 ></script>
@@ -77,4 +77,4 @@ Neu berechnen:
 openssl dgst -sha384 -binary static/embed.js | openssl base64 -A
 ```
 
-Aktueller Hash (Stand dieser Datei): `sha384-hsUzktAMycfrnp7zgrBfg/jMJYhJ+EaQ+z1XlY1CdvbOaQCF+LQklHLuGPIfHvDT`
+Aktueller Hash (Stand dieser Datei): `sha384-/WFE1Udb3OCzPlnGInUZ5R+XTEQnqKz0S9E2JwCxYCDiJyQfYXzvYTuM++vOLXYu`

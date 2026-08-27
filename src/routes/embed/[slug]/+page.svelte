@@ -11,6 +11,7 @@
 </svelte:head>
 
 <div class="embed-shell">
+	<h1 class="sr-only">{data.board?.club.name ?? 'Ranking'}</h1>
 	<ClubLeaderboard board={data.board} unavailable={data.unavailable} compact />
 </div>
 

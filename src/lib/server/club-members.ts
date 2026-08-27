@@ -75,7 +75,7 @@ export async function loadClubMembers(admin: SupabaseClient, clubId: string): Pr
  * per direktem POST einen fremden Spieler außerhalb seines Vereins
  * kalibrieren kann. Die eigentliche "0 Matches"-Grenze erzwingt die
  * DB-Funktion selbst (external_seed_locked, siehe
- * 0020_initial_index_calibration.sql) — hier nur eine freundliche
+ * 0029_initial_index_calibration.sql) — hier nur eine freundliche
  * Fehlermeldung statt der rohen Postgres-Exception, falls es schnell
  * fehlschlagen soll, ohne den Roundtrip abzuwarten.
  */

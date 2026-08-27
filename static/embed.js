@@ -22,7 +22,7 @@
   // inhaltlichen Änderung hochzählen, siehe docs/embed-integration.md
   // (dort auch der aktuelle SRI-Hash, der nach jeder Änderung neu
   // berechnet werden muss).
-  const EMBED_VERSION = '1.0.0';
+  const EMBED_VERSION = '1.0.1';
 
   const API_DEFAULT = 'https://padelindex.de/api/v1';
   const SIGMA_MAX = 25 / 3; // Startunsicherheit -> confidence 0
@@ -34,7 +34,7 @@
       --pi-muted: #6B7C85;
       --pi-line: #E4E8E7;
       --pi-accent: #0F6E5C;
-      --pi-signal: #B4711A;
+      --pi-signal: #8F5A15;
       --pi-radius: 10px;
 
       display: block;

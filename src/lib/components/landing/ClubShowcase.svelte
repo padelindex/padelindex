@@ -371,7 +371,7 @@
 		color: var(--muted-light);
 	}
 	.cs-mt.prov {
-		color: #b4711a;
+		color: #8f5a15;
 	}
 	.cs-mv {
 		font-size: 11px;
@@ -382,7 +382,7 @@
 		color: var(--court-deep);
 	}
 	.cs-mv.down {
-		color: #b4711a;
+		color: #8f5a15;
 	}
 	.cs-sc {
 		display: flex;

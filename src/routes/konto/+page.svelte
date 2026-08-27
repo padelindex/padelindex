@@ -8,6 +8,8 @@
 	import { parseLevelParam } from '$lib/level-estimator';
 	import AvatarUpload from '$lib/components/AvatarUpload.svelte';
 	import MatchChat from '$lib/components/chat/MatchChat.svelte';
+	import LandingNav from '$lib/components/landing/LandingNav.svelte';
+	import { mainNav } from '$lib/landing/nav';
 	// Alias t statt m: {#each data.pendingMatches as m} weiter unten belegt
 	// den Namen m bereits als Schleifenvariable für das einzelne Match.
 	import { m as t } from '$lib/paraglide/messages.js';
@@ -181,14 +183,7 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href="/" aria-label="PadelIndex Startseite">
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-	</div>
-</nav>
+<LandingNav links={mainNav()} />
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 480px">
@@ -922,7 +917,7 @@
 
 	.token-badge.token-out {
 		background: rgba(180, 113, 26, 0.12);
-		color: #b4711a;
+		color: #8f5a15;
 	}
 
 	.rewards {

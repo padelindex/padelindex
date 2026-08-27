@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import MinimalNav from '$lib/components/MinimalNav.svelte';
 	import RouletteWheel from '$lib/components/RouletteWheel.svelte';
 	import type { ActionData, PageData } from './$types';
 
@@ -48,15 +49,9 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href="/" aria-label="PadelIndex Startseite">
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-		<a class="btn btn-ghost" href="/konto">Mein Konto</a>
-	</div>
-</nav>
+<MinimalNav>
+	<a class="btn btn-ghost" href="/konto">Mein Konto</a>
+</MinimalNav>
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 680px">

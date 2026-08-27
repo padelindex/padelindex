@@ -1,7 +1,7 @@
 // ============================================================
 // PadelIndex — Head-to-Head & Teammate-Statistik (/p/[handle])
 // ============================================================
-// Dünner Wrapper um die RPC get_h2h_stats() (0020_h2h_stats.sql). Läuft
+// Dünner Wrapper um die RPC get_h2h_stats() (0028_h2h_stats.sql). Läuft
 // bewusst über den Sessions-Client (RLS, SECURITY INVOKER), nicht über
 // den Admin-Client: die Policies auf matches/match_participants/
 // match_sets (plays_in_match(), seit 0005) sorgen dafür, dass nur Matches

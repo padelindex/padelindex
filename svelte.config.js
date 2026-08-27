@@ -32,7 +32,8 @@ const cspDirectives = {
 		'wss://tcpfkfsxsrbwsctepjni.supabase.co',
 		'https://*.board.support',
 		'wss://*.board.support',
-		'https://static.cloudflareinsights.com'
+		'https://static.cloudflareinsights.com',
+		'https://fonts.googleapis.com'
 	],
 	'frame-ancestors': ["'none'"],
 	// Pflicht für reportOnly (SvelteKit wirft sonst serverseitig einen

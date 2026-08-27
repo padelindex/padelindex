@@ -142,7 +142,7 @@
 		aria-label="Profilbild ändern"
 		style="--size: {size}px"
 	>
-		<AvatarCircle {avatarUrl} name={displayName} {size} />
+		<AvatarCircle {avatarUrl} name={displayName} {size} loading="eager" />
 		{#if busy}
 			<span class="spinner" aria-hidden="true"></span>
 		{/if}

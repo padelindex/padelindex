@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MinimalNav from '$lib/components/MinimalNav.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -9,20 +10,13 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href="/" aria-label="PadelIndex Startseite">
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-	</div>
-</nav>
+<MinimalNav />
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 480px">
 		{#if data.ok}
 			<div class="sec-head">
-				<h2>Erledigt</h2>
+				<h1>Erledigt</h1>
 				<p class="muted">
 					Das Profil ist jetzt aus der öffentlichen Rangliste entfernt. Wer die alte Profilseite
 					aufruft, sieht ab sofort nichts mehr davon.
@@ -30,7 +24,7 @@
 			</div>
 		{:else}
 			<div class="sec-head">
-				<h2>Konnte nicht bestätigt werden</h2>
+				<h1>Konnte nicht bestätigt werden</h1>
 				<p class="err" role="alert">{data.message}</p>
 			</div>
 			<a class="btn btn-ghost-light" href="/profil-entfernen" style="margin-top: 8px; display: inline-block">

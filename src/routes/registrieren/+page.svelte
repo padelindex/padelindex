@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import MinimalNav from '$lib/components/MinimalNav.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -13,19 +14,12 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href="/" aria-label="PadelIndex Startseite">
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-	</div>
-</nav>
+<MinimalNav />
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 480px">
 		<div class="sec-head">
-			<h2>Registrieren</h2>
+			<h1>Registrieren</h1>
 			<p class="muted">Leg dein Spielerprofil an — mit echtem Namen, Verein und Passwort.</p>
 		</div>
 
@@ -146,6 +140,12 @@
 					{busy ? 'Wird angelegt…' : 'Konto erstellen'}
 				</button>
 
+				<p class="terms-note">
+					Mit „Konto erstellen“ akzeptierst du unsere
+					<a href="/nutzungsbedingungen">Nutzungsbedingungen</a>
+					und <a href="/datenschutz">Datenschutzerklärung</a>.
+				</p>
+
 				{#if form?.message}
 					<p class="err" role="alert">{form.message}</p>
 				{/if}
@@ -212,6 +212,17 @@
 		margin: 8px 0 0;
 		font-size: 13px;
 		color: var(--muted-light);
+	}
+
+	.terms-note {
+		margin: 14px 0 0;
+		font-size: 12px;
+		text-align: center;
+		color: var(--muted-light);
+	}
+
+	.terms-note a {
+		color: inherit;
 	}
 
 	.err {

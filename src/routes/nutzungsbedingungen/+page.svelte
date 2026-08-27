@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>{m.imp_meta_title()}</title>
+	<title>{m.nb_meta_title()}</title>
 	<meta name="robots" content="noindex, follow" />
 </svelte:head>
 
@@ -14,51 +14,64 @@
 <section class="sec">
 	<div class="wrap legal" style="max-width: 72ch">
 		<span class="eyebrow">{m.legal_eyebrow()}</span>
-		<h1 style="margin-top: 18px">{m.imp_h2()}</h1>
+		<h1 style="margin-top: 18px">{m.nb_h2()}</h1>
 
-		<h3>{m.imp_h3_1()}</h3>
+		<h3>{m.nb_h3_1()}</h3>
 		<p>
-			Alec Hahn<br />
-			Geltingerstrasse 12<br />
-			82515 Wolfratshausen<br />
-			{m.imp_address_country()}
+			{m.nb_p1()}
 		</p>
 
-		<h3>{m.imp_h3_contact()}</h3>
-		<p>E-Mail: <a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a></p>
-
-		<h3>{m.imp_h3_responsible()}</h3>
+		<h3>{m.nb_h3_2()}</h3>
 		<p>
-			Alec Hahn<br />
-			Geltingerstrasse 12<br />
-			82515 Wolfratshausen
+			{m.nb_p2()}
 		</p>
 
-		<h3>{m.imp_h3_dispute()}</h3>
+		<h3>{m.nb_h3_3()}</h3>
 		<p>
-			{m.imp_p_dispute()}
+			{m.nb_p3()}
 		</p>
 
-		<h3>{m.imp_h3_liability_content()}</h3>
+		<h3>{m.nb_h3_4()}</h3>
 		<p>
-			{m.imp_p_liability_content()}
+			{m.nb_p4()}
 		</p>
 
-		<h3>{m.imp_h3_ugc()}</h3>
+		<h3>{m.nb_h3_5()}</h3>
 		<p>
-			{m.imp_p_ugc_pre()}
-			<a href="mailto:kontakt@padelindex.de">kontakt@padelindex.de</a>
-			{m.imp_p_ugc_post()}
+			{m.nb_p5_pre()}
+			<a href={localizeHref('/impressum')}>{m.nb_p5_link()}</a>{m.nb_p5_post()}
 		</p>
 
-		<h3>{m.imp_h3_links()}</h3>
+		<h3>{m.nb_h3_6()}</h3>
 		<p>
-			{m.imp_p_links()}
+			{m.nb_p6()}
 		</p>
 
-		<h3>{m.imp_h3_copyright()}</h3>
+		<h3>{m.nb_h3_7()}</h3>
 		<p>
-			{m.imp_p_copyright()}
+			{m.nb_p7()}
+		</p>
+
+		<h3>{m.nb_h3_8()}</h3>
+		<p>
+			{m.nb_p8()}
+		</p>
+
+		<h3>{m.nb_h3_9()}</h3>
+		<p>
+			{m.nb_p9()}
+		</p>
+
+		<h3>{m.nb_h3_10()}</h3>
+		<p>
+			{m.nb_p10_pre()}
+			<a href={localizeHref('/profil-entfernen')}>{m.nb_p10_link()}</a>
+			{m.nb_p10_post()}
+		</p>
+
+		<h3>{m.nb_h3_11()}</h3>
+		<p>
+			{m.nb_p11()}
 		</p>
 	</div>
 </section>

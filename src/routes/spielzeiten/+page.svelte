@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import MinimalNav from '$lib/components/MinimalNav.svelte';
 	import {
 		AVAILABILITY_MATCH_TYPES,
 		AVAILABILITY_MATCH_TYPE_LABELS,
@@ -36,15 +37,9 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href="/" aria-label="PadelIndex Startseite">
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-		<a class="btn btn-ghost" href="/konto">Mein Konto</a>
-	</div>
-</nav>
+<MinimalNav>
+	<a class="btn btn-ghost" href="/konto">Mein Konto</a>
+</MinimalNav>
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 640px">
@@ -395,7 +390,7 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		color: #b4711a;
+		color: #8f5a15;
 		background: rgba(180, 113, 26, 0.12);
 		padding: 2px 7px;
 		border-radius: 100px;

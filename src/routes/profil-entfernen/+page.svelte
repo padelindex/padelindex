@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import MinimalNav from '$lib/components/MinimalNav.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -11,19 +12,12 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href="/" aria-label="PadelIndex Startseite">
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-	</div>
-</nav>
+<MinimalNav />
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 480px">
 		<div class="sec-head">
-			<h2>Ich möchte hier nicht gelistet sein</h2>
+			<h1>Ich möchte hier nicht gelistet sein</h1>
 			<p class="muted">
 				Kein Konto nötig. Wir schicken dir einen Bestätigungslink per E-Mail — sobald du ihn
 				anklickst, verschwindet das Profil sofort aus der öffentlichen Rangliste.
