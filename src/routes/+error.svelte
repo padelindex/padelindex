@@ -1,4 +1,6 @@
 <script lang="ts">
+	import MinimalNav from '$lib/components/MinimalNav.svelte';
+
 	let { error, status }: { error: { message: string }; status: number } = $props();
 </script>
 
@@ -6,14 +8,7 @@
 	<title>PadelIndex</title>
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href="/">
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-	</div>
-</nav>
+<MinimalNav />
 
 <section class="sec">
 	<div class="wrap">

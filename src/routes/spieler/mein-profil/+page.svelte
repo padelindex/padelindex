@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import AvatarCircle from '$lib/components/AvatarCircle.svelte';
+	import MinimalNav from '$lib/components/MinimalNav.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -33,20 +34,14 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href="/" aria-label="PadelIndex Startseite">
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-		<a class="btn btn-ghost" href="/konto">Mein Konto</a>
-	</div>
-</nav>
+<MinimalNav>
+	<a class="btn btn-ghost" href="/konto">Mein Konto</a>
+</MinimalNav>
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 640px">
 		<div class="sec-head profile-head">
-			<AvatarCircle avatarUrl={data.profile.avatarUrl} name={fullName} size={64} />
+			<AvatarCircle avatarUrl={data.profile.avatarUrl} name={fullName} size={64} loading="eager" />
 			<div>
 				<span class="eyebrow">Mein Profil</span>
 				<h2>{fullName}</h2>

@@ -6,6 +6,7 @@
 	import H2HStats from '$lib/components/H2HStats.svelte';
 	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
 	import AvatarCircle from '$lib/components/AvatarCircle.svelte';
+	import MinimalNav from '$lib/components/MinimalNav.svelte';
 	import { isProfileIndexable } from '$lib/seo';
 	import { jsonLd } from '$lib/jsonld';
 	import { dateLocaleFor } from '$lib/i18n/date';
@@ -148,24 +149,23 @@
 	{@html `<script type="application/ld+json">${breadcrumbs}</script>`}
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href={localizeHref('/')} aria-label={m.nav_brand_aria()}>
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-		{#if data.club}
-			<a class="btn btn-primary" href={localizeHref(`/c/${data.club.slug}`)}
-				>{m.player_nav_ranking_cta()}</a
-			>
-		{/if}
-	</div>
-</nav>
+<MinimalNav>
+	{#if data.club}
+		<a class="btn btn-primary" href={localizeHref(`/c/${data.club.slug}`)}
+			>{m.player_nav_ranking_cta()}</a
+		>
+	{/if}
+</MinimalNav>
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 720px">
 		<div class="profile-head">
-			<AvatarCircle avatarUrl={data.profile.avatarUrl} name={data.profile.name} size={72} />
+			<AvatarCircle
+				avatarUrl={data.profile.avatarUrl}
+				name={data.profile.name}
+				size={72}
+				loading="eager"
+			/>
 			<div class="ring-wrap">
 				<svg class="ring" viewBox="0 0 48 48" aria-hidden="true">
 					<circle class="t" cx="24" cy="24" r="22"></circle>

@@ -149,6 +149,7 @@
 					<img
 						class="og-preview"
 						src={ogImagePath}
+						loading="lazy"
 						alt="Vorschau des teilbaren Ergebnisbilds: {band.label}, Level {result.toFixed(
 							1
 						)} von 7"

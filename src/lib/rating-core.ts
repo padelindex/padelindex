@@ -40,7 +40,7 @@ export function seedRating(selfAssessedLevel: number) {
 // ein Vereins-Admin die Quelle, der den Spieler persönlich kennt — der
 // Zielwert wird deshalb NICHT künstlich gesenkt. Nur zulässig, solange
 // external_seed_locked = false (0 Matches gespielt, siehe
-// 0020_initial_index_calibration.sql, die exakt dieselben Zielwerte
+// 0029_initial_index_calibration.sql, die exakt dieselben Zielwerte
 // verwendet — bei Änderung hier IMMER auch dort nachziehen).
 export type SkillTier = 'beginner' | 'intermediate' | 'advanced';
 

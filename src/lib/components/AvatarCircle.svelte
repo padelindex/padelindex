@@ -7,8 +7,15 @@
 	let {
 		avatarUrl,
 		name,
-		size = 64
-	}: { avatarUrl: string | null; name: string; size?: number } = $props();
+		size = 64,
+		loading = 'lazy'
+	}: {
+		avatarUrl: string | null;
+		name: string;
+		size?: number;
+		/** 'eager' für above-the-fold-Vorkommen (Profilkopf, Kontoseite) — sonst lazy. */
+		loading?: 'lazy' | 'eager';
+	} = $props();
 </script>
 
 {#if avatarUrl}
@@ -18,6 +25,7 @@
 		alt={name}
 		width={size}
 		height={size}
+		{loading}
 		style="--size: {size}px"
 	/>
 {:else}
