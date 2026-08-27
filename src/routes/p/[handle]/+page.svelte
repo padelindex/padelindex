@@ -532,7 +532,7 @@
 		color: var(--court-deep, #0f6e5c);
 	}
 	.form-v.down {
-		color: #b4711a;
+		color: #8f5a15;
 	}
 	.form-l {
 		display: block;

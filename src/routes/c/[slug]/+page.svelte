@@ -3,9 +3,10 @@
 	import ClubLeaderboard from '$lib/components/ClubLeaderboard.svelte';
 	import RatingLegend from '$lib/components/RatingLegend.svelte';
 	import HreflangLinks from '$lib/components/HreflangLinks.svelte';
+	import LandingNav from '$lib/components/landing/LandingNav.svelte';
 	import { jsonLd } from '$lib/jsonld';
 	import { ogLocaleFor, ogImageUrl } from '$lib/i18n/hreflang';
-	import { ctaHref } from '$lib/landing/nav';
+	import { mainNav } from '$lib/landing/nav';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 	import type { PageData } from './$types';
@@ -14,7 +15,6 @@
 
 	const clubName = $derived(data.board?.club.name ?? m.club_default_name());
 	const clubUrl = $derived(`https://padelindex.de/c/${page.params.slug}`);
-	const cta = $derived(ctaHref(page.data.loggedIn));
 	const ogLocale = $derived(ogLocaleFor(getLocale()));
 	const ogImage = $derived(ogImageUrl(getLocale()));
 
@@ -96,21 +96,13 @@
 	{/if}
 </svelte:head>
 
-<nav class="nav">
-	<div class="wrap nav-in">
-		<a class="brand" href={localizeHref('/')} aria-label={m.nav_brand_aria()}>
-			<img src="/logo.svg" width="30" height="30" alt="" />
-			<span>Padel<b>Index</b></span>
-		</a>
-		<a class="btn btn-primary" href={cta}>{m.nav_cta()}</a>
-	</div>
-</nav>
+<LandingNav links={mainNav()} />
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 720px">
 		<div class="sec-head">
 			<span class="eyebrow">{m.club_eyebrow()}</span>
-			<h2>{data.board?.club.name ?? m.club_default_name()}</h2>
+			<h1>{data.board?.club.name ?? m.club_default_name()}</h1>
 			<p class="muted">
 				{m.club_intro_p()}
 			</p>
@@ -183,7 +175,7 @@
 
 	.pager-btn.disabled {
 		color: var(--muted-light);
-		opacity: 0.5;
+		border-color: transparent;
 	}
 
 	.pager-status {

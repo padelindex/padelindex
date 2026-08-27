@@ -204,7 +204,7 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-		color: #b4711a;
+		color: #8f5a15;
 	}
 
 	.stat-row {

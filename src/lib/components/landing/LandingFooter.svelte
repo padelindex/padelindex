@@ -172,13 +172,13 @@
 	}
 
 	.foot-langs a {
-		opacity: 0.7;
+		color: var(--muted-dark);
 		text-decoration: none;
 	}
 
 	.foot-langs a:hover,
 	.foot-langs a:focus-visible {
-		opacity: 1;
+		color: var(--chalk);
 		text-decoration: underline;
 	}
 </style>

@@ -23,7 +23,7 @@
 
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 480px; text-align: center">
-		<h2>Link ungültig oder abgelaufen</h2>
+		<h1>Link ungültig oder abgelaufen</h1>
 		<p class="muted">
 			Bestätigungslinks gelten nur einmal und laufen nach einiger Zeit ab. Fordere einfach einen
 			neuen an.

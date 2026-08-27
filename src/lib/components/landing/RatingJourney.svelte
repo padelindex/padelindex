@@ -269,7 +269,7 @@
 		font-size: 9px;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
-		fill: #b4711a;
+		fill: #8f5a15;
 	}
 	.rj-here {
 		font-family: var(--mono);
@@ -326,7 +326,7 @@
 		font-size: 11px;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		color: #b4711a;
+		color: #8f5a15;
 	}
 	.rj-dres.won {
 		color: var(--court-deep);
@@ -376,13 +376,13 @@
 		color: var(--court-deep);
 	}
 	.rj-ddelta.down {
-		color: #b4711a;
+		color: #8f5a15;
 	}
 	.rj-dnote {
 		margin-top: 12px;
 		font-size: 11.5px;
 		line-height: 1.5;
-		color: #b4711a;
+		color: #8f5a15;
 	}
 	.rj-hint {
 		margin-top: 14px;

@@ -22,14 +22,14 @@
 	<div class="wrap" style="max-width: 480px">
 		{#if data.ok}
 			<div class="sec-head">
-				<h2>Bestätigt</h2>
+				<h1>Bestätigt</h1>
 				<p class="muted">
 					Du bist auf der Warteliste. Wir melden uns, sobald dein Verein dabei ist.
 				</p>
 			</div>
 		{:else}
 			<div class="sec-head">
-				<h2>Konnte nicht bestätigt werden</h2>
+				<h1>Konnte nicht bestätigt werden</h1>
 				<p class="err" role="alert">{data.message}</p>
 			</div>
 			<a class="btn btn-ghost-light" href="/#anmelden" style="margin-top: 8px; display: inline-block">

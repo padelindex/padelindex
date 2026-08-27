@@ -395,7 +395,7 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		color: #b4711a;
+		color: #8f5a15;
 		background: rgba(180, 113, 26, 0.12);
 		padding: 2px 7px;
 		border-radius: 100px;

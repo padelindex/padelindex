@@ -25,7 +25,7 @@
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 480px">
 		<div class="sec-head">
-			<h2>Registrieren</h2>
+			<h1>Registrieren</h1>
 			<p class="muted">Leg dein Spielerprofil an — mit echtem Namen, Verein und Passwort.</p>
 		</div>
 

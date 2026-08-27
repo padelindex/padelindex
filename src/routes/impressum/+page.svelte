@@ -20,7 +20,7 @@
 <section class="sec">
 	<div class="wrap legal" style="max-width: 72ch">
 		<span class="eyebrow">{m.legal_eyebrow()}</span>
-		<h2 style="margin-top: 18px">{m.imp_h2()}</h2>
+		<h1 style="margin-top: 18px">{m.imp_h2()}</h1>
 
 		<h3>{m.imp_h3_1()}</h3>
 		<p>

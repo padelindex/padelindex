@@ -22,7 +22,7 @@
 	<div class="wrap" style="max-width: 480px">
 		{#if data.ok}
 			<div class="sec-head">
-				<h2>Erledigt</h2>
+				<h1>Erledigt</h1>
 				<p class="muted">
 					Das Profil ist jetzt aus der öffentlichen Rangliste entfernt. Wer die alte Profilseite
 					aufruft, sieht ab sofort nichts mehr davon.
@@ -30,7 +30,7 @@
 			</div>
 		{:else}
 			<div class="sec-head">
-				<h2>Konnte nicht bestätigt werden</h2>
+				<h1>Konnte nicht bestätigt werden</h1>
 				<p class="err" role="alert">{data.message}</p>
 			</div>
 			<a class="btn btn-ghost-light" href="/profil-entfernen" style="margin-top: 8px; display: inline-block">

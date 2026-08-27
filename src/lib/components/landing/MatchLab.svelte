@@ -690,7 +690,7 @@
 		color: var(--court-deep);
 	}
 	.lab-r.down .lab-rd {
-		color: #b4711a;
+		color: #8f5a15;
 	}
 	.lab-rbar {
 		height: 4px;
@@ -734,7 +734,7 @@
 		font-size: 9px;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		color: #b4711a;
+		color: #8f5a15;
 	}
 
 	.lab-factors {

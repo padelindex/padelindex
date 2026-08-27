@@ -45,12 +45,12 @@ export function categoryMetaFor(locale: Locale): Record<FeedCategory, CategoryMe
 		},
 		SPIELER: {
 			label: m.feed_cat_community({}, { locale }),
-			background: '#2F6FE0',
+			background: '#2A63CC',
 			color: '#EAF1FF'
 		},
 		CLUB_CTA: {
 			label: m.feed_cat_community({}, { locale }),
-			background: '#2F6FE0',
+			background: '#2A63CC',
 			color: '#EAF1FF'
 		},
 		RATGEBER: {

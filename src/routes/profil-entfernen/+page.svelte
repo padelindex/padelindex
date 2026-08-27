@@ -23,7 +23,7 @@
 <section class="sec sec-light">
 	<div class="wrap" style="max-width: 480px">
 		<div class="sec-head">
-			<h2>Ich möchte hier nicht gelistet sein</h2>
+			<h1>Ich möchte hier nicht gelistet sein</h1>
 			<p class="muted">
 				Kein Konto nötig. Wir schicken dir einen Bestätigungslink per E-Mail — sobald du ihn
 				anklickst, verschwindet das Profil sofort aus der öffentlichen Rangliste.
