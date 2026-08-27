@@ -6,9 +6,12 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	let partnerId = $state('');
-	let opponent1Id = $state('');
-	let opponent2Id = $state('');
+	let partnerName = $state('');
+	let opponent1Name = $state('');
+	let opponent2Name = $state('');
+	let partnerEmail = $state('');
+	let opponent1Email = $state('');
+	let opponent2Email = $state('');
 	let setCount = $state(2);
 	let busy = $state(false);
 	let challengeId = $state('');
@@ -22,9 +25,47 @@
 	});
 
 	const today = new Date().toISOString().slice(0, 10);
+	const norm = (s: string) => s.trim().toLowerCase();
 
-	const otherOptions = (excludeIds: string[]) =>
-		data.roster.filter((p) => p.id !== data.me && !excludeIds.includes(p.id));
+	// Kader-Optionen für ein Feld: die anderen beiden Positionen werden über
+	// ihren aktuell eingetippten TEXT ausgeschlossen, nicht über eine
+	// aufgelöste ID — sonst hinge jedes der drei Felder zirkulär von den
+	// beiden anderen ab (partnerId bräuchte opponent1Id/opponent2Id für den
+	// Ausschluss, die wiederum partnerId brauchen). Namensdopplungen im
+	// Kader (z. B. zwei unbeanspruchte Profile, beide aus Datenschutzgründen
+	// als "Max K." angezeigt) werden mit dem Handle disambiguiert.
+	function optionsFor(excludeNames: string[]) {
+		const excluded = excludeNames.map(norm).filter(Boolean);
+		const available = data.roster.filter(
+			(p) => p.id !== data.me && !excluded.includes(norm(p.name))
+		);
+		const nameCounts = new Map<string, number>();
+		for (const p of available) nameCounts.set(p.name, (nameCounts.get(p.name) ?? 0) + 1);
+		return available.map((p) => ({
+			id: p.id,
+			label: (nameCounts.get(p.name) ?? 0) > 1 ? `${p.name} (@${p.handle})` : p.name
+		}));
+	}
+
+	// Exakter (case-insensitive) Treffer gegen die Optionen dieses Felds ->
+	// vorhandene Spieler-ID. Kein Treffer heißt: neuer Shadow-Profil-Spieler
+	// (die eigentliche, tippfehlertolerante Deduplizierung läuft serverseitig
+	// in resolveMatchPlayerSlots, siehe matches.ts).
+	function resolveId(text: string, options: { id: string; label: string }[]) {
+		return options.find((o) => norm(o.label) === norm(text))?.id ?? '';
+	}
+
+	let partnerOptions = $derived(optionsFor([opponent1Name, opponent2Name]));
+	let opponent1Options = $derived(optionsFor([partnerName, opponent2Name]));
+	let opponent2Options = $derived(optionsFor([partnerName, opponent1Name]));
+
+	let partnerId = $derived(resolveId(partnerName, partnerOptions));
+	let opponent1Id = $derived(resolveId(opponent1Name, opponent1Options));
+	let opponent2Id = $derived(resolveId(opponent2Name, opponent2Options));
+
+	let partnerIsNew = $derived(partnerName.trim().length > 0 && !partnerId);
+	let opponent1IsNew = $derived(opponent1Name.trim().length > 0 && !opponent1Id);
+	let opponent2IsNew = $derived(opponent2Name.trim().length > 0 && !opponent2Id);
 </script>
 
 <svelte:head>
@@ -91,34 +132,109 @@
 					{/if}
 				{/if}
 
-				<label for="partnerId">Dein Partner</label>
-				<select id="partnerId" name="partnerId" bind:value={partnerId} required>
-					<option value="" disabled selected>Auswählen…</option>
-					{#each otherOptions([opponent1Id, opponent2Id]) as p (p.id)}
-						<option value={p.id}>{p.name}</option>
+				<label for="partnerNameInput">
+					Dein Partner
+					{#if partnerIsNew}<span class="badge-new">Neuer Spieler</span>{/if}
+				</label>
+				<input
+					id="partnerNameInput"
+					name="partnerName"
+					list="partner-options"
+					bind:value={partnerName}
+					placeholder="Name eingeben oder auswählen…"
+					autocomplete="off"
+					required
+				/>
+				<datalist id="partner-options">
+					{#each partnerOptions as p (p.id)}
+						<option value={p.label}></option>
 					{/each}
-				</select>
+				</datalist>
+				<input type="hidden" name="partnerId" value={partnerId} />
+				{#if partnerIsNew}
+					<input
+						class="email-field"
+						name="partnerEmail"
+						type="email"
+						bind:value={partnerEmail}
+						placeholder="E-Mail (optional) — für die Einladung"
+					/>
+					<p class="note">
+						Legt ein neues, unbeanspruchtes Profil ("Schatten-Profil") an — es zählt für die
+						Rangliste, sobald das Match bestätigt ist.
+						{#if partnerEmail}Wir schicken direkt eine Einladung per E-Mail.{/if}
+					</p>
+				{/if}
 
 				<div class="pair">
 					<div>
-						<label for="opponent1Id">Gegner 1</label>
-						<select id="opponent1Id" name="opponent1Id" bind:value={opponent1Id} required>
-							<option value="" disabled selected>Auswählen…</option>
-							{#each otherOptions([partnerId, opponent2Id]) as p (p.id)}
-								<option value={p.id}>{p.name}</option>
+						<label for="opponent1NameInput">
+							Gegner 1
+							{#if opponent1IsNew}<span class="badge-new">Neuer Spieler</span>{/if}
+						</label>
+						<input
+							id="opponent1NameInput"
+							name="opponent1Name"
+							list="opponent1-options"
+							bind:value={opponent1Name}
+							placeholder="Name eingeben oder auswählen…"
+							autocomplete="off"
+							required
+						/>
+						<datalist id="opponent1-options">
+							{#each opponent1Options as p (p.id)}
+								<option value={p.label}></option>
 							{/each}
-						</select>
+						</datalist>
+						<input type="hidden" name="opponent1Id" value={opponent1Id} />
+						{#if opponent1IsNew}
+							<input
+								class="email-field"
+								name="opponent1Email"
+								type="email"
+								bind:value={opponent1Email}
+								placeholder="E-Mail (optional)"
+							/>
+						{/if}
 					</div>
 					<div>
-						<label for="opponent2Id">Gegner 2</label>
-						<select id="opponent2Id" name="opponent2Id" bind:value={opponent2Id} required>
-							<option value="" disabled selected>Auswählen…</option>
-							{#each otherOptions([partnerId, opponent1Id]) as p (p.id)}
-								<option value={p.id}>{p.name}</option>
+						<label for="opponent2NameInput">
+							Gegner 2
+							{#if opponent2IsNew}<span class="badge-new">Neuer Spieler</span>{/if}
+						</label>
+						<input
+							id="opponent2NameInput"
+							name="opponent2Name"
+							list="opponent2-options"
+							bind:value={opponent2Name}
+							placeholder="Name eingeben oder auswählen…"
+							autocomplete="off"
+							required
+						/>
+						<datalist id="opponent2-options">
+							{#each opponent2Options as p (p.id)}
+								<option value={p.label}></option>
 							{/each}
-						</select>
+						</datalist>
+						<input type="hidden" name="opponent2Id" value={opponent2Id} />
+						{#if opponent2IsNew}
+							<input
+								class="email-field"
+								name="opponent2Email"
+								type="email"
+								bind:value={opponent2Email}
+								placeholder="E-Mail (optional)"
+							/>
+						{/if}
 					</div>
 				</div>
+				{#if opponent1IsNew || opponent2IsNew}
+					<p class="note">
+						Legt neue, unbeanspruchte Profile ("Schatten-Profile") an — sie zählen für die
+						Rangliste, sobald das Match bestätigt ist.
+						{#if opponent1Email || opponent2Email}Wir schicken direkt eine Einladung per E-Mail.{/if}
+					</p>
+				{/if}
 
 				<label class="sets-label" for="set1team1">Sätze (eure Spiele : Gegner-Spiele)</label>
 				{#each Array(setCount) as _, i (i)}
@@ -204,6 +320,23 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 14px;
+	}
+
+	.badge-new {
+		display: inline-block;
+		margin-left: 8px;
+		padding: 2px 9px;
+		border-radius: 100px;
+		background: rgba(15, 110, 92, 0.12);
+		color: var(--court-deep, #0f6e5c);
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.01em;
+		text-transform: none;
+	}
+
+	.email-field {
+		margin-top: 8px;
 	}
 
 	.pair label {
