@@ -18,11 +18,12 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { error } from '@sveltejs/kit';
-import { formatPlayerName } from '$lib/claim-match';
+import { formatPlayerName, matchClaimName } from '$lib/claim-match';
 import { confirmMatchByPlayer } from './rating/confirm';
 import { validateMatchReport, type MatchReportInput } from '$lib/match-report';
 import { matchReportedEmail } from '$lib/notifications';
 import { sendEmail, type EmailEnv } from './email';
+import { startProfileClaim } from './claims';
 
 export type PlayerClub = { id: string; slug: string; name: string };
 
@@ -68,15 +69,17 @@ export async function loadClubRoster(
 
 	const rows = (data ?? []).map(
 		(row) =>
-			(row as unknown as {
-				players: {
-					id: string;
-					handle: string;
-					display_name: string;
-					claim_status: string;
-					show_full_name: boolean;
-				};
-			}).players
+			(
+				row as unknown as {
+					players: {
+						id: string;
+						handle: string;
+						display_name: string;
+						claim_status: string;
+						show_full_name: boolean;
+					};
+				}
+			).players
 	);
 
 	return rows
@@ -96,7 +99,13 @@ export async function createMatchReport(
 	clubId: string,
 	input: MatchReportInput & { playedAt: string },
 	emailEnv: EmailEnv | null,
-	kontoUrl: string
+	kontoUrl: string,
+	invite?: {
+		clubSlug: string;
+		origin: string;
+		platform?: App.Platform;
+		shadowPlayers: NewShadowPlayer[];
+	}
 ): Promise<ReportResult> {
 	const validation = validateMatchReport(input);
 	if (!validation.ok) return validation;
@@ -117,7 +126,168 @@ export async function createMatchReport(
 
 	await notifyOpponentsOfPendingMatch(admin, emailEnv, input, kontoUrl);
 
+	if (invite && invite.shadowPlayers.length > 0) {
+		await inviteShadowPlayers(
+			invite.clubSlug,
+			invite.shadowPlayers,
+			invite.origin,
+			invite.platform
+		);
+	}
+
 	return { ok: true, matchId };
+}
+
+// ============================================================
+// Shadow-Profile beim Melden: unregistrierte Mitspieler auf die Schnelle
+// ============================================================
+// Ein Slot (Partner/Gegner) kommt vom Formular entweder als ausgewählte
+// Spieler-ID aus dem Kader ODER als frei eingetippter Name (+ optionale
+// E-Mail) für jemanden, der noch kein Profil hat. Auflösung läuft VOR
+// createMatchReport(), weil create_match_report() (0006) eine echte
+// players.id für alle vier Positionen braucht.
+
+export type MatchPlayerSlot = { existingId: string; typedName: string; email: string };
+export type NewShadowPlayer = { handle: string; email: string };
+
+type ResolvedSlot =
+	| { kind: 'existing'; id: string }
+	| { kind: 'created'; id: string; handle: string; displayName: string; email: string | null };
+
+type SlotResolveResult = { ok: true; player: ResolvedSlot } | { ok: false; message: string };
+
+const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/i;
+
+/**
+ * Dedupliziert gegen den VOLLEN Klarnamen-Bestand des Vereins (nicht die im
+ * UI aus Datenschutzgründen abgekürzten Anzeigenamen, siehe
+ * public_display_name() in 0005_claimable_profiles.sql) — sonst könnte ein
+ * Tippfehler denselben Menschen doppelt anlegen, nur weil sein Name auf dem
+ * Formular selbst abgekürzt dargestellt wird. rosterCandidates enthält
+ * zusätzlich bereits in DIESER Anfrage neu angelegte Slots (siehe
+ * resolveMatchPlayerSlots), damit zwei gleich benannte "neue" Positionen im
+ * selben Formular nicht zwei Profile für dieselbe Person erzeugen.
+ */
+async function resolveMatchPlayerSlot(
+	admin: SupabaseClient,
+	clubId: string,
+	slot: MatchPlayerSlot,
+	rosterCandidates: { id: string; displayName: string }[]
+): Promise<SlotResolveResult> {
+	if (slot.existingId) return { ok: true, player: { kind: 'existing', id: slot.existingId } };
+
+	const name = slot.typedName.trim();
+	if (!name) return { ok: false, message: 'Bitte alle Mitspieler angeben.' };
+	if (name.length > 120) return { ok: false, message: 'Name ist zu lang.' };
+
+	const hit = matchClaimName(name, rosterCandidates);
+	if (hit) return { ok: true, player: { kind: 'existing', id: hit.match.id } };
+
+	const email = slot.email.trim();
+	if (email && !EMAIL_PATTERN.test(email)) {
+		return { ok: false, message: `Ungültige E-Mail-Adresse für "${name}".` };
+	}
+
+	const { data, error: rpcErr } = await admin
+		.rpc('create_shadow_player', { p_club_id: clubId, p_display_name: name })
+		.single();
+	if (rpcErr || !data) {
+		return { ok: false, message: rpcErr?.message ?? 'Profil konnte nicht angelegt werden.' };
+	}
+
+	const row = data as { id: string; handle: string };
+	return {
+		ok: true,
+		player: {
+			kind: 'created',
+			id: row.id,
+			handle: row.handle,
+			displayName: name,
+			email: email || null
+		}
+	};
+}
+
+export type ResolveMatchSlotsResult =
+	| {
+			ok: true;
+			ids: { partnerId: string; opponent1Id: string; opponent2Id: string };
+			shadowPlayers: NewShadowPlayer[];
+	  }
+	| { ok: false; message: string };
+
+/**
+ * Löst die drei Nicht-Melder-Positionen (Partner, Gegner 1, Gegner 2) auf —
+ * legt dabei bei Bedarf neue Shadow-Profile an. Reihenfolge ist bewusst
+ * sequenziell (nicht Promise.all): jede bereits in diesem Aufruf neu
+ * angelegte Position fließt als zusätzlicher Dedupe-Kandidat in die
+ * nächste ein (siehe resolveMatchPlayerSlot).
+ */
+export async function resolveMatchPlayerSlots(
+	admin: SupabaseClient,
+	clubId: string,
+	slots: { partner: MatchPlayerSlot; opponent1: MatchPlayerSlot; opponent2: MatchPlayerSlot }
+): Promise<ResolveMatchSlotsResult> {
+	const { data: members, error: err } = await admin
+		.from('club_memberships')
+		.select('players!inner(id, display_name)')
+		.eq('club_id', clubId);
+	if (err) return { ok: false, message: err.message };
+
+	const candidates = (members ?? [])
+		.map((row) => (row as unknown as { players: { id: string; display_name: string } }).players)
+		.map((p) => ({ id: p.id, displayName: p.display_name }));
+
+	const ids: Record<'partner' | 'opponent1' | 'opponent2', string> = {
+		partner: '',
+		opponent1: '',
+		opponent2: ''
+	};
+	const shadowPlayers: NewShadowPlayer[] = [];
+
+	for (const key of ['partner', 'opponent1', 'opponent2'] as const) {
+		const result = await resolveMatchPlayerSlot(admin, clubId, slots[key], candidates);
+		if (!result.ok) return { ok: false, message: result.message };
+
+		ids[key] = result.player.id;
+		if (result.player.kind === 'created') {
+			candidates.push({ id: result.player.id, displayName: result.player.displayName });
+			if (result.player.email) {
+				shadowPlayers.push({ handle: result.player.handle, email: result.player.email });
+			}
+		}
+	}
+
+	return {
+		ok: true,
+		ids: { partnerId: ids.partner, opponent1Id: ids.opponent1, opponent2Id: ids.opponent2 },
+		shadowPlayers
+	};
+}
+
+/**
+ * Best-effort, wie notifyOpponentsOfPendingMatch: ein Einladungsfehler darf
+ * das bereits erfolgreich gemeldete Match nicht nachträglich als
+ * fehlgeschlagen erscheinen lassen. Nutzt bewusst denselben Magic-Link-
+ * Claim wie die Self-Service-Seite /c/[slug]/beanspruchen
+ * (startProfileClaim aus claims.ts) statt eines eigenen Token-Schemas —
+ * das frisch angelegte Profil ist ja bereits genau das unbeanspruchte
+ * Profil, das startProfileClaim sonst erst über die Namenssuche finden
+ * müsste.
+ */
+async function inviteShadowPlayers(
+	clubSlug: string,
+	players: NewShadowPlayer[],
+	origin: string,
+	platform: App.Platform | undefined
+): Promise<void> {
+	for (const p of players) {
+		try {
+			await startProfileClaim(clubSlug, p.handle, p.email, origin, platform);
+		} catch (e) {
+			console.error('Einladung für neues Schatten-Profil fehlgeschlagen', e);
+		}
+	}
 }
 
 /**
@@ -215,7 +385,9 @@ export async function loadPendingMatches(
 		await Promise.all([
 			admin
 				.from('match_participants')
-				.select('match_id, player_id, team, confirmed, players(display_name, claim_status, show_full_name)')
+				.select(
+					'match_id, player_id, team, confirmed, players(display_name, claim_status, show_full_name)'
+				)
 				.in('match_id', pendingIds),
 			supabase
 				.from('match_sets')
@@ -229,8 +401,14 @@ export async function loadPendingMatches(
 		const myTeam = myTeamByMatch.get(m.id) ?? 1;
 		const mine = (participants ?? []).filter((p) => p.match_id === m.id);
 		const toEntry = (p: (typeof mine)[number]) => {
-			const player = p.players as unknown as { display_name: string; claim_status: string; show_full_name: boolean } | null;
-			const name = player ? formatPlayerName(player.display_name, player.claim_status, player.show_full_name) : '?';
+			const player = p.players as unknown as {
+				display_name: string;
+				claim_status: string;
+				show_full_name: boolean;
+			} | null;
+			const name = player
+				? formatPlayerName(player.display_name, player.claim_status, player.show_full_name)
+				: '?';
 			return { name, claimed: player?.claim_status === 'claimed' };
 		};
 
@@ -388,8 +566,14 @@ export async function loadClubPendingMatches(
 	return matches.map((m) => {
 		const mine = (participants ?? []).filter((p) => p.match_id === m.id);
 		const toEntry = (p: (typeof mine)[number]) => {
-			const player = p.players as unknown as { display_name: string; claim_status: string; show_full_name: boolean } | null;
-			const name = player ? formatPlayerName(player.display_name, player.claim_status, player.show_full_name) : '?';
+			const player = p.players as unknown as {
+				display_name: string;
+				claim_status: string;
+				show_full_name: boolean;
+			} | null;
+			const name = player
+				? formatPlayerName(player.display_name, player.claim_status, player.show_full_name)
+				: '?';
 			return { name, claimed: player?.claim_status === 'claimed' };
 		};
 
