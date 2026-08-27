@@ -46,35 +46,22 @@
 		<p>
 			<b>Supabase</b>
 			{m.ds_p4_supabase_desc()}
-			<!--
-			  TODO (Formulierungsvorschlag, bitte prüfen und ergänzen sobald bekannt):
-			  "Serverstandort: [Region aus den Supabase-Projekteinstellungen einsetzen,
-			  z. B. EU Central (Frankfurt)]. Mit Supabase besteht ein
-			  Auftragsverarbeitungsvertrag (AVV) nach Art. 28 DSGVO: [Ja/Nein — falls noch
-			  nicht abgeschlossen, über das Supabase-Dashboard unter Project Settings →
-			  Legal Documents nachholen]."
-			-->
 			{m.ds_p4_supabase_status()}
 		</p>
 		<p>
 			<b>Cloudflare</b>
 			{m.ds_p4_cloudflare_desc()}
-			<!--
-			  TODO (Formulierungsvorschlag): "Cloudflare ist ein US-Anbieter mit
-			  Serverstandorten weltweit (Edge-Netzwerk); die konkrete Verarbeitung für diese
-			  Website läuft über [Region/Vertragsgrundlage aus dem Cloudflare-Vertrag
-			  einsetzen]. Mit Cloudflare besteht ein Auftragsverarbeitungsvertrag inkl.
-			  Standardvertragsklauseln für Datenübermittlungen in die USA."
-			-->
 			{m.ds_p4_cloudflare_status()}
 		</p>
 		<p>
 			<b>Resend</b>
 			{m.ds_p4_resend_desc()}
-			<!--
-			  TODO (Formulierungsvorschlag): "Mit Resend besteht ein Auftragsverarbeitungsvertrag
-			  nach Art. 28 DSGVO: [Ja/Nein — Stand prüfen]."
-			-->
+			{m.ds_p4_resend_status()}
+		</p>
+		<p>
+			<b>Support Board</b>
+			{m.ds_p4_supportboard_desc()}
+			{m.ds_p4_supportboard_status()}
 		</p>
 
 		<h3>{m.ds_h3_5()}</h3>

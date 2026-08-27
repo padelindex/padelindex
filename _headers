@@ -1,3 +1,21 @@
+# Basis-Sicherheitsheader für die ganze Seite. Bewusst NICHT hier drin:
+# Content-Security-Policy (läuft über kit.csp in svelte.config.js, weil
+# SvelteKit dafür pro Request eine Nonce für seinen eigenen
+# Hydration-Bootstrap braucht — eine statische _headers-Datei kann das
+# nicht) und X-Frame-Options/frame-ancestors (die öffentliche
+# /embed/[slug]-Route ist der iframe-Fallback fürs Vereins-Widget und
+# muss sich absichtlich von fremden Domains einbetten lassen — eine
+# blanket-DENY-Regel hier würde genau dieses Feature brechen, und ob eine
+# pfadspezifische Ausnahme in Cloudflares _headers zuverlässig
+# vorrangig vor einer /*-Regel greift, ließ sich aus dieser Umgebung
+# heraus nicht gegen die echte Seite verifizieren — deshalb erstmal
+# ausgelassen statt blind geraten).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+
 # embed.js ist über eine stabile URL eingebunden (kein Content-Hash im
 # Dateinamen, siehe docs/embed-integration.md) — deshalb moderates statt
 # "immutable" Caching: 1 Stunde beim Browser, 1 Tag am Edge, danach im
