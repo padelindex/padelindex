@@ -19,6 +19,11 @@ import { supabaseAnon, supabaseAdmin } from '$lib/server/supabase';
 import { isValidEmail } from '$lib/email';
 import { validateRegisterInput, type RegisterFieldErrors, type RegisterInput } from '$lib/register';
 import { checkRateLimit } from '$lib/server/rate-limit';
+import {
+	findClaimableProfilesByName,
+	createPendingClaimForSignup,
+	type SignupClaimCandidate
+} from '$lib/server/claims';
 
 type RegisterFormValues = {
 	firstName: string;
@@ -75,6 +80,46 @@ export const actions: Actions = {
 				values,
 				message: 'Zu viele Registrierungsversuche. Bitte versuch es später erneut.'
 			};
+		}
+
+		// Schatten-Profil-Abgleich: verhindert ein zweites Profil für jemanden,
+		// der (z.B. von seinem Verein) schon als unbeanspruchter Platzhalter
+		// angelegt wurde. '' = noch nicht gefragt, 'skip' = Nutzer will
+		// bewusst ein neues Profil, sonst die gewählte Profil-ID.
+		const duplicateChoice = String(form.get('duplicateChoice') ?? '');
+		const fullName = `${input.firstName} ${input.lastName}`.trim();
+
+		if (duplicateChoice !== 'skip') {
+			const candidates = await findClaimableProfilesByName(fullName, platform);
+
+			if (duplicateChoice === '') {
+				if (candidates.length > 0) {
+					return { errors: NO_ERRORS, values, candidates };
+				}
+				// Keine Treffer: nichts zu fragen, normal weiter mit signUp() unten.
+			} else {
+				// Nie dem Formularfeld blind vertrauen — nochmal serverseitig gegen
+				// dieselbe Namenssuche prüfen, statt eine beliebige, ggf.
+				// manipulierte ID zu übernehmen (siehe findClaimableProfilesByName).
+				const chosen = candidates.find((c: SignupClaimCandidate) => c.id === duplicateChoice);
+				if (!chosen) {
+					return {
+						errors: NO_ERRORS,
+						values,
+						message: 'Ungültige Auswahl — bitte die Registrierung erneut starten.'
+					};
+				}
+
+				const claim = await createPendingClaimForSignup(chosen.id, input.email, fullName, platform);
+				if (!claim.ok) {
+					return {
+						errors: NO_ERRORS,
+						values,
+						message:
+							'Dieses Profil wird gerade von jemand anderem beansprucht. Bitte wende dich an deinen Verein.'
+					};
+				}
+			}
 		}
 
 		const sb = supabaseAnon(platform);

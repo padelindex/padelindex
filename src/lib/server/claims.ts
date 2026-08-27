@@ -14,7 +14,16 @@
 // importierten Profile sind für anon absichtlich nicht lesbar.
 
 import { error } from '@sveltejs/kit';
-import { abbreviateName, matchClaimName, type NameCandidate } from '$lib/claim-match';
+import {
+	abbreviateName,
+	formatPlayerName,
+	isUsableClaimQuery,
+	matchClaimName,
+	normalizeName,
+	similarity,
+	CLAIM_MATCH_THRESHOLD,
+	type NameCandidate
+} from '$lib/claim-match';
 import { supabaseAdmin, supabasePublic } from './supabase';
 
 export interface ClaimableProfile {
@@ -160,4 +169,128 @@ export async function startProfileClaim(
 	if (otpErr) throw error(502, `Magic Link konnte nicht gesendet werden: ${otpErr.message}`);
 
 	return { ok: true, email };
+}
+
+// ============================================================
+// PadelIndex — Registrierung: Namensabgleich gegen unbeanspruchte Profile
+// ============================================================
+// Andere Baustelle als lookupClaimableProfile() oben: dort gilt "genau ein
+// Treffer oder keiner" (Selbstbedienungsseite, EIN Verein schon bekannt).
+// Bei der Registrierung kennen wir den Verein nicht zuverlässig (clubName
+// im Formular ist Freitext, keine Fremdschlüsselbeziehung) und wollen
+// bewusst MEHRERE Kandidaten zeigen können (z.B. derselbe Name an zwei
+// Vereinen) — ein Mensch entscheidet in der UI, nicht der Algorithmus.
+// Deshalb ohne matchClaimName()s "Vorsprung vor dem Zweitplatzierten"-Regel,
+// aber mit demselben Schwellwert (CLAIM_MATCH_THRESHOLD).
+
+export type SignupClaimCandidate = {
+	id: string;
+	handle: string;
+	/** Abgekürzt, wie überall sonst (formatPlayerName) — nie der volle Name. */
+	name: string;
+	clubName: string;
+	clubSlug: string;
+	rating: number;
+	matches: number;
+};
+
+interface SignupCandidateRow {
+	clubs: { name: string; slug: string } | null;
+	players: {
+		id: string;
+		handle: string;
+		display_name: string;
+		rating: number | string;
+		matches_played: number;
+	};
+}
+
+/**
+ * Sucht unbeanspruchte Profile, deren Name zum bei der Registrierung
+ * eingetippten Namen passt — site-weit (nicht auf einen Verein beschränkt,
+ * siehe oben). Zeigt dieselben Felder, die club_leaderboard
+ * (0014_block0_privacy.sql) für unbeanspruchte Profile ohnehin öffentlich
+ * zeigt: keine neue Exposition, nur derselbe Ausschnitt an einer zweiten
+ * Stelle.
+ */
+export async function findClaimableProfilesByName(
+	fullName: string,
+	platform?: App.Platform
+): Promise<SignupClaimCandidate[]> {
+	if (!isUsableClaimQuery(fullName)) return [];
+
+	const sb = supabaseAdmin(platform);
+	const { data, error: err } = await sb
+		.from('club_memberships')
+		.select(
+			'clubs(name, slug), players!inner(id, handle, display_name, rating, matches_played, claim_status)'
+		)
+		.eq('players.claim_status', 'unclaimed');
+
+	if (err) throw error(500, err.message);
+
+	const query = normalizeName(fullName);
+	const seen = new Set<string>();
+	const scored: { candidate: SignupClaimCandidate; score: number }[] = [];
+
+	for (const row of (data ?? []) as unknown as SignupCandidateRow[]) {
+		const p = row.players;
+		if (!p || !row.clubs || seen.has(p.id)) continue;
+
+		const score = similarity(query, normalizeName(p.display_name));
+		if (score < CLAIM_MATCH_THRESHOLD) continue;
+
+		seen.add(p.id);
+		scored.push({
+			score,
+			candidate: {
+				id: p.id,
+				handle: p.handle,
+				name: formatPlayerName(p.display_name, 'unclaimed', false),
+				clubName: row.clubs.name,
+				clubSlug: row.clubs.slug,
+				rating: Number(p.rating),
+				matches: p.matches_played
+			}
+		});
+	}
+
+	return scored
+		.sort((a, b) => b.score - a.score)
+		.slice(0, 5)
+		.map((s) => s.candidate);
+}
+
+export type SignupClaimResult = { ok: true } | { ok: false; reason: 'pending_exists' };
+
+/**
+ * Legt direkt einen Claim an, ohne einen Magic Link zu verschicken — die
+ * klassische Registrierung (signUp() gleich im Anschluss, siehe
+ * routes/registrieren) übernimmt die E-Mail-Bestätigung selbst.
+ * handle_new_user() (0019_password_auth.sql) verknüpft beim ersten Login
+ * automatisch mit diesem Profil, genau wie beim Magic-Link-Claim oben —
+ * KEINE Änderung am Trigger nötig, der Pfad "offener Claim für diese
+ * E-Mail" existiert dort bereits.
+ */
+export async function createPendingClaimForSignup(
+	playerId: string,
+	email: string,
+	requestedName: string,
+	platform?: App.Platform
+): Promise<SignupClaimResult> {
+	const sb = supabaseAdmin(platform);
+
+	const { error: insErr } = await sb.from('profile_claims').insert({
+		player_id: playerId,
+		email,
+		requested_name: requestedName
+	});
+
+	if (insErr) {
+		// unique index profile_claims_one_pending_idx
+		if (insErr.code === '23505') return { ok: false, reason: 'pending_exists' };
+		throw error(500, insErr.message);
+	}
+
+	return { ok: true };
 }
