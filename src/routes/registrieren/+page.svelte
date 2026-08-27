@@ -146,6 +146,12 @@
 					{busy ? 'Wird angelegt…' : 'Konto erstellen'}
 				</button>
 
+				<p class="terms-note">
+					Mit „Konto erstellen“ akzeptierst du unsere
+					<a href="/nutzungsbedingungen">Nutzungsbedingungen</a>
+					und <a href="/datenschutz">Datenschutzerklärung</a>.
+				</p>
+
 				{#if form?.message}
 					<p class="err" role="alert">{form.message}</p>
 				{/if}
@@ -212,6 +218,17 @@
 		margin: 8px 0 0;
 		font-size: 13px;
 		color: var(--muted-light);
+	}
+
+	.terms-note {
+		margin: 14px 0 0;
+		font-size: 12px;
+		text-align: center;
+		color: var(--muted-light);
+	}
+
+	.terms-note a {
+		color: inherit;
 	}
 
 	.err {

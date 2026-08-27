@@ -84,6 +84,7 @@
 			<a href={localizeHref('/login')}>{m.footer_anmelden()}</a>
 			<a href={localizeHref('/datenschutz')}>{m.footer_datenschutz()}</a>
 			<a href={localizeHref('/impressum')}>{m.footer_impressum()}</a>
+			<a href={localizeHref('/nutzungsbedingungen')}>{m.footer_nutzungsbedingungen()}</a>
 			<a href="mailto:kontakt@padelindex.de">{m.footer_kontakt()}</a>
 		</div>
 		<div class="foot-social">
