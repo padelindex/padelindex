@@ -39,10 +39,15 @@
 		{:else}
 			<form
 				method="POST"
+				action="?/login"
 				use:enhance={() => {
 					busy = true;
 					return async ({ update }) => {
-						await update();
+						// reset:false — sonst leert SvelteKits Standardverhalten das
+						// Passwortfeld (kein value-Attribut) bei jedem fehlgeschlagenen
+						// Login-Versuch, obwohl der Nutzer es gerade richtig eingegeben
+						// haben könnte (z.B. bei "E-Mail noch nicht bestätigt").
+						await update({ reset: false });
 						busy = false;
 					};
 				}}

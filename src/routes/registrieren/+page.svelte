@@ -58,7 +58,16 @@
 				use:enhance={() => {
 					busy = true;
 					return async ({ update }) => {
-						await update();
+						// reset:false — sonst leert SvelteKits Standardverhalten bei
+						// jeder (auch nicht-fehlerhaften) Antwort automatisch das
+						// <form>-Element. Passwort/-Wiederholung haben bewusst kein
+						// value-Attribut (wird nie vom Server zurückgegeben), landen
+						// bei einem echten reset() also immer bei "" — das hat den
+						// Schatten-Profil-Zwischenschritt unten in eine Endlosschleife
+						// laufen lassen: Kandidat auswählen -> Passwort weg ->
+						// Validierung schlägt fehl, bevor die Auswahl verarbeitet wird
+						// -> zurück auf Los.
+						await update({ reset: false });
 						busy = false;
 					};
 				}}

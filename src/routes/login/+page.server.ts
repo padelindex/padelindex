@@ -26,7 +26,13 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, url, platform, getClientAddress }) => {
+	// Kein "default": SvelteKit verbietet die Mischung aus "default" und
+	// benannten Actions im selben actions-Objekt (wirft serverseitig einen
+	// 500er auf JEDEN POST auf diese Route, unabhängig vom Ziel-Formular)
+	// — siehe login: unten und die passende action="?/login" im
+	// +page.svelte. Ohne diese Umbenennung war der klassische
+	// E-Mail+Passwort-Login seit seiner Einführung nie funktionsfähig.
+	login: async ({ request, url, platform, getClientAddress }) => {
 		const form = await request.formData();
 		const email = String(form.get('email') ?? '')
 			.trim()

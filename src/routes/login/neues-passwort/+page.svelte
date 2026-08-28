@@ -37,7 +37,10 @@
 				use:enhance={() => {
 					busy = true;
 					return async ({ update }) => {
-						await update();
+						// reset:false — sonst leert SvelteKits Standardverhalten beide
+						// Passwortfelder (kein value-Attribut) bei jedem Fehler, etwa
+						// wenn die beiden Eingaben nicht übereinstimmen.
+						await update({ reset: false });
 						busy = false;
 					};
 				}}
