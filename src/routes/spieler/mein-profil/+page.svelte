@@ -1,9 +1,11 @@
 <script lang="ts">
-	import type { PageData } from './$types';
+	import { enhance } from '$app/forms';
+	import type { ActionData, PageData } from './$types';
 	import AvatarCircle from '$lib/components/AvatarCircle.svelte';
 	import MinimalNav from '$lib/components/MinimalNav.svelte';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let busy = $state(false);
 
 	const claimLabel: Record<string, string> = {
 		unclaimed: 'Nicht beansprucht',
@@ -26,6 +28,17 @@
 	const fullName = $derived(
 		[data.profile.firstName, data.profile.lastName].filter(Boolean).join(' ') ||
 			data.profile.displayName
+	);
+
+	// Jedes Feld ist genau einmal ausfüllbar (siehe fillDetails-Action) —
+	// ein Profil, das per Magic Link beansprucht statt registriert wurde,
+	// hat diese Felder nie bekommen. Fehlende zeigen ein Eingabefeld,
+	// bereits gesetzte bleiben reiner Text.
+	const missingAnyDetail = $derived(
+		!data.profile.firstName ||
+			!data.profile.lastName ||
+			!data.profile.birthDate ||
+			!data.profile.clubName
 	);
 </script>
 
@@ -50,28 +63,94 @@
 
 		<div class="card">
 			<h3 class="card-title">Persönliche Daten</h3>
-			<dl class="facts">
-				<div class="fact">
-					<dt>Vorname</dt>
-					<dd>{data.profile.firstName ?? '—'}</dd>
-				</div>
-				<div class="fact">
-					<dt>Nachname</dt>
-					<dd>{data.profile.lastName ?? '—'}</dd>
-				</div>
-				<div class="fact">
-					<dt>Geburtsdatum <span class="priv">nur privat sichtbar</span></dt>
-					<dd>{birthDateLabel}</dd>
-				</div>
-				<div class="fact">
-					<dt>Verein</dt>
-					<dd>{data.profile.clubName ?? '—'}</dd>
-				</div>
-				<div class="fact">
-					<dt>E-Mail</dt>
-					<dd>{data.email ?? '—'}</dd>
-				</div>
-			</dl>
+			<form
+				method="POST"
+				action="?/fillDetails"
+				use:enhance={() => {
+					busy = true;
+					return async ({ update }) => {
+						await update({ reset: false });
+						busy = false;
+					};
+				}}
+			>
+				<dl class="facts">
+					<div class="fact">
+						<dt><label for="firstName">Vorname</label></dt>
+						{#if data.profile.firstName}
+							<dd>{data.profile.firstName}</dd>
+						{:else}
+							<dd class="fill">
+								<input id="firstName" name="firstName" type="text" autocomplete="given-name" />
+							</dd>
+						{/if}
+					</div>
+					<div class="fact">
+						<dt><label for="lastName">Nachname</label></dt>
+						{#if data.profile.lastName}
+							<dd>{data.profile.lastName}</dd>
+						{:else}
+							<dd class="fill">
+								<input id="lastName" name="lastName" type="text" autocomplete="family-name" />
+							</dd>
+						{/if}
+					</div>
+					<div class="fact">
+						<dt>
+							<label for="birthDate">Geburtsdatum</label>
+							<span class="priv">nur privat sichtbar</span>
+						</dt>
+						{#if data.profile.birthDate}
+							<dd>{birthDateLabel}</dd>
+						{:else}
+							<dd class="fill">
+								<input id="birthDate" name="birthDate" type="date" autocomplete="bday" />
+							</dd>
+						{/if}
+					</div>
+					<div class="fact">
+						<dt><label for="clubName">Verein</label></dt>
+						{#if data.profile.clubName}
+							<dd>{data.profile.clubName}</dd>
+						{:else}
+							<dd class="fill">
+								<input id="clubName" name="clubName" type="text" autocomplete="organization" />
+							</dd>
+						{/if}
+					</div>
+					<div class="fact">
+						<dt>E-Mail</dt>
+						<dd>{data.email ?? '—'}</dd>
+					</div>
+				</dl>
+
+				{#if missingAnyDetail}
+					<p class="fill-hint">
+						Jedes Feld lässt sich nur einmal eintragen — bitte sorgfältig ausfüllen.
+					</p>
+					{#if form?.detailsErrors?.general}
+						<p class="field-err">{form.detailsErrors.general}</p>
+					{/if}
+					{#if form?.detailsErrors?.firstName}
+						<p class="field-err">Vorname: {form.detailsErrors.firstName}</p>
+					{/if}
+					{#if form?.detailsErrors?.lastName}
+						<p class="field-err">Nachname: {form.detailsErrors.lastName}</p>
+					{/if}
+					{#if form?.detailsErrors?.birthDate}
+						<p class="field-err">Geburtsdatum: {form.detailsErrors.birthDate}</p>
+					{/if}
+					{#if form?.detailsErrors?.clubName}
+						<p class="field-err">Verein: {form.detailsErrors.clubName}</p>
+					{/if}
+					{#if form?.detailsSaved}
+						<p class="ok" style="font-size: 14px; margin-top: 10px">Gespeichert.</p>
+					{/if}
+					<button class="btn btn-ghost-light" type="submit" disabled={busy} style="margin-top: 16px">
+						{busy ? 'Wird gespeichert…' : 'Angaben speichern'}
+					</button>
+				{/if}
+			</form>
 		</div>
 
 		<div class="card">
@@ -200,6 +279,39 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		color: #8f5a15;
+	}
+
+	.fact dd.fill {
+		flex: 1 1 220px;
+	}
+
+	.fill input {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 8px 14px;
+		border-radius: 100px;
+		border: 1px solid var(--line-light, rgba(0, 0, 0, 0.14));
+		background: #fff;
+		font-family: var(--body);
+		font-size: 14px;
+		text-align: left;
+	}
+
+	.fill-hint {
+		margin: 16px 0 0;
+		font-size: 12.5px;
+		color: var(--muted-light);
+	}
+
+	.field-err {
+		margin: 8px 0 0;
+		font-size: 13px;
+		color: #a3341f;
+	}
+
+	.ok {
+		color: var(--court, #0f6e5c);
+		font-weight: 600;
 	}
 
 	.stat-row {
