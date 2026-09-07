@@ -16,6 +16,13 @@
 import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getPlayerAvailabilities } from '$lib/server/availabilities';
+import {
+	isNonEmpty,
+	isValidCalendarDate,
+	ageInYears,
+	MIN_REGISTRATION_AGE,
+	MAX_PLAUSIBLE_AGE
+} from '$lib/register';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.player || !locals.supabase || !locals.user) {
@@ -62,5 +69,54 @@ export const actions: Actions = {
 			await locals.supabase.auth.signOut();
 		}
 		throw redirect(303, '/');
+	},
+
+	// Trägt Vorname/Nachname/Geburtsdatum/Verein nach, wenn sie noch nie
+	// gesetzt wurden — z.B. bei per Magic Link beanspruchten Vereins-
+	// Profilen, die nie durch die Registrierung liefen. Einmal gesetzte
+	// Werte bleiben gesperrt (siehe fill_own_registration_fields(),
+	// 0030_self_fill_registration_fields.sql) — dieselbe Absicht wie bei
+	// der Registrierung selbst, Altersklassen/Rankings sollen verlässlich
+	// bleiben. Nur die Felder validieren, die tatsächlich ausgefüllt
+	// wurden — welche das sind, entscheidet die UI (zeigt nur für aktuell
+	// leere Felder ein Eingabefeld an).
+	fillDetails: async ({ request, locals }) => {
+		if (!locals.supabase || !locals.player) {
+			return { detailsErrors: { general: 'Nicht angemeldet.' } };
+		}
+
+		const form = await request.formData();
+		const firstName = String(form.get('firstName') ?? '').trim();
+		const lastName = String(form.get('lastName') ?? '').trim();
+		const birthDate = String(form.get('birthDate') ?? '').trim();
+		const clubName = String(form.get('clubName') ?? '').trim();
+
+		const errors: Record<string, string> = {};
+		if (firstName && !isNonEmpty(firstName)) errors.firstName = 'Bitte einen kürzeren Namen eingeben.';
+		if (lastName && !isNonEmpty(lastName)) errors.lastName = 'Bitte einen kürzeren Namen eingeben.';
+		if (clubName && !isNonEmpty(clubName)) errors.clubName = 'Bitte einen kürzeren Namen eingeben.';
+		if (birthDate) {
+			if (!isValidCalendarDate(birthDate)) {
+				errors.birthDate = 'Das ist kein gültiges Datum.';
+			} else if (ageInYears(birthDate) < MIN_REGISTRATION_AGE) {
+				errors.birthDate = `Du musst mindestens ${MIN_REGISTRATION_AGE} Jahre alt sein.`;
+			} else if (ageInYears(birthDate) > MAX_PLAUSIBLE_AGE) {
+				errors.birthDate = 'Bitte dein echtes Geburtsdatum eingeben.';
+			}
+		}
+
+		if (Object.keys(errors).length > 0) {
+			return { detailsErrors: errors };
+		}
+
+		const { error } = await locals.supabase.rpc('fill_own_registration_fields', {
+			p_first_name: firstName || null,
+			p_last_name: lastName || null,
+			p_birth_date: birthDate || null,
+			p_club_name: clubName || null
+		});
+
+		if (error) return { detailsErrors: { general: error.message } };
+		return { detailsSaved: true };
 	}
 };

@@ -25,7 +25,7 @@ export type RegisterInput = {
 
 export type RegisterFieldErrors = Partial<Record<keyof RegisterInput, string>>;
 
-function isNonEmpty(value: string, max = MAX_TEXT_FIELD_LENGTH): boolean {
+export function isNonEmpty(value: string, max = MAX_TEXT_FIELD_LENGTH): boolean {
 	const trimmed = value.trim();
 	return trimmed.length > 0 && trimmed.length <= max;
 }
