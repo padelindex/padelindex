@@ -32,7 +32,7 @@ export const actions: Actions = {
 	// — siehe login: unten und die passende action="?/login" im
 	// +page.svelte. Ohne diese Umbenennung war der klassische
 	// E-Mail+Passwort-Login seit seiner Einführung nie funktionsfähig.
-	login: async ({ request, url, platform, getClientAddress }) => {
+	login: async ({ request, url, platform, getClientAddress, locals }) => {
 		const form = await request.formData();
 		const email = String(form.get('email') ?? '')
 			.trim()
@@ -55,12 +55,21 @@ export const actions: Actions = {
 			return { message: 'Zu viele Loginversuche. Bitte versuch es in ein paar Minuten erneut.' };
 		}
 
-		const sb = supabaseAnon(platform);
-		if (!sb) {
+		if (!locals.supabase) {
 			return { message: 'Supabase ist noch nicht verbunden.' };
 		}
 
-		const { error } = await sb.auth.signInWithPassword({ email, password });
+		// locals.supabase (nicht supabaseAnon()!) — der Cookie-Client aus
+		// hooks.server.ts schreibt die Session-Cookies in die Response.
+		// supabaseAnon() legt einen isolierten Client ohne Cookie-Anbindung
+		// an (persistSession: false, siehe lib/server/supabase.ts) — damit
+		// meldete signInWithPassword() zwar erfolgreich an, aber die Session
+		// landete nie im Browser: der Redirect nach /spieler/mein-profil ging
+		// durch, aber ohne gültiges Cookie schickte diese Seite sofort wieder
+		// zu /login zurück — von außen ununterscheidbar von "es passiert
+		// nichts". Falsches Passwort funktionierte, weil dieser Codepfad gar
+		// nicht bis zum Cookie-Schreiben kommt.
+		const { error } = await locals.supabase.auth.signInWithPassword({ email, password });
 
 		if (error) {
 			const unconfirmed =
