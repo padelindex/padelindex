@@ -50,10 +50,18 @@
 					<label class="field-label" for="seasonChoice">Saison</label>
 					<select id="seasonChoice" bind:value={seasonChoice}>
 						{#each data.seasons as s (s.id)}
-							<option value={s.id}>{s.name}</option>
+							<option value={s.id}
+								>{s.name}{s.status === 'completed' ? ' (abgeschlossen)' : ''}</option
+							>
 						{/each}
 						<option value="__new__">Neue Saison…</option>
 					</select>
+					{#if data.seasons.find((s) => s.id === seasonChoice)?.status === 'completed'}
+						<p class="hint">
+							Diese Saison ist als abgeschlossen markiert — ein neuer Zyklus hier läuft ihr zuwider.
+							Meist ist „Neue Saison…" gemeint.
+						</p>
+					{/if}
 					<input
 						type="hidden"
 						name="seasonId"
@@ -126,6 +134,11 @@
 		font-size: 14px;
 		background: rgba(179, 65, 31, 0.1);
 		color: #8f3419;
+	}
+	.hint {
+		margin-top: 8px;
+		font-size: 12.5px;
+		color: #7a5300;
 	}
 	fieldset {
 		border: none;

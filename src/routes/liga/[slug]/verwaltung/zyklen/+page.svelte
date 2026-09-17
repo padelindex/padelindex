@@ -59,7 +59,12 @@
 						<tbody>
 							{#each data.cycles as c (c.id)}
 								<tr>
-									<td>{c.seasonName}</td>
+									<td>
+										{c.seasonName}
+										{#if c.seasonStatus === 'completed'}
+											<span class="pill pill-done pill-inline">abgeschlossen</span>
+										{/if}
+									</td>
 									<td class="c-num num">{c.ordinal}</td>
 									<td class="num">
 										{dateFmt.format(new Date(c.startDate))} – {dateFmt.format(new Date(c.endDate))}
@@ -144,6 +149,9 @@
 	.pill-done {
 		background: rgba(0, 0, 0, 0.07);
 		color: var(--muted-light);
+	}
+	.pill-inline {
+		margin-left: 8px;
 	}
 	.back {
 		margin-top: 32px;
