@@ -74,6 +74,7 @@ export type CycleSummary = {
 	id: string;
 	seasonId: string;
 	seasonName: string;
+	seasonStatus: 'planned' | 'running' | 'completed';
 	ordinal: number;
 	name: string | null;
 	startDate: string;
@@ -88,7 +89,7 @@ export async function listCycles(admin: SupabaseClient, leagueId: string): Promi
 		.from('league_cycles')
 		.select(
 			`id, ordinal, name, start_date, end_date, status,
-			 league_seasons!inner ( id, name, league_id ),
+			 league_seasons!inner ( id, name, status, league_id ),
 			 league_boxes ( id )`
 		)
 		.eq('league_seasons.league_id', leagueId)
@@ -97,11 +98,16 @@ export async function listCycles(admin: SupabaseClient, leagueId: string): Promi
 	if (err) throw error(500, err.message);
 
 	return (data ?? []).map((row) => {
-		const season = row.league_seasons as unknown as { id: string; name: string };
+		const season = row.league_seasons as unknown as {
+			id: string;
+			name: string;
+			status: 'planned' | 'running' | 'completed';
+		};
 		return {
 			id: row.id,
 			seasonId: season.id,
 			seasonName: season.name,
+			seasonStatus: season.status,
 			ordinal: row.ordinal,
 			name: row.name,
 			startDate: row.start_date,
